@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { PlusIcon, UploadIcon } from "lucide-react";
 
+import { BulkActionsToolbar } from "@/components/inventory/bulk-actions-toolbar";
 import { CategoryFilterCards } from "@/components/inventory/category-filter-cards";
 import { DeleteItemDialog } from "@/components/inventory/delete-item-dialog";
 import { InventoryErrorState } from "@/components/inventory/inventory-error-state";
@@ -56,6 +57,7 @@ export function InventoryDashboard() {
   const [itemToDelete, setItemToDelete] = useState<WardrobeItemRow | null>(
     null,
   );
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
     const timeout = setTimeout(
@@ -113,6 +115,14 @@ export function InventoryDashboard() {
     colors: [],
   };
 
+  useEffect(() => {
+    setSelectedIds((current) => {
+      const visibleIds = new Set(items.map((item) => item.id));
+      const next = new Set([...current].filter((id) => visibleIds.has(id)));
+      return next.size === current.size ? current : next;
+    });
+  }, [items]);
+
   function handleRetry() {
     void Promise.all(queries.map((query) => query.refetch()));
   }
@@ -152,7 +162,7 @@ export function InventoryDashboard() {
   const showEmptyState = !isInitialLoading && !error && items.length === 0;
 
   return (
-    <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-6 py-8 lg:px-8 lg:py-10">
+    <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-6 py-8 pb-28 lg:px-8 lg:py-10">
       <header className="flex items-start justify-between gap-6 border-b pb-6">
         <div className="space-y-2">
           <p className="text-sm font-medium text-muted-foreground">
@@ -247,10 +257,19 @@ export function InventoryDashboard() {
       ) : (
         <InventoryTable
           items={items}
+          selectedIds={selectedIds}
+          onSelectedIdsChange={setSelectedIds}
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
         />
       )}
+
+      <BulkActionsToolbar
+        selectedCount={selectedIds.size}
+        selectedIds={[...selectedIds]}
+        onClearSelection={() => setSelectedIds(new Set())}
+        onCompleted={() => void itemsQuery.refetch()}
+      />
 
       <ItemFormDialog
         mode={formMode}

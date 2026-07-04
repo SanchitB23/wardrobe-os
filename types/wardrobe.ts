@@ -274,6 +274,22 @@ export type WardrobeItemRelations = {
   care: ItemCareProfile | null;
 };
 
+export type WardrobeItemDetail = {
+  item: WardrobeItemRow;
+  images: ItemImageRow[];
+  relations: WardrobeItemRelations;
+};
+
+export const EMPTY_WARDROBE_ITEM_RELATIONS: WardrobeItemRelations = {
+  materials: [],
+  seasons: [],
+  styles: [],
+  features: [],
+  tags: [],
+  occasions: [],
+  care: null,
+};
+
 export type DuplicateMatchReason = "same_code" | "similar_name";
 
 export type DuplicateGroup = {
@@ -295,6 +311,54 @@ export type BulkCleanupResult = {
   processed: number;
   mode: BulkCleanupMode;
 };
+
+export type BulkEditLookups = {
+  tags: LookupOption[];
+  seasons: LookupOption[];
+  styles: LookupOption[];
+};
+
+export type BulkEditAction =
+  | { type: "set_status"; value: ItemStatus }
+  | { type: "set_usage"; value: UsageFrequency }
+  | { type: "set_formality"; value: FormalityEnum | null }
+  | { type: "set_fit"; value: FitType }
+  | { type: "set_favorite"; value: boolean }
+  | { type: "add_tag"; tagId: string }
+  | { type: "remove_tag"; tagId: string }
+  | { type: "add_season"; seasonId: string }
+  | { type: "remove_season"; seasonId: string }
+  | { type: "add_style"; styleId: string }
+  | { type: "remove_style"; styleId: string };
+
+export type BulkEditInput = {
+  itemIds: string[];
+  action: BulkEditAction;
+};
+
+export type BulkEditResult = {
+  affected: number;
+  itemCount: number;
+  action: BulkEditAction;
+};
+
+export const BULK_EDIT_ACTION_OPTIONS: {
+  type: BulkEditAction["type"];
+  label: string;
+  category: "field" | "relation";
+}[] = [
+  { type: "set_status", label: "Update status", category: "field" },
+  { type: "set_usage", label: "Update usage", category: "field" },
+  { type: "set_formality", label: "Update formality", category: "field" },
+  { type: "set_fit", label: "Update fit", category: "field" },
+  { type: "set_favorite", label: "Update favorite", category: "field" },
+  { type: "add_tag", label: "Add tag", category: "relation" },
+  { type: "remove_tag", label: "Remove tag", category: "relation" },
+  { type: "add_season", label: "Add season", category: "relation" },
+  { type: "remove_season", label: "Remove season", category: "relation" },
+  { type: "add_style", label: "Add style", category: "relation" },
+  { type: "remove_style", label: "Remove style", category: "relation" },
+];
 
 export const ITEM_STATUSES: ItemStatus[] = ["active", "retired", "returned"];
 export const OWNERSHIP_TYPES: OwnershipType[] = [

@@ -2,13 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import {
-  ArrowLeftIcon,
-  HistoryIcon,
-  ImageIcon,
-  PencilIcon,
-  StarIcon,
-} from "lucide-react";
+import { ArrowLeftIcon, ImageIcon, PencilIcon, StarIcon } from "lucide-react";
 
 import { InventoryErrorState } from "@/components/inventory/inventory-error-state";
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
@@ -22,11 +16,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
-  useItemImages,
-  useWardrobeItem,
-  useWardrobeItemRelations,
+  useWardrobeItemDetail,
   useWardrobeLookups,
 } from "@/lib/wardrobe/hooks";
 import { buildItemImageAltText } from "@/lib/wardrobe/images";
@@ -40,7 +33,6 @@ import {
   type ItemStatus,
   type LookupOption,
   type UsageFrequency,
-  type WardrobeItemRelations,
   type WardrobeItemRow,
 } from "@/types/wardrobe";
 
@@ -105,94 +97,23 @@ function DetailField({
   );
 }
 
-function ItemImagePlaceholder({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/30 text-muted-foreground",
-        className,
-      )}
-    >
-      <ImageIcon className="size-10 opacity-60" />
-      <span className="text-sm">No image</span>
-    </div>
-  );
-}
-
-function HeroImage({
-  imageUrl,
-  name,
+function SectionCard({
+  title,
+  description,
+  children,
 }: {
-  imageUrl: string | null;
-  name: string;
+  title: string;
+  description?: string;
+  children: React.ReactNode;
 }) {
-  if (!imageUrl) {
-    return <ItemImagePlaceholder className="aspect-[3/4] w-full" />;
-  }
-
   return (
-    <div className="overflow-hidden rounded-xl border bg-muted/20 shadow-sm ring-1 ring-foreground/10">
-      <ItemImage
-        src={imageUrl}
-        alt={buildItemImageAltText(name, "hero")}
-        containerClassName="aspect-[3/4] w-full"
-        className="aspect-[3/4] w-full object-cover"
-      />
-    </div>
-  );
-}
-
-function ImageGallery({
-  images,
-  itemName,
-  selectedImageUrl,
-  onSelect,
-}: {
-  images: ItemImageRow[];
-  itemName: string;
-  selectedImageUrl: string | null;
-  onSelect: (url: string) => void;
-}) {
-  if (images.length === 0) {
-    return null;
-  }
-
-  return (
-    <div className="space-y-2">
-      <h3 className="text-sm font-medium">All images</h3>
-      <div className="grid grid-cols-4 gap-2">
-        {images.map((image) => (
-          <button
-            key={image.id}
-            type="button"
-            onClick={() => onSelect(image.image_url)}
-            className={cn(
-              "group relative overflow-hidden rounded-lg border bg-muted/30 shadow-sm ring-1 ring-foreground/5 transition-colors",
-              selectedImageUrl === image.image_url && "ring-2 ring-primary",
-            )}
-          >
-            <ItemImage
-              src={image.image_url}
-              alt={buildItemImageAltText(
-                itemName,
-                "gallery",
-                image.image_type,
-              )}
-              containerClassName="aspect-square w-full"
-              className="aspect-square w-full object-cover"
-            />
-            {image.is_primary && (
-              <Badge
-                variant="secondary"
-                className="absolute top-1 left-1 px-1.5 py-0 text-[10px]"
-              >
-                Primary
-              </Badge>
-            )}
-          </button>
-        ))}
-      </div>
-    </div>
+    <Card>
+      <CardHeader>
+        <CardTitle>{title}</CardTitle>
+        {description ? <CardDescription>{description}</CardDescription> : null}
+      </CardHeader>
+      <CardContent>{children}</CardContent>
+    </Card>
   );
 }
 
@@ -223,42 +144,136 @@ function BadgeGroup({
   );
 }
 
-function MetadataCard({
-  title,
-  description,
-  children,
+function ItemImagePlaceholder({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/30 text-muted-foreground",
+        className,
+      )}
+    >
+      <ImageIcon className="size-10 opacity-60" />
+      <span className="text-sm">No image</span>
+    </div>
+  );
+}
+
+function ItemHeaderCard({
+  item,
+  heroImageUrl,
+  images,
+  selectedImageUrl,
+  onSelectImage,
 }: {
-  title: string;
-  description?: string;
-  children: React.ReactNode;
+  item: WardrobeItemRow;
+  heroImageUrl: string | null;
+  images: ItemImageRow[];
+  selectedImageUrl: string | null;
+  onSelectImage: (url: string) => void;
 }) {
   return (
     <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
-        {description ? <CardDescription>{description}</CardDescription> : null}
-      </CardHeader>
-      <CardContent className="space-y-5">{children}</CardContent>
+      <CardContent className="pt-6">
+        <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[320px_minmax(0,1fr)]">
+          <div className="space-y-4">
+            {heroImageUrl ? (
+              <div className="overflow-hidden rounded-xl border bg-muted/20 shadow-sm ring-1 ring-foreground/10">
+                <ItemImage
+                  src={heroImageUrl}
+                  alt={buildItemImageAltText(item.name, "hero")}
+                  containerClassName="aspect-[3/4] w-full"
+                  className="aspect-[3/4] w-full object-cover"
+                />
+              </div>
+            ) : (
+              <ItemImagePlaceholder className="aspect-[3/4] w-full" />
+            )}
+
+            {images.length > 0 && (
+              <>
+                <Separator />
+                <div className="space-y-2">
+                  <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                    All images
+                  </p>
+                  <div className="grid grid-cols-4 gap-2">
+                    {images.map((image) => (
+                      <button
+                        key={image.id}
+                        type="button"
+                        onClick={() => onSelectImage(image.image_url)}
+                        className={cn(
+                          "relative overflow-hidden rounded-lg border bg-muted/30 ring-1 ring-foreground/5 transition-colors",
+                          selectedImageUrl === image.image_url &&
+                            "ring-2 ring-primary",
+                        )}
+                      >
+                        <ItemImage
+                          src={image.image_url}
+                          alt={buildItemImageAltText(
+                            item.name,
+                            "gallery",
+                            image.image_type,
+                          )}
+                          containerClassName="aspect-square w-full"
+                          className="aspect-square w-full object-cover"
+                        />
+                        {image.is_primary && (
+                          <Badge
+                            variant="secondary"
+                            className="absolute top-1 left-1 px-1 py-0 text-[10px]"
+                          >
+                            Primary
+                          </Badge>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          <div className="flex flex-col justify-center space-y-4">
+            <div className="space-y-2">
+              <p className="font-mono text-sm text-muted-foreground">{item.code}</p>
+              <h1 className="text-3xl font-semibold tracking-tight">{item.name}</h1>
+            </div>
+
+            <Separator />
+
+            <div className="flex flex-wrap items-center gap-2">
+              {item.status && (
+                <Badge variant={statusBadgeVariant(item.status)}>
+                  {formatEnumLabel(item.status)}
+                </Badge>
+              )}
+              {item.usage && (
+                <Badge variant={usageBadgeVariant(item.usage)}>
+                  {formatEnumLabel(item.usage)}
+                </Badge>
+              )}
+              {item.rating !== null && (
+                <Badge variant="outline" className="gap-1 tabular-nums">
+                  <StarIcon className="size-3 fill-amber-400 text-amber-400" />
+                  {formatRating(item.rating)} / 10
+                </Badge>
+              )}
+            </div>
+          </div>
+        </div>
+      </CardContent>
     </Card>
   );
 }
 
-function CoreInfoCard({
-  item,
-  materials,
-}: {
-  item: WardrobeItemRow;
-  materials: LookupOption[];
-}) {
+function CoreInfoCard({ item }: { item: WardrobeItemRow }) {
   return (
-    <MetadataCard
+    <SectionCard
       title="Core Info"
-      description="Catalog attributes and fabric composition."
+      description="Classification, brand, and fit attributes."
     >
-      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        <DetailField label="Code">
-          <span className="font-mono text-sm">{item.code}</span>
-        </DetailField>
+      <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         <DetailField label="Category">
           {displayText(item.category?.name)}
         </DetailField>
@@ -271,126 +286,127 @@ function CoreInfoCard({
         <DetailField label="Primary color">
           {displayText(item.primary_color?.name)}
         </DetailField>
-        <DetailField label="Status">
-          {item.status ? (
-            <Badge variant={statusBadgeVariant(item.status)}>
-              {formatEnumLabel(item.status)}
-            </Badge>
-          ) : (
-            "—"
-          )}
-        </DetailField>
-        <DetailField label="Ownership">
-          {item.ownership ? formatEnumLabel(item.ownership) : "—"}
-        </DetailField>
         <DetailField label="Fit">
           {item.fit ? formatEnumLabel(item.fit) : "—"}
         </DetailField>
         <DetailField label="Formality">
           {item.formality ? formatEnumLabel(item.formality) : "—"}
         </DetailField>
-        <DetailField label="Usage">
-          {item.usage ? (
-            <Badge variant={usageBadgeVariant(item.usage)}>
-              {formatEnumLabel(item.usage)}
-            </Badge>
-          ) : (
-            "—"
-          )}
-        </DetailField>
-        <DetailField label="Rating">
-          {item.rating !== null ? (
-            <span className="inline-flex items-center gap-1 tabular-nums">
-              <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
-              <span className="font-medium">{formatRating(item.rating)}</span>
-              <span className="text-xs text-muted-foreground">/10</span>
-            </span>
-          ) : (
-            "—"
-          )}
-        </DetailField>
       </dl>
-      <BadgeGroup label="Materials" items={materials} />
-    </MetadataCard>
+    </SectionCard>
   );
 }
 
-function StyleDnaCard({ relations }: { relations: WardrobeItemRelations }) {
+function StyleDnaCard({
+  styles,
+  materials,
+  features,
+}: {
+  styles: LookupOption[];
+  materials: LookupOption[];
+  features: LookupOption[];
+}) {
   return (
-    <MetadataCard
+    <SectionCard
       title="Style DNA"
-      description="Seasonality, aesthetic signals, and descriptive tags."
+      description="Aesthetic profile, fabric, and construction signals."
     >
-      <BadgeGroup label="Seasons" items={relations.seasons} />
-      <BadgeGroup label="Styles" items={relations.styles} />
-      <BadgeGroup label="Features" items={relations.features} />
-      <BadgeGroup label="Tags" items={relations.tags} />
-    </MetadataCard>
+      <div className="space-y-5">
+        <BadgeGroup label="Styles" items={styles} />
+        <Separator />
+        <BadgeGroup label="Materials" items={materials} />
+        <Separator />
+        <BadgeGroup label="Features" items={features} />
+      </div>
+    </SectionCard>
   );
 }
 
-function OccasionBadge({ occasion }: { occasion: ItemOccasionRelation }) {
+function SeasonTagsCard({
+  seasons,
+  tags,
+}: {
+  seasons: LookupOption[];
+  tags: LookupOption[];
+}) {
+  return (
+    <SectionCard
+      title="Season & Tags"
+      description="When to wear it and how you label it."
+    >
+      <div className="space-y-5">
+        <BadgeGroup label="Seasons" items={seasons} />
+        <Separator />
+        <BadgeGroup label="Tags" items={tags} />
+      </div>
+    </SectionCard>
+  );
+}
+
+function OccasionCard({ occasion }: { occasion: ItemOccasionRelation }) {
   const name = occasion.occasion?.name ?? "Unknown occasion";
 
   return (
-    <Badge variant="outline" className="gap-1.5 tabular-nums">
-      <span>{name}</span>
-      {occasion.score !== null && (
-        <span className="text-muted-foreground">· {occasion.score}/10</span>
-      )}
-    </Badge>
+    <div className="rounded-lg border bg-muted/20 p-4">
+      <div className="flex items-start justify-between gap-3">
+        <p className="font-medium">{name}</p>
+        {occasion.score !== null && (
+          <Badge variant="outline" className="shrink-0 tabular-nums">
+            {occasion.score}/10
+          </Badge>
+        )}
+      </div>
+      {occasion.notes?.trim() ? (
+        <p className="mt-2 text-sm text-muted-foreground">{occasion.notes}</p>
+      ) : null}
+    </div>
   );
 }
 
-function UsageOccasionsCard({
-  occasions,
-}: {
-  occasions: ItemOccasionRelation[];
-}) {
+function OccasionsCard({ occasions }: { occasions: ItemOccasionRelation[] }) {
   return (
-    <MetadataCard
-      title="Usage & Occasions"
-      description="Where this piece fits in your rotation, ranked by suitability."
+    <SectionCard
+      title="Occasions"
+      description="Suitability scores for different contexts."
     >
       {occasions.length > 0 ? (
-        <div className="flex flex-wrap gap-2">
+        <div className="grid gap-3 sm:grid-cols-2">
           {occasions.map((occasion) => (
-            <OccasionBadge key={occasion.id} occasion={occasion} />
+            <OccasionCard key={occasion.id} occasion={occasion} />
           ))}
         </div>
       ) : (
         <p className="text-sm text-muted-foreground">No occasions linked yet.</p>
       )}
-    </MetadataCard>
+    </SectionCard>
   );
 }
 
 function CareCard({ care }: { care: ItemCareProfile | null }) {
   return (
-    <MetadataCard
+    <SectionCard
       title="Care"
-      description="Washing, storage, and maintenance guidance."
+      description="Storage, washing, and maintenance guidance."
     >
       {care ? (
-        <dl className="grid gap-4 sm:grid-cols-2">
-          <DetailField label="Wash">
-            {displayText(care.wash)}
-          </DetailField>
+        <dl className="space-y-4">
           <DetailField label="Storage">
-            {displayText(care.storage)}
+            {displayText(care.storage ?? care.storage_type?.name)}
           </DetailField>
-          <DetailField label="Storage type">
-            {displayText(care.storage_type?.name)}
-          </DetailField>
+          <Separator />
+          <DetailField label="Wash">{displayText(care.wash)}</DetailField>
           {care.notes?.trim() ? (
-            <div className="space-y-1 sm:col-span-2">
-              <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-                Care notes
-              </dt>
-              <dd className="text-sm whitespace-pre-wrap text-muted-foreground">
-                {care.notes}
-              </dd>
-            </div>
+            <>
+              <Separator />
+              <div className="space-y-1">
+                <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                  Notes
+                </dt>
+                <dd className="text-sm whitespace-pre-wrap text-muted-foreground">
+                  {care.notes}
+                </dd>
+              </div>
+            </>
           ) : null}
         </dl>
       ) : (
@@ -398,46 +414,17 @@ function CareCard({ care }: { care: ItemCareProfile | null }) {
           No care profile recorded for this item.
         </p>
       )}
-    </MetadataCard>
+    </SectionCard>
   );
 }
 
 function NotesCard({ notes }: { notes: string | null }) {
   return (
-    <MetadataCard title="Notes" description="Free-form context and reminders.">
+    <SectionCard title="Notes" description="Free-form context and reminders.">
       <p className="text-sm whitespace-pre-wrap text-muted-foreground">
         {notes?.trim() ? notes : "No notes yet."}
       </p>
-    </MetadataCard>
-  );
-}
-
-function PlaceholderCard({
-  title,
-  description,
-  icon: Icon,
-}: {
-  title: string;
-  description: string;
-  icon: React.ComponentType<{ className?: string }>;
-}) {
-  return (
-    <Card className="border-dashed">
-      <CardHeader>
-        <div className="flex items-start gap-3">
-          <div className="flex size-9 shrink-0 items-center justify-center rounded-lg border bg-muted/40">
-            <Icon className="size-4 text-muted-foreground" />
-          </div>
-          <div className="space-y-1">
-            <CardTitle>{title}</CardTitle>
-            <CardDescription>{description}</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <p className="text-sm text-muted-foreground">Coming soon.</p>
-      </CardContent>
-    </Card>
+    </SectionCard>
   );
 }
 
@@ -448,16 +435,15 @@ function ItemDetailSkeleton() {
         <Skeleton className="h-9 w-40" />
         <Skeleton className="h-9 w-24" />
       </div>
-      <div className="grid gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
-        <Skeleton className="aspect-[3/4] w-full rounded-xl" />
-        <div className="space-y-4">
-          <Skeleton className="h-8 w-64" />
-          <Skeleton className="h-64 w-full rounded-xl" />
-          <Skeleton className="h-48 w-full rounded-xl" />
-          <Skeleton className="h-40 w-full rounded-xl" />
-          <Skeleton className="h-32 w-full rounded-xl" />
-        </div>
+      <Skeleton className="h-[420px] w-full rounded-xl" />
+      <div className="grid gap-6 lg:grid-cols-2">
+        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-48 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
+        <Skeleton className="h-40 w-full rounded-xl" />
       </div>
+      <Skeleton className="h-32 w-full rounded-xl" />
+      <Skeleton className="h-32 w-full rounded-xl" />
     </div>
   );
 }
@@ -481,30 +467,13 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
-  const itemQuery = useWardrobeItem(itemId);
-  const imagesQuery = useItemImages(itemId);
-  const relationsQuery = useWardrobeItemRelations(itemId);
+  const detailQuery = useWardrobeItemDetail(itemId);
   const lookupsQuery = useWardrobeLookups();
 
-  const isLoading =
-    itemQuery.isPending || imagesQuery.isPending || relationsQuery.isPending;
-  const error =
-    itemQuery.error?.message ??
-    imagesQuery.error?.message ??
-    relationsQuery.error?.message ??
-    null;
-
-  const item = itemQuery.data;
-  const images = imagesQuery.data ?? [];
-  const relations = relationsQuery.data ?? {
-    materials: [],
-    seasons: [],
-    styles: [],
-    features: [],
-    tags: [],
-    occasions: [],
-    care: null,
-  };
+  const detail = detailQuery.data;
+  const item = detail?.item;
+  const images = detail?.images ?? [];
+  const relations = detail?.relations;
   const lookups = lookupsQuery.data ?? {
     categories: [],
     subcategories: [],
@@ -519,35 +488,23 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
     images[0]?.image_url ??
     null;
 
-  function handleRetry() {
-    void Promise.all([
-      itemQuery.refetch(),
-      imagesQuery.refetch(),
-      relationsQuery.refetch(),
-    ]);
-  }
-
-  if (isLoading) {
+  if (detailQuery.isPending) {
     return <ItemDetailSkeleton />;
   }
 
-  if (error) {
+  if (detailQuery.error) {
     return (
       <div className="mx-auto w-full max-w-[1400px] px-6 py-8 lg:px-8 lg:py-10">
         <InventoryErrorState
-          message={error}
-          onRetry={handleRetry}
-          isRetrying={
-            itemQuery.isFetching ||
-            imagesQuery.isFetching ||
-            relationsQuery.isFetching
-          }
+          message={detailQuery.error.message}
+          onRetry={() => detailQuery.refetch()}
+          isRetrying={detailQuery.isFetching}
         />
       </div>
     );
   }
 
-  if (!item) {
+  if (!item || !relations) {
     return <ItemNotFound />;
   }
 
@@ -564,56 +521,31 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
         </Button>
       </header>
 
-      <div className="grid gap-8 lg:grid-cols-[380px_minmax(0,1fr)] xl:grid-cols-[420px_minmax(0,1fr)]">
-        <aside className="space-y-4">
-          <HeroImage imageUrl={heroImageUrl} name={item.name} />
-          <ImageGallery
-            images={images}
-            itemName={item.name}
-            selectedImageUrl={heroImageUrl}
-            onSelect={setSelectedImageUrl}
+      <div className="space-y-6">
+        <ItemHeaderCard
+          item={item}
+          heroImageUrl={heroImageUrl}
+          images={images}
+          selectedImageUrl={heroImageUrl}
+          onSelectImage={setSelectedImageUrl}
+        />
+
+        <CoreInfoCard item={item} />
+
+        <div className="grid gap-6 lg:grid-cols-2">
+          <StyleDnaCard
+            styles={relations.styles}
+            materials={relations.materials}
+            features={relations.features}
           />
-        </aside>
+          <SeasonTagsCard seasons={relations.seasons} tags={relations.tags} />
+        </div>
 
-        <div className="space-y-6">
-          <div className="space-y-2">
-            <p className="font-mono text-sm text-muted-foreground">{item.code}</p>
-            <h1 className="text-3xl font-semibold tracking-tight">{item.name}</h1>
-            <div className="flex flex-wrap items-center gap-2 pt-1">
-              {item.status && (
-                <Badge variant={statusBadgeVariant(item.status)}>
-                  {formatEnumLabel(item.status)}
-                </Badge>
-              )}
-              {item.usage && (
-                <Badge variant={usageBadgeVariant(item.usage)}>
-                  {formatEnumLabel(item.usage)}
-                </Badge>
-              )}
-              {item.rating !== null && (
-                <Badge variant="outline" className="tabular-nums">
-                  <StarIcon className="size-3 fill-amber-400 text-amber-400" />
-                  {formatRating(item.rating)} / 10
-                </Badge>
-              )}
-            </div>
-          </div>
+        <OccasionsCard occasions={relations.occasions} />
 
-          <CoreInfoCard item={item} materials={relations.materials} />
-
-          <StyleDnaCard relations={relations} />
-
-          <UsageOccasionsCard occasions={relations.occasions} />
-
+        <div className="grid gap-6 lg:grid-cols-2">
           <CareCard care={relations.care} />
-
           <NotesCard notes={item.notes} />
-
-          <PlaceholderCard
-            title="Wear History"
-            description="Outfits, occasions, and wear frequency over time."
-            icon={HistoryIcon}
-          />
         </div>
       </div>
 
@@ -625,7 +557,7 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
         onOpenChange={(open) => {
           setFormOpen(open);
           if (!open) {
-            void relationsQuery.refetch();
+            void detailQuery.refetch();
           }
         }}
       />

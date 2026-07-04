@@ -18,6 +18,10 @@ import {
 import {
   fetchImportLookups,
 } from "@/lib/wardrobe/import";
+import {
+  applyBulkEdit,
+  fetchBulkEditLookups,
+} from "@/lib/wardrobe/bulk-actions";
 import { bulkSyncJsonWardrobeItems, type JsonSyncInput } from "@/lib/wardrobe/json-sync";
 import {
   buildDuplicateReview,
@@ -30,10 +34,12 @@ import {
   fetchPrimaryImageUrlsForItems,
   uploadPrimaryItemImage,
 } from "@/lib/wardrobe/images";
+import { fetchWardrobeItemDetail } from "@/lib/wardrobe/item-detail";
 import { fetchWardrobeItemRelations } from "@/lib/wardrobe/relations";
 import { wardrobeKeys, type CategoryCountFilters } from "@/lib/wardrobe/query-keys";
 import type {
   BulkCleanupMode,
+  BulkEditInput,
   CreateWardrobeItemInput,
   InventoryFilters,
   UpdateWardrobeItemInput,
@@ -120,6 +126,20 @@ export function useWardrobeItemRelations(itemId: string) {
   });
 }
 
+export function useWardrobeItemDetail(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemDetail(itemId),
+    queryFn: async () => {
+      const result = await fetchWardrobeItemDetail(itemId);
+      if (result.error) {
+        throw result.error;
+      }
+      return result.data;
+    },
+    enabled: Boolean(itemId),
+  });
+}
+
 export function useCategoryCounts(filters: CategoryCountFilters) {
   return useQuery({
     queryKey: wardrobeKeys.categoryCounts(filters),
@@ -132,6 +152,32 @@ export function useWardrobeLookups() {
     queryKey: wardrobeKeys.lookups(),
     queryFn: async () => unwrapData(await fetchLookups()),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useBulkEditLookups() {
+  return useQuery({
+    queryKey: wardrobeKeys.bulkEditLookups(),
+    queryFn: async () => unwrapData(await fetchBulkEditLookups()),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useBulkEditMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: BulkEditInput) =>
+      unwrapData(await applyBulkEdit(input)),
+    onSuccess: async (result) => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success(
+        `Bulk edit applied to ${result.itemCount} item${result.itemCount === 1 ? "" : "s"} (${result.affected} change${result.affected === 1 ? "" : "s"})`,
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Bulk edit failed. Please try again.");
+    },
   });
 }
 

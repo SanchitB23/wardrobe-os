@@ -32,6 +32,8 @@ import {
 
 type InventoryTableProps = {
   items: WardrobeItemRow[];
+  selectedIds: Set<string>;
+  onSelectedIdsChange: (ids: Set<string>) => void;
   onEdit: (item: WardrobeItemRow) => void;
   onDelete: (item: WardrobeItemRow) => void;
 };
@@ -148,10 +150,34 @@ function ItemThumbnail({
 
 export function InventoryTable({
   items,
+  selectedIds,
+  onSelectedIdsChange,
   onEdit,
   onDelete,
 }: InventoryTableProps) {
   const router = useRouter();
+
+  const allSelected =
+    items.length > 0 && items.every((item) => selectedIds.has(item.id));
+  const someSelected = items.some((item) => selectedIds.has(item.id));
+
+  function toggleItem(itemId: string, checked: boolean) {
+    onSelectedIdsChange(
+      new Set(
+        checked
+          ? [...selectedIds, itemId]
+          : [...selectedIds].filter((id) => id !== itemId),
+      ),
+    );
+  }
+
+  function toggleAll(checked: boolean) {
+    if (checked) {
+      onSelectedIdsChange(new Set(items.map((item) => item.id)));
+      return;
+    }
+    onSelectedIdsChange(new Set());
+  }
 
   function navigateToItem(itemId: string) {
     router.push(`/inventory/${itemId}`);
@@ -163,6 +189,20 @@ export function InventoryTable({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              <TableHead className="w-[44px]">
+                <input
+                  type="checkbox"
+                  className="size-4 rounded border"
+                  aria-label="Select all items"
+                  checked={allSelected}
+                  ref={(element) => {
+                    if (element) {
+                      element.indeterminate = someSelected && !allSelected;
+                    }
+                  }}
+                  onChange={(event) => toggleAll(event.target.checked)}
+                />
+              </TableHead>
               <TableHead className="w-[68px]">
                 <span className="sr-only">Image</span>
               </TableHead>
@@ -186,6 +226,7 @@ export function InventoryTable({
                 aria-label={`View ${item.name}`}
                 className={cn(
                   "cursor-pointer transition-colors",
+                  selectedIds.has(item.id) && "bg-muted/40",
                   "hover:bg-muted/60",
                   "focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
                 )}
@@ -197,6 +238,21 @@ export function InventoryTable({
                   }
                 }}
               >
+                <TableCell
+                  onClick={stopRowNavigation}
+                  onMouseDown={stopRowNavigation}
+                  onPointerDown={stopRowNavigation}
+                >
+                  <input
+                    type="checkbox"
+                    className="size-4 rounded border"
+                    aria-label={`Select ${item.name}`}
+                    checked={selectedIds.has(item.id)}
+                    onChange={(event) =>
+                      toggleItem(item.id, event.target.checked)
+                    }
+                  />
+                </TableCell>
                 <TableCell>
                   <ItemThumbnail
                     imageUrl={item.primary_image_url}
