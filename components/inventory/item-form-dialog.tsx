@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   EMPTY_ITEM_FORM,
@@ -32,14 +32,18 @@ type ItemFormDialogProps = {
   onOpenChange: (open: boolean) => void;
 };
 
-export function ItemFormDialog({
+type ItemFormDialogBodyProps = Omit<ItemFormDialogProps, "open">;
+
+function ItemFormDialogBody({
   mode,
-  open,
   item,
   lookups,
   onOpenChange,
-}: ItemFormDialogProps) {
-  const [form, setForm] = useState(EMPTY_ITEM_FORM);
+}: ItemFormDialogBodyProps) {
+  const isEdit = mode === "edit";
+  const [form, setForm] = useState(() =>
+    isEdit && item ? itemToFormState(item) : EMPTY_ITEM_FORM,
+  );
   const [validationError, setValidationError] = useState<string | null>(null);
   const [imageFile, setImageFile] = useState<File | null>(null);
 
@@ -61,51 +65,53 @@ export function ItemFormDialog({
     );
   }, [form.category_id, lookups.subcategories]);
 
-  useEffect(() => {
-    if (!open) {
-      setForm(EMPTY_ITEM_FORM);
-      setValidationError(null);
-      setImageFile(null);
-      createMutation.reset();
-      updateMutation.reset();
-      uploadImageMutation.reset();
-      return;
-    }
-
-    if (mode === "edit" && item) {
-      setForm(itemToFormState(item));
-    } else {
-      setForm(EMPTY_ITEM_FORM);
-    }
-    setImageFile(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when dialog closes
-  }, [open, mode, item]);
-
-  useEffect(() => {
+  const formForDisplay = useMemo(() => {
     if (
       form.subcategory_id &&
       !filteredSubcategories.some(
         (subcategory) => subcategory.id === form.subcategory_id,
       )
     ) {
-      setForm((current) => ({ ...current, subcategory_id: null }));
+      return { ...form, subcategory_id: null };
     }
-  }, [filteredSubcategories, form.subcategory_id]);
+    return form;
+  }, [form, filteredSubcategories]);
+
+  function handleFormChange(next: typeof form) {
+    if (next.category_id !== form.category_id && next.subcategory_id) {
+      const subcategoryStillValid = lookups.subcategories.some(
+        (subcategory) =>
+          subcategory.id === next.subcategory_id &&
+          subcategory.category_id === next.category_id,
+      );
+      setForm(
+        subcategoryStillValid
+          ? next
+          : { ...next, subcategory_id: null },
+      );
+      return;
+    }
+
+    setForm(next);
+  }
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setValidationError(null);
 
-    if (!form.code.trim() || !form.name.trim()) {
+    if (!formForDisplay.code.trim() || !formForDisplay.name.trim()) {
       setValidationError("Code and name are required.");
       return;
     }
 
     try {
       const savedItem =
-        mode === "edit" && item
-          ? await updateMutation.mutateAsync({ id: item.id, ...form })
-          : await createMutation.mutateAsync(form);
+        isEdit && item
+          ? await updateMutation.mutateAsync({
+              id: item.id,
+              ...formForDisplay,
+            })
+          : await createMutation.mutateAsync(formForDisplay);
 
       if (imageFile) {
         await uploadImageMutation.mutateAsync({
@@ -120,84 +126,105 @@ export function ItemFormDialog({
     }
   }
 
-  const isEdit = mode === "edit";
   const mutationError =
     createMutation.error ??
     updateMutation.error ??
     uploadImageMutation.error;
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-        <DialogHeader>
-          <DialogTitle>
-            {isEdit ? "Edit wardrobe item" : "Add wardrobe item"}
-          </DialogTitle>
-          <DialogDescription>
-            {isEdit
-              ? "Update item details and optionally replace the primary photo."
-              : "Create a new item and optionally add a primary photo."}
-          </DialogDescription>
-        </DialogHeader>
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+      <DialogHeader>
+        <DialogTitle>
+          {isEdit ? "Edit wardrobe item" : "Add wardrobe item"}
+        </DialogTitle>
+        <DialogDescription>
+          {isEdit
+            ? "Update item details and optionally replace the primary photo."
+            : "Create a new item and optionally add a primary photo."}
+        </DialogDescription>
+      </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <ItemImageUpload
-            itemName={form.name.trim() || item?.name || "wardrobe item"}
-            existingImageUrl={isEdit ? item?.primary_image_url : null}
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <ItemImageUpload
+          itemName={formForDisplay.name.trim() || item?.name || "wardrobe item"}
+          existingImageUrl={isEdit ? item?.primary_image_url : null}
+          disabled={submitting}
+          isUploading={uploadImageMutation.isPending}
+          onFileChange={setImageFile}
+          inputId={isEdit ? "edit-item-image-upload" : "item-image-upload"}
+        />
+
+        <ItemFormFields
+          form={formForDisplay}
+          lookups={lookups}
+          filteredSubcategories={filteredSubcategories}
+          onChange={handleFormChange}
+          labelFallbacks={
+            isEdit && item
+              ? {
+                  category: item.category?.name,
+                  subcategory: item.subcategory?.name,
+                  brand: item.brand?.name,
+                  primary_color: item.primary_color?.name,
+                }
+              : undefined
+          }
+          codeInputId={isEdit ? "edit-item-code" : "item-code"}
+          nameInputId={isEdit ? "edit-item-name" : "item-name"}
+          notesInputId={isEdit ? "edit-item-notes" : "item-notes"}
+          ratingInputId={isEdit ? "edit-item-rating" : "item-rating"}
+        />
+
+        {(validationError || mutationError) && (
+          <p className="text-sm text-destructive" role="alert">
+            {validationError ?? mutationError?.message}
+          </p>
+        )}
+
+        <DialogFooter>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => onOpenChange(false)}
             disabled={submitting}
-            isUploading={uploadImageMutation.isPending}
-            onFileChange={setImageFile}
-            inputId={isEdit ? "edit-item-image-upload" : "item-image-upload"}
-          />
+          >
+            Cancel
+          </Button>
+          <Button type="submit" disabled={submitting}>
+            {submitting
+              ? uploadImageMutation.isPending
+                ? "Uploading image…"
+                : "Saving…"
+              : isEdit
+                ? "Save changes"
+                : "Add item"}
+          </Button>
+        </DialogFooter>
+      </form>
+    </DialogContent>
+  );
+}
 
-          <ItemFormFields
-            form={form}
-            lookups={lookups}
-            filteredSubcategories={filteredSubcategories}
-            onChange={setForm}
-            labelFallbacks={
-              isEdit && item
-                ? {
-                    category: item.category?.name,
-                    subcategory: item.subcategory?.name,
-                    brand: item.brand?.name,
-                    primary_color: item.primary_color?.name,
-                  }
-                : undefined
-            }
-            codeInputId={isEdit ? "edit-item-code" : "item-code"}
-            nameInputId={isEdit ? "edit-item-name" : "item-name"}
-            notesInputId={isEdit ? "edit-item-notes" : "item-notes"}
-            ratingInputId={isEdit ? "edit-item-rating" : "item-rating"}
-          />
+export function ItemFormDialog({
+  mode,
+  open,
+  item,
+  lookups,
+  onOpenChange,
+}: ItemFormDialogProps) {
+  const dialogKey = open ? `${mode}:${item?.id ?? "new"}` : "closed";
 
-          {(validationError || mutationError) && (
-            <p className="text-sm text-destructive" role="alert">
-              {validationError ?? mutationError?.message}
-            </p>
-          )}
-
-          <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-              disabled={submitting}
-            >
-              Cancel
-            </Button>
-            <Button type="submit" disabled={submitting}>
-              {submitting
-                ? uploadImageMutation.isPending
-                  ? "Uploading image…"
-                  : "Saving…"
-                : isEdit
-                  ? "Save changes"
-                  : "Add item"}
-            </Button>
-          </DialogFooter>
-        </form>
-      </DialogContent>
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      {open ? (
+        <ItemFormDialogBody
+          key={dialogKey}
+          mode={mode}
+          item={item}
+          lookups={lookups}
+          onOpenChange={onOpenChange}
+        />
+      ) : null}
     </Dialog>
   );
 }

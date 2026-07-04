@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ImageIcon, Loader2Icon, UploadIcon, XIcon } from "lucide-react";
 import { toast } from "sonner";
 
@@ -33,27 +33,27 @@ export function ItemImageUpload({
 }: ItemImageUploadProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
+
+  const previewUrl = useMemo(() => {
+    if (!selectedFile) {
+      return null;
+    }
+    return URL.createObjectURL(selectedFile);
+  }, [selectedFile]);
+
+  useEffect(() => {
+    return () => {
+      if (previewUrl) {
+        URL.revokeObjectURL(previewUrl);
+      }
+    };
+  }, [previewUrl]);
 
   const displayUrl = previewUrl ?? existingImageUrl ?? null;
   const hasNewFile = selectedFile !== null;
   const previewAlt = buildItemImageAltText(itemName, "preview");
   const controlsDisabled = disabled || isUploading;
-
-  useEffect(() => {
-    if (!selectedFile) {
-      setPreviewUrl(null);
-      return;
-    }
-
-    const objectUrl = URL.createObjectURL(selectedFile);
-    setPreviewUrl(objectUrl);
-
-    return () => {
-      URL.revokeObjectURL(objectUrl);
-    };
-  }, [selectedFile]);
 
   function handleFileSelect(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0] ?? null;

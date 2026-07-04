@@ -291,24 +291,6 @@ function resolveCareProfile(
   };
 }
 
-function buildWardrobeItemInsert(input: CreateWardrobeItemInput) {
-  return {
-    code: input.code.trim(),
-    name: input.name.trim(),
-    category_id: input.category_id ?? null,
-    subcategory_id: input.subcategory_id ?? null,
-    brand_id: input.brand_id ?? null,
-    primary_color_id: input.primary_color_id ?? null,
-    status: input.status ?? "active",
-    ownership: input.ownership ?? "owned",
-    fit: input.fit ?? "unknown",
-    formality: input.formality ?? null,
-    rating: input.rating ?? null,
-    usage: input.usage ?? null,
-    notes: input.notes?.trim() || null,
-  };
-}
-
 function toImportError(message: string) {
   return new Error(message);
 }

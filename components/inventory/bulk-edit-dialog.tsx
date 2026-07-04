@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   AlertDialog,
@@ -273,7 +273,10 @@ export function BulkEditDialog({
   const lookupsQuery = useBulkEditLookups();
   const bulkEditMutation = useBulkEditMutation();
 
-  const lookups = lookupsQuery.data ?? { tags: [], seasons: [], styles: [] };
+  const lookups = useMemo(
+    () => lookupsQuery.data ?? { tags: [], seasons: [], styles: [] },
+    [lookupsQuery.data],
+  );
   const itemCount = itemIds.length;
 
   const actionSummary = useMemo(
@@ -283,13 +286,18 @@ export function BulkEditDialog({
 
   const canApply = isBulkEditActionReady(action) && itemCount > 0;
 
-  useEffect(() => {
-    if (!open) {
-      setActionType("set_status");
-      setAction(createDefaultBulkEditAction("set_status"));
-      setConfirmOpen(false);
+  function resetDialogState() {
+    setActionType("set_status");
+    setAction(createDefaultBulkEditAction("set_status"));
+    setConfirmOpen(false);
+  }
+
+  function handleDialogOpenChange(nextOpen: boolean) {
+    if (!nextOpen) {
+      resetDialogState();
     }
-  }, [open]);
+    onOpenChange(nextOpen);
+  }
 
   function handleActionTypeChange(type: BulkEditAction["type"]) {
     setActionType(type);
@@ -304,6 +312,7 @@ export function BulkEditDialog({
     try {
       await bulkEditMutation.mutateAsync({ itemIds, action });
       setConfirmOpen(false);
+      resetDialogState();
       onOpenChange(false);
       onCompleted?.();
     } catch {
@@ -314,7 +323,7 @@ export function BulkEditDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
+      <Dialog open={open} onOpenChange={handleDialogOpenChange}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Bulk edit</DialogTitle>
@@ -373,7 +382,7 @@ export function BulkEditDialog({
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={() => handleDialogOpenChange(false)}>
               Cancel
             </Button>
             <Button

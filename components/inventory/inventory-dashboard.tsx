@@ -102,7 +102,23 @@ export function InventoryDashboard() {
   const error = queries.find((query) => query.error)?.error?.message ?? null;
 
   const summary = summaryQuery.data ?? EMPTY_SUMMARY;
-  const items = itemsQuery.data ?? [];
+  const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
+  const visibleItemIds = useMemo(
+    () => new Set(items.map((item) => item.id)),
+    [items],
+  );
+  const visibleSelectedIds = useMemo(
+    () => new Set([...selectedIds].filter((id) => visibleItemIds.has(id))),
+    [selectedIds, visibleItemIds],
+  );
+
+  function handleSelectedIdsChange(nextVisible: Set<string>) {
+    setSelectedIds((current) => {
+      const hidden = [...current].filter((id) => !visibleItemIds.has(id));
+      return new Set([...hidden, ...nextVisible]);
+    });
+  }
+
   const categoryCounts = countsQuery.data ?? {
     total: 0,
     uncategorized: 0,
@@ -114,14 +130,6 @@ export function InventoryDashboard() {
     brands: [],
     colors: [],
   };
-
-  useEffect(() => {
-    setSelectedIds((current) => {
-      const visibleIds = new Set(items.map((item) => item.id));
-      const next = new Set([...current].filter((id) => visibleIds.has(id)));
-      return next.size === current.size ? current : next;
-    });
-  }, [items]);
 
   function handleRetry() {
     void Promise.all(queries.map((query) => query.refetch()));
@@ -257,16 +265,16 @@ export function InventoryDashboard() {
       ) : (
         <InventoryTable
           items={items}
-          selectedIds={selectedIds}
-          onSelectedIdsChange={setSelectedIds}
+          selectedIds={visibleSelectedIds}
+          onSelectedIdsChange={handleSelectedIdsChange}
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
         />
       )}
 
       <BulkActionsToolbar
-        selectedCount={selectedIds.size}
-        selectedIds={[...selectedIds]}
+        selectedCount={visibleSelectedIds.size}
+        selectedIds={[...visibleSelectedIds]}
         onClearSelection={() => setSelectedIds(new Set())}
         onCompleted={() => void itemsQuery.refetch()}
       />

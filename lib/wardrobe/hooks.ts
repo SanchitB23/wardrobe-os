@@ -10,7 +10,6 @@ import {
   fetchInventorySummary,
   fetchLookups,
   fetchWardrobeItemById,
-  fetchWardrobeItemCodes,
   fetchWardrobeItems,
   retireWardrobeItem,
   updateWardrobeItem,

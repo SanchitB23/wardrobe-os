@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { ImageIcon } from "lucide-react";
 
 import { Skeleton } from "@/components/ui/skeleton";
@@ -14,7 +14,7 @@ type ItemImageProps = {
   fallback?: React.ReactNode;
 };
 
-export function ItemImage({
+function ItemImageContent({
   src,
   alt,
   className,
@@ -23,11 +23,6 @@ export function ItemImage({
 }: ItemImageProps) {
   const [loaded, setLoaded] = useState(false);
   const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setLoaded(false);
-    setFailed(false);
-  }, [src]);
 
   if (failed) {
     return (
@@ -60,4 +55,8 @@ export function ItemImage({
       />
     </div>
   );
+}
+
+export function ItemImage(props: ItemImageProps) {
+  return <ItemImageContent key={props.src} {...props} />;
 }
