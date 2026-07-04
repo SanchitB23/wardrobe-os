@@ -5,12 +5,14 @@ import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import {
   ArrowLeftIcon,
+  CalendarDaysIcon,
   ImageIcon,
   SaveIcon,
   ShirtIcon,
   XIcon,
 } from "lucide-react";
 
+import { WearOutfitDialog } from "@/components/outfits/wear-outfit-dialog";
 import { OutfitItemPicker } from "@/components/outfits/outfit-item-picker";
 import { OutfitPreview } from "@/components/outfits/outfit-preview";
 import { InventoryErrorState } from "@/components/inventory/inventory-error-state";
@@ -519,6 +521,12 @@ export function OutfitBuilderPageShell({
   description,
   outfitId,
 }: OutfitBuilderPageShellProps) {
+  const [wearDialogOpen, setWearDialogOpen] = useState(false);
+  const outfitQuery = useOutfit(outfitId ?? "");
+  const outfit = outfitQuery.data ?? null;
+  const wearableItemCount =
+    outfit?.items.filter((entry) => entry.item).length ?? 0;
+
   return (
     <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -538,6 +546,16 @@ export function OutfitBuilderPageShell({
           <p className="max-w-2xl text-sm text-muted-foreground">{description}</p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
+          {outfitId ? (
+            <Button
+              variant="outline"
+              onClick={() => setWearDialogOpen(true)}
+              disabled={!outfit || wearableItemCount === 0}
+            >
+              <CalendarDaysIcon />
+              Wear outfit
+            </Button>
+          ) : null}
           <Button variant="outline" render={<Link href="/inventory" />}>
             <ShirtIcon />
             Inventory
@@ -546,6 +564,14 @@ export function OutfitBuilderPageShell({
       </header>
 
       <OutfitBuilder outfitId={outfitId} />
+
+      {outfitId ? (
+        <WearOutfitDialog
+          outfit={outfit}
+          open={wearDialogOpen}
+          onOpenChange={setWearDialogOpen}
+        />
+      ) : null}
     </main>
   );
 }

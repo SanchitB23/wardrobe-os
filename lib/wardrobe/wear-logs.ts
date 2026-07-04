@@ -8,6 +8,7 @@ import type {
   WearLogFilters,
   WearLogListRow,
   WearLogRow,
+  WearOutfitInput,
 } from "@/types/wardrobe";
 import { UNCATEGORIZED_CATEGORY_ID } from "@/types/wardrobe";
 
@@ -168,6 +169,7 @@ export async function createWearLog(
     .insert({
       item_id: input.item_id,
       worn_on: input.worn_on,
+      outfit_id: input.outfit_id ?? null,
       occasion_id: input.occasion_id ?? null,
       comfort_rating: input.comfort_rating ?? null,
       notes: input.notes?.trim() || null,
@@ -180,6 +182,36 @@ export async function createWearLog(
   }
 
   return { data: data as WearLogRow, error: null };
+}
+
+export async function createOutfitWearLogs(
+  input: WearOutfitInput,
+): Promise<{ data: WearLogRow[] | null; error: Error | null }> {
+  const supabase = createClient();
+
+  if (input.item_ids.length === 0) {
+    return { data: [], error: toError("This outfit has no items to log.") };
+  }
+
+  const { data, error } = await supabase
+    .from("wear_logs")
+    .insert(
+      input.item_ids.map((itemId) => ({
+        item_id: itemId,
+        outfit_id: input.outfit_id,
+        worn_on: input.worn_on,
+        occasion_id: input.occasion_id ?? null,
+        comfort_rating: input.comfort_rating ?? null,
+        notes: input.notes?.trim() || null,
+      })),
+    )
+    .select(WEAR_LOG_SELECT);
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: (data ?? []) as WearLogRow[], error: null };
 }
 
 export async function deleteWearLog(

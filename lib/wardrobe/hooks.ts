@@ -41,6 +41,7 @@ import {
 } from "@/lib/wardrobe/outfits";
 import {
   createWearLog,
+  createOutfitWearLogs,
   deleteWearLog,
   fetchItemWearSummary,
   fetchOccasions,
@@ -76,6 +77,7 @@ import type {
   SaveOutfitInput,
   UpdateOutfitInput,
   OutfitSlot,
+  WearOutfitInput,
 } from "@/types/wardrobe";
 
 function unwrapData<T>(result: { data: T | null; error: Error | null }): T {
@@ -428,6 +430,24 @@ export function useCreateWearLogMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to log wear");
+    },
+  });
+}
+
+export function useWearOutfitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: WearOutfitInput) =>
+      unwrapData(await createOutfitWearLogs(input)),
+    onSuccess: async (logs) => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success(
+        `Logged wear for ${logs.length} item${logs.length === 1 ? "" : "s"}`,
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to log outfit wear");
     },
   });
 }

@@ -325,6 +325,16 @@ export type WearLogListRow = WearLogRow & {
 export type CreateWearLogInput = {
   item_id: string;
   worn_on: string;
+  outfit_id?: string | null;
+  occasion_id?: string | null;
+  comfort_rating?: number | null;
+  notes?: string | null;
+};
+
+export type WearOutfitInput = {
+  outfit_id: string;
+  item_ids: string[];
+  worn_on: string;
   occasion_id?: string | null;
   comfort_rating?: number | null;
   notes?: string | null;
