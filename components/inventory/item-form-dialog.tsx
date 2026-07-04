@@ -17,9 +17,9 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import {
-  createWardrobeItem,
-  updateWardrobeItem,
-} from "@/lib/wardrobe/queries";
+  useCreateWardrobeItemMutation,
+  useUpdateWardrobeItemMutation,
+} from "@/lib/wardrobe/hooks";
 import type { WardrobeItemRow, WardrobeLookups } from "@/types/wardrobe";
 
 type ItemFormDialogProps = {
@@ -28,7 +28,6 @@ type ItemFormDialogProps = {
   item?: WardrobeItemRow | null;
   lookups: WardrobeLookups;
   onOpenChange: (open: boolean) => void;
-  onSuccess: () => void;
 };
 
 export function ItemFormDialog({
@@ -37,11 +36,13 @@ export function ItemFormDialog({
   item,
   lookups,
   onOpenChange,
-  onSuccess,
 }: ItemFormDialogProps) {
   const [form, setForm] = useState(EMPTY_ITEM_FORM);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const createMutation = useCreateWardrobeItemMutation();
+  const updateMutation = useUpdateWardrobeItemMutation();
+  const submitting = createMutation.isPending || updateMutation.isPending;
 
   const filteredSubcategories = useMemo(() => {
     if (!form.category_id) {
@@ -55,8 +56,9 @@ export function ItemFormDialog({
   useEffect(() => {
     if (!open) {
       setForm(EMPTY_ITEM_FORM);
-      setError(null);
-      setSubmitting(false);
+      setValidationError(null);
+      createMutation.reset();
+      updateMutation.reset();
       return;
     }
 
@@ -65,6 +67,7 @@ export function ItemFormDialog({
     } else {
       setForm(EMPTY_ITEM_FORM);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset mutations only when dialog closes
   }, [open, mode, item]);
 
   useEffect(() => {
@@ -80,32 +83,27 @@ export function ItemFormDialog({
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    setError(null);
+    setValidationError(null);
 
     if (!form.code.trim() || !form.name.trim()) {
-      setError("Code and name are required.");
+      setValidationError("Code and name are required.");
       return;
     }
 
-    setSubmitting(true);
-
-    const result =
-      mode === "edit" && item
-        ? await updateWardrobeItem({ id: item.id, ...form })
-        : await createWardrobeItem(form);
-
-    setSubmitting(false);
-
-    if (result.error) {
-      setError(result.error.message);
-      return;
+    try {
+      if (mode === "edit" && item) {
+        await updateMutation.mutateAsync({ id: item.id, ...form });
+      } else {
+        await createMutation.mutateAsync(form);
+      }
+      onOpenChange(false);
+    } catch {
+      // Mutation onError shows toast; keep dialog open for retry.
     }
-
-    onOpenChange(false);
-    onSuccess();
   }
 
   const isEdit = mode === "edit";
+  const mutationError = createMutation.error ?? updateMutation.error;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -143,9 +141,9 @@ export function ItemFormDialog({
             ratingInputId={isEdit ? "edit-item-rating" : "item-rating"}
           />
 
-          {error && (
+          {(validationError || mutationError) && (
             <p className="text-sm text-destructive" role="alert">
-              {error}
+              {validationError ?? mutationError?.message}
             </p>
           )}
 

@@ -54,8 +54,19 @@ export type InventorySort = {
 export type InventoryFilters = {
   search?: string;
   categoryId?: string;
+  subcategoryId?: string;
+  brandId?: string;
+  primaryColorId?: string;
   status?: ItemStatus;
+  usage?: UsageFrequency;
   sort?: InventorySort;
+};
+
+export type InventorySummary = {
+  totalItems: number;
+  activeItems: number;
+  heroPieces: number;
+  averageRating: number | null;
 };
 
 export type CategoryCount = LookupOption & {
@@ -139,4 +150,34 @@ export function formatEnumLabel(value: string): string {
     .split("_")
     .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
     .join(" ");
+}
+
+export function formatRating(value: number | null | undefined): string {
+  if (value === null || value === undefined) {
+    return "—";
+  }
+  return value.toFixed(1);
+}
+
+export function countActiveFilters(filters: InventoryFilters): number {
+  let count = 0;
+  if (filters.search?.trim()) count += 1;
+  if (filters.categoryId) count += 1;
+  if (filters.subcategoryId) count += 1;
+  if (filters.brandId) count += 1;
+  if (filters.primaryColorId) count += 1;
+  if (filters.status) count += 1;
+  if (filters.usage) count += 1;
+  if (
+    filters.sort &&
+    (filters.sort.field !== DEFAULT_INVENTORY_SORT.field ||
+      filters.sort.ascending !== DEFAULT_INVENTORY_SORT.ascending)
+  ) {
+    count += 1;
+  }
+  return count;
+}
+
+export function hasActiveFilters(filters: InventoryFilters): boolean {
+  return countActiveFilters(filters) > 0;
 }

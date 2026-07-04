@@ -1,9 +1,11 @@
 import { createClient } from "@/lib/supabase/client";
+import type { CategoryCountFilters } from "@/lib/wardrobe/query-keys";
 import type {
   CategoryCountsResult,
   CreateWardrobeItemInput,
   InventoryFilters,
   InventorySort,
+  InventorySummary,
   LookupOption,
   SubcategoryOption,
   UpdateWardrobeItemInput,
@@ -59,22 +61,54 @@ function buildItemPayload(input: CreateWardrobeItemInput) {
   };
 }
 
-function applyListFilters<
-  T extends {
-    or: (filters: string) => T;
-    eq: (column: string, value: string) => T;
-  },
->(query: T, filters: Pick<InventoryFilters, "search" | "status">): T {
+type FilterableQuery = {
+  or: (filters: string) => FilterableQuery;
+  eq: (column: string, value: string) => FilterableQuery;
+  is: (column: string, value: null) => FilterableQuery;
+};
+
+function applyInventoryFilters<T extends FilterableQuery>(
+  query: T,
+  filters: InventoryFilters,
+  options: { includeCategory?: boolean } = {},
+): T {
+  const { includeCategory = true } = options;
   const search = filters.search?.trim();
+  let next = query;
+
   if (search) {
-    query = query.or(`name.ilike.%${search}%,code.ilike.%${search}%`);
+    next = next.or(`name.ilike.%${search}%,code.ilike.%${search}%`) as T;
   }
 
   if (filters.status) {
-    query = query.eq("status", filters.status);
+    next = next.eq("status", filters.status) as T;
   }
 
-  return query;
+  if (filters.usage) {
+    next = next.eq("usage", filters.usage) as T;
+  }
+
+  if (filters.subcategoryId) {
+    next = next.eq("subcategory_id", filters.subcategoryId) as T;
+  }
+
+  if (filters.brandId) {
+    next = next.eq("brand_id", filters.brandId) as T;
+  }
+
+  if (filters.primaryColorId) {
+    next = next.eq("primary_color_id", filters.primaryColorId) as T;
+  }
+
+  if (includeCategory) {
+    if (filters.categoryId === UNCATEGORIZED_CATEGORY_ID) {
+      next = next.is("category_id", null) as T;
+    } else if (filters.categoryId) {
+      next = next.eq("category_id", filters.categoryId) as T;
+    }
+  }
+
+  return next;
 }
 
 function applySort(
@@ -102,6 +136,41 @@ function applySort(
   }
 }
 
+export async function fetchInventorySummary(): Promise<{
+  data: InventorySummary | null;
+  error: Error | null;
+}> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("wardrobe_items")
+    .select("status, usage, rating");
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  const rows = data ?? [];
+  const ratedItems = rows.filter((row) => row.rating !== null);
+  const ratingSum = ratedItems.reduce(
+    (sum, row) => sum + Number(row.rating),
+    0,
+  );
+
+  return {
+    data: {
+      totalItems: rows.length,
+      activeItems: rows.filter((row) => row.status === "active").length,
+      heroPieces: rows.filter((row) => row.usage === "hero").length,
+      averageRating:
+        ratedItems.length > 0
+          ? Math.round((ratingSum / ratedItems.length) * 10) / 10
+          : null,
+    },
+    error: null,
+  };
+}
+
 export async function fetchWardrobeItems(
   filters: InventoryFilters = {},
 ): Promise<{ data: WardrobeItemRow[] | null; error: Error | null }> {
@@ -109,14 +178,7 @@ export async function fetchWardrobeItems(
 
   let query = supabase.from("wardrobe_items").select(WARDROBE_ITEM_SELECT);
 
-  query = applyListFilters(query, filters);
-
-  if (filters.categoryId === UNCATEGORIZED_CATEGORY_ID) {
-    query = query.is("category_id", null);
-  } else if (filters.categoryId) {
-    query = query.eq("category_id", filters.categoryId);
-  }
-
+  query = applyInventoryFilters(query, filters);
   query = applySort(query, filters.sort ?? DEFAULT_INVENTORY_SORT);
 
   const { data, error } = await query;
@@ -129,13 +191,13 @@ export async function fetchWardrobeItems(
 }
 
 export async function fetchCategoryCounts(
-  filters: Pick<InventoryFilters, "search" | "status"> = {},
+  filters: CategoryCountFilters = {},
 ): Promise<{ data: CategoryCountsResult | null; error: Error | null }> {
   const supabase = createClient();
 
   let query = supabase.from("wardrobe_items").select("category_id");
 
-  query = applyListFilters(query, filters);
+  query = applyInventoryFilters(query, filters, { includeCategory: false });
 
   const [countsResult, categoriesResult] = await Promise.all([
     query,
@@ -257,16 +319,21 @@ export async function updateWardrobeItem(
   return { data: data as WardrobeItemRow, error: null };
 }
 
-export async function deleteWardrobeItem(
+export async function retireWardrobeItem(
   id: string,
-): Promise<{ error: Error | null }> {
+): Promise<{ data: WardrobeItemRow | null; error: Error | null }> {
   const supabase = createClient();
 
-  const { error } = await supabase.from("wardrobe_items").delete().eq("id", id);
+  const { data, error } = await supabase
+    .from("wardrobe_items")
+    .update({ status: "retired" })
+    .eq("id", id)
+    .select(WARDROBE_ITEM_SELECT)
+    .single();
 
   if (error) {
-    return { error: toError(error.message) };
+    return { data: null, error: toError(error.message) };
   }
 
-  return { error: null };
+  return { data: data as WardrobeItemRow, error: null };
 }

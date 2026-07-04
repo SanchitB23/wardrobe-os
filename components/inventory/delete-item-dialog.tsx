@@ -1,107 +1,109 @@
 "use client";
 
-import { useState } from "react";
+import { ArchiveIcon } from "lucide-react";
 
-import { Button } from "@/components/ui/button";
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
-import { deleteWardrobeItem } from "@/lib/wardrobe/queries";
+  AlertDialog,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogMedia,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { useRetireWardrobeItemMutation } from "@/lib/wardrobe/hooks";
 import type { WardrobeItemRow } from "@/types/wardrobe";
 
 type DeleteItemDialogProps = {
   item: WardrobeItemRow | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onDeleted: () => void;
 };
 
 export function DeleteItemDialog({
   item,
   open,
   onOpenChange,
-  onDeleted,
 }: DeleteItemDialogProps) {
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const retireMutation = useRetireWardrobeItemMutation();
+  const alreadyRetired = item?.status === "retired";
 
-  async function handleDelete() {
-    if (!item) {
+  async function handleRetire() {
+    if (!item || alreadyRetired) {
       return;
     }
 
-    setSubmitting(true);
-    setError(null);
-
-    const { error: deleteError } = await deleteWardrobeItem(item.id);
-    setSubmitting(false);
-
-    if (deleteError) {
-      setError(deleteError.message);
-      return;
+    try {
+      await retireMutation.mutateAsync({ id: item.id, name: item.name });
+      onOpenChange(false);
+    } catch {
+      // Mutation onError shows toast; keep dialog open for retry.
     }
-
-    onOpenChange(false);
-    onDeleted();
   }
 
   return (
-    <Dialog
+    <AlertDialog
       open={open}
       onOpenChange={(next) => {
         if (!next) {
-          setError(null);
+          retireMutation.reset();
         }
         onOpenChange(next);
       }}
     >
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Delete item</DialogTitle>
-          <DialogDescription>
+      <AlertDialogContent className="sm:max-w-md">
+        <AlertDialogHeader>
+          <AlertDialogMedia>
+            <ArchiveIcon className="text-muted-foreground" />
+          </AlertDialogMedia>
+          <AlertDialogTitle>
+            {alreadyRetired ? "Item already retired" : "Retire this item?"}
+          </AlertDialogTitle>
+          <AlertDialogDescription>
             {item ? (
-              <>
-                Permanently remove{" "}
-                <span className="font-medium text-foreground">{item.name}</span>{" "}
-                (<span className="font-mono text-xs">{item.code}</span>) from
-                your inventory? This cannot be undone.
-              </>
+              alreadyRetired ? (
+                <>
+                  <span className="font-medium text-foreground">{item.name}</span>{" "}
+                  is already marked as retired.
+                </>
+              ) : (
+                <>
+                  Mark{" "}
+                  <span className="font-medium text-foreground">{item.name}</span>{" "}
+                  (<span className="font-mono text-xs">{item.code}</span>) as
+                  retired? The item stays in your catalog but is removed from
+                  active rotation.
+                </>
+              )
             ) : (
-              "Remove this item from your inventory?"
+              "Mark this item as retired?"
             )}
-          </DialogDescription>
-        </DialogHeader>
+          </AlertDialogDescription>
+        </AlertDialogHeader>
 
-        {error && (
+        {retireMutation.error && (
           <p className="text-sm text-destructive" role="alert">
-            {error}
+            {retireMutation.error.message}
           </p>
         )}
 
-        <DialogFooter>
-          <Button
-            type="button"
-            variant="outline"
-            onClick={() => onOpenChange(false)}
-            disabled={submitting}
-          >
-            Cancel
-          </Button>
-          <Button
-            type="button"
-            variant="destructive"
-            onClick={() => void handleDelete()}
-            disabled={submitting || !item}
-          >
-            {submitting ? "Deleting…" : "Delete item"}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={retireMutation.isPending}>
+            {alreadyRetired ? "Close" : "Cancel"}
+          </AlertDialogCancel>
+          {!alreadyRetired && (
+            <Button
+              variant="destructive"
+              disabled={retireMutation.isPending || !item}
+              onClick={() => void handleRetire()}
+            >
+              {retireMutation.isPending ? "Retiring…" : "Retire item"}
+            </Button>
+          )}
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
