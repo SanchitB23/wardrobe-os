@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutGridIcon, RefreshCwIcon, ShirtIcon, CalendarDaysIcon } from "lucide-react";
+import { LayoutGridIcon, RefreshCwIcon, ShirtIcon, CalendarDaysIcon, ReceiptIcon } from "lucide-react";
 
 import {
   DashboardSummaryCards,
@@ -10,6 +10,7 @@ import {
 import { DistributionPanel } from "@/components/dashboard/distribution-panel";
 import { InsightsPanel } from "@/components/dashboard/insights-panel";
 import { WearInsightsPanel } from "@/components/dashboard/wear-insights-panel";
+import { PurchaseAnalyticsPanel } from "@/components/dashboard/purchase-analytics-panel";
 import { InventoryErrorState } from "@/components/inventory/inventory-error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -75,6 +76,10 @@ export function WardrobeDashboard() {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
+          <Button variant="outline" render={<Link href="/purchases" />}>
+            <ReceiptIcon />
+            Purchases
+          </Button>
           <Button variant="outline" render={<Link href="/wear-logs" />}>
             <CalendarDaysIcon />
             Wear logs
@@ -176,6 +181,11 @@ export function WardrobeDashboard() {
               {analytics ? <InsightsPanel insights={analytics.insights} /> : null}
               {analytics ? (
                 <WearInsightsPanel wearInsights={analytics.wearInsights} />
+              ) : null}
+              {analytics ? (
+                <PurchaseAnalyticsPanel
+                  purchaseInsights={analytics.purchaseInsights}
+                />
               ) : null}
             </>
           )}

@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase/client";
 import { fetchWearLogAnalytics } from "@/lib/wardrobe/wear-logs";
+import { fetchPurchaseAnalytics } from "@/lib/wardrobe/purchases";
 import type {
   AnalyticsColorDistributionItem,
   AnalyticsDistributionItem,
@@ -378,19 +379,26 @@ export async function fetchWardrobeDashboardAnalytics(): Promise<{
       return left.name.localeCompare(right.name);
     });
 
-  const wearAnalyticsResult = await fetchWearLogAnalytics(
-    items.map((item) => ({
-      id: item.id,
-      code: item.code,
-      name: item.name,
-      category_id: item.category_id,
-      status: item.status,
-    })),
-    categoryNameById,
-  );
+  const [wearAnalyticsResult, purchaseAnalyticsResult] = await Promise.all([
+    fetchWearLogAnalytics(
+      items.map((item) => ({
+        id: item.id,
+        code: item.code,
+        name: item.name,
+        category_id: item.category_id,
+        status: item.status,
+      })),
+      categoryNameById,
+    ),
+    fetchPurchaseAnalytics(),
+  ]);
 
   if (wearAnalyticsResult.error) {
     return { data: null, error: wearAnalyticsResult.error };
+  }
+
+  if (purchaseAnalyticsResult.error) {
+    return { data: null, error: purchaseAnalyticsResult.error };
   }
 
   return {
@@ -409,6 +417,16 @@ export async function fetchWardrobeDashboardAnalytics(): Promise<{
         leastWornActive: [],
         notWornYet: [],
         recentlyWorn: [],
+      },
+      purchaseInsights: purchaseAnalyticsResult.data ?? {
+        totalWardrobeValue: 0,
+        averageCostPerWear: null,
+        mostExpensiveItem: null,
+        cheapestItem: null,
+        topBrandsByValue: [],
+        spendingByBrand: [],
+        spendingByCategory: [],
+        monthlyTimeline: [],
       },
     },
     error: null,

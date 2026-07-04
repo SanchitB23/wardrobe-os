@@ -284,6 +284,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      purchases: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          item_id: string;
+          price: number;
+          purchase_date: string;
+          return_reason: string | null;
+          source: string | null;
+          status: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          item_id: string;
+          price: number;
+          purchase_date: string;
+          return_reason?: string | null;
+          source?: string | null;
+          status?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          item_id?: string;
+          price?: number;
+          purchase_date?: string;
+          return_reason?: string | null;
+          source?: string | null;
+          status?: string | null;
+        };
+        Relationships: [];
+      };
       wear_logs: {
         Row: {
           comfort_rating: number | null;

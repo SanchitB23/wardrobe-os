@@ -135,6 +135,92 @@ export type WardrobeDashboardAnalytics = {
     highCountCategories: AnalyticsDistributionItem[];
   };
   wearInsights: WearLogAnalytics;
+  purchaseInsights: PurchaseAnalytics;
+};
+
+export type PurchaseStatus = "active" | "returned" | "pending" | "cancelled";
+
+export type PurchaseRow = {
+  id: string;
+  item_id: string;
+  purchase_date: string;
+  price: number;
+  source: string | null;
+  status: PurchaseStatus | string | null;
+  return_reason: string | null;
+  created_at: string | null;
+};
+
+export type PurchaseListRow = PurchaseRow & {
+  item: {
+    id: string;
+    code: string;
+    name: string;
+    brand: LookupOption | null;
+    category: LookupOption | null;
+  } | null;
+};
+
+export type CreatePurchaseInput = {
+  item_id: string;
+  purchase_date: string;
+  price: number;
+  source?: string | null;
+  status?: PurchaseStatus | string | null;
+  return_reason?: string | null;
+};
+
+export type UpdatePurchaseInput = CreatePurchaseInput & {
+  id: string;
+};
+
+export type PurchaseFilters = {
+  year?: string;
+  brandId?: string;
+  categoryId?: string;
+  status?: string;
+  priceMin?: number;
+  priceMax?: number;
+};
+
+export type ItemPurchaseDetail = {
+  purchase: PurchaseRow | null;
+  wearCount: number;
+  costPerWear: number | null;
+};
+
+export type SpendingAmountItem = {
+  id: string | null;
+  name: string;
+  amount: number;
+};
+
+export type MonthlySpendingItem = {
+  month: string;
+  label: string;
+  amount: number;
+};
+
+export type PurchaseAnalyticsItem = {
+  id: string;
+  code: string;
+  name: string;
+  price: number;
+  brand: string | null;
+  category: string | null;
+  wearCount: number;
+  costPerWear: number | null;
+};
+
+export type PurchaseAnalytics = {
+  totalWardrobeValue: number;
+  averageCostPerWear: number | null;
+  mostExpensiveItem: PurchaseAnalyticsItem | null;
+  cheapestItem: PurchaseAnalyticsItem | null;
+  topBrandsByValue: SpendingAmountItem[];
+  spendingByBrand: SpendingAmountItem[];
+  spendingByCategory: SpendingAmountItem[];
+  monthlyTimeline: MonthlySpendingItem[];
 };
 
 export type WearLogRow = {
@@ -494,6 +580,31 @@ export const USAGE_FREQUENCIES: UsageFrequency[] = [
   "frequent",
   "hero",
 ];
+
+export const PURCHASE_STATUSES: PurchaseStatus[] = [
+  "active",
+  "returned",
+  "pending",
+  "cancelled",
+];
+
+export function formatCurrency(value: number): string {
+  return new Intl.NumberFormat(undefined, {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
+export function calculateCostPerWear(
+  price: number | null | undefined,
+  wearCount: number,
+): number | null {
+  if (price === null || price === undefined || wearCount === 0) {
+    return null;
+  }
+  return Math.round((price / wearCount) * 100) / 100;
+}
 
 export const INVENTORY_SORT_OPTIONS: {
   field: InventorySortField;

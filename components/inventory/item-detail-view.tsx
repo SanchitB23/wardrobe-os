@@ -8,6 +8,7 @@ import { InventoryErrorState } from "@/components/inventory/inventory-error-stat
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
 import { ItemImage } from "@/components/inventory/item-image";
 import { LogWearDialog } from "@/components/wear-logs/log-wear-dialog";
+import { PurchaseFormDialog } from "@/components/purchases/purchase-form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -28,21 +29,25 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  useItemPurchaseDetail,
   useItemWearSummary,
   useWardrobeItemDetail,
   useWardrobeLookups,
 } from "@/lib/wardrobe/hooks";
 import { buildItemImageAltText } from "@/lib/wardrobe/images";
+import { formatPurchaseDisplayDate } from "@/lib/wardrobe/purchases";
 import { formatWearLogDisplayDate } from "@/lib/wardrobe/wear-logs";
 import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
+  formatCurrency,
   formatRating,
   type ItemCareProfile,
   type ItemImageRow,
   type ItemOccasionRelation,
   type ItemStatus,
   type ItemWearSummary,
+  type ItemPurchaseDetail,
   type LookupOption,
   type UsageFrequency,
   type WardrobeItemRow,
@@ -430,16 +435,6 @@ function CareCard({ care }: { care: ItemCareProfile | null }) {
   );
 }
 
-function NotesCard({ notes }: { notes: string | null }) {
-  return (
-    <SectionCard title="Notes" description="Free-form context and reminders.">
-      <p className="text-sm whitespace-pre-wrap text-muted-foreground">
-        {notes?.trim() ? notes : "No notes yet."}
-      </p>
-    </SectionCard>
-  );
-}
-
 function WearSummaryCard({
   summary,
   isLoading,
@@ -542,6 +537,94 @@ function WearSummaryCard({
   );
 }
 
+function PurchaseCard({
+  item,
+  detail,
+  isLoading,
+  onEdit,
+}: {
+  item: WardrobeItemRow;
+  detail: ItemPurchaseDetail | undefined;
+  isLoading: boolean;
+  onEdit: () => void;
+}) {
+  if (isLoading) {
+    return (
+      <SectionCard
+        title="Purchase"
+        description="Purchase history and cost-per-wear for this item."
+      >
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          {Array.from({ length: 6 }).map((_, index) => (
+            <Skeleton key={index} className="h-12 w-full rounded-lg" />
+          ))}
+        </div>
+      </SectionCard>
+    );
+  }
+
+  const purchase = detail?.purchase ?? null;
+  const wearCount = detail?.wearCount ?? 0;
+  const costPerWear =
+    wearCount === 0 ? null : detail?.costPerWear ?? null;
+
+  return (
+    <SectionCard
+      title="Purchase"
+      description="Purchase history and cost-per-wear for this item."
+    >
+      <div className="mb-4 flex justify-end">
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          {purchase ? "Edit purchase" : "Add purchase"}
+        </Button>
+      </div>
+
+      {purchase ? (
+        <dl className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+          <DetailField label="Purchase date">
+            {formatPurchaseDisplayDate(purchase.purchase_date)}
+          </DetailField>
+          <DetailField label="Price">
+            {formatCurrency(Number(purchase.price))}
+          </DetailField>
+          <DetailField label="Purchase source">
+            {displayText(purchase.source)}
+          </DetailField>
+          <DetailField label="Purchase status">
+            {purchase.status
+              ? formatEnumLabel(String(purchase.status))
+              : "—"}
+          </DetailField>
+          {purchase.status === "returned" ? (
+            <DetailField label="Return reason">
+              {displayText(purchase.return_reason)}
+            </DetailField>
+          ) : null}
+          <DetailField label="Cost per wear">
+            {costPerWear !== null
+              ? formatCurrency(costPerWear)
+              : "Not enough data"}
+          </DetailField>
+        </dl>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No purchase recorded for {item.name} yet.
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
+function NotesCard({ notes }: { notes: string | null }) {
+  return (
+    <SectionCard title="Notes" description="Free-form context and reminders.">
+      <p className="text-sm whitespace-pre-wrap text-muted-foreground">
+        {notes?.trim() ? notes : "No notes yet."}
+      </p>
+    </SectionCard>
+  );
+}
+
 function ItemDetailSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8 lg:px-8 lg:py-10">
@@ -580,10 +663,12 @@ function ItemNotFound() {
 export function ItemDetailView({ itemId }: ItemDetailViewProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [logWearOpen, setLogWearOpen] = useState(false);
+  const [purchaseOpen, setPurchaseOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const detailQuery = useWardrobeItemDetail(itemId);
   const wearSummaryQuery = useItemWearSummary(itemId);
+  const purchaseDetailQuery = useItemPurchaseDetail(itemId);
   const lookupsQuery = useWardrobeLookups();
 
   const detail = detailQuery.data;
@@ -659,6 +744,13 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
           isLoading={wearSummaryQuery.isPending}
         />
 
+        <PurchaseCard
+          item={item}
+          detail={purchaseDetailQuery.data}
+          isLoading={purchaseDetailQuery.isPending}
+          onEdit={() => setPurchaseOpen(true)}
+        />
+
         <div className="grid gap-6 lg:grid-cols-2">
           <StyleDnaCard
             styles={relations.styles}
@@ -683,6 +775,19 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
           setLogWearOpen(open);
           if (!open) {
             void wearSummaryQuery.refetch();
+            void purchaseDetailQuery.refetch();
+          }
+        }}
+      />
+
+      <PurchaseFormDialog
+        item={item}
+        purchase={purchaseDetailQuery.data?.purchase}
+        open={purchaseOpen}
+        onOpenChange={(open) => {
+          setPurchaseOpen(open);
+          if (!open) {
+            void purchaseDetailQuery.refetch();
           }
         }}
       />

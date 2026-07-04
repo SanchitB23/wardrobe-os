@@ -1,4 +1,4 @@
-import type { InventoryFilters, WearLogFilters } from "@/types/wardrobe";
+import type { InventoryFilters, PurchaseFilters, WearLogFilters } from "@/types/wardrobe";
 
 export type CategoryCountFilters = Omit<InventoryFilters, "categoryId" | "sort">;
 
@@ -25,4 +25,10 @@ export const wardrobeKeys = {
   itemWearSummary: (itemId: string) =>
     [...wardrobeKeys.all, "item-wear-summary", itemId] as const,
   occasions: () => [...wardrobeKeys.all, "occasions"] as const,
+  purchases: (filters: PurchaseFilters) =>
+    [...wardrobeKeys.all, "purchases", filters] as const,
+  purchaseCharts: (filters: PurchaseFilters) =>
+    [...wardrobeKeys.all, "purchase-charts", filters] as const,
+  itemPurchase: (itemId: string) =>
+    [...wardrobeKeys.all, "item-purchase", itemId] as const,
 };

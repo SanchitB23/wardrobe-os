@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGridIcon, PlusIcon, UploadIcon, CalendarDaysIcon } from "lucide-react";
+import { LayoutGridIcon, PlusIcon, UploadIcon, CalendarDaysIcon, ReceiptIcon } from "lucide-react";
 
 import { BulkActionsToolbar } from "@/components/inventory/bulk-actions-toolbar";
 import { CategoryFilterCards } from "@/components/inventory/category-filter-cards";
@@ -207,6 +207,10 @@ export function InventoryDashboard() {
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
+          <Button variant="outline" render={<Link href="/purchases" />}>
+            <ReceiptIcon />
+            Purchases
+          </Button>
           <Button variant="outline" render={<Link href="/wear-logs" />}>
             <CalendarDaysIcon />
             Wear logs
