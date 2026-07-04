@@ -138,6 +138,84 @@ export type WardrobeDashboardAnalytics = {
   purchaseInsights: PurchaseAnalytics;
 };
 
+export type OutfitSlot =
+  | "top"
+  | "bottom"
+  | "footwear"
+  | "outerwear"
+  | "watch"
+  | "belt"
+  | "fragrance"
+  | "accessory";
+
+export type OutfitSlotDefinition = {
+  slot: OutfitSlot;
+  label: string;
+  optional: boolean;
+  categoryKeywords: string[];
+};
+
+export type OutfitRow = {
+  id: string;
+  name: string;
+  occasion_id: string | null;
+  season: string | null;
+  rating: number | null;
+  notes: string | null;
+  created_at: string | null;
+};
+
+export type OutfitItemRow = {
+  outfit_id: string;
+  item_id: string;
+  slot: OutfitSlot;
+};
+
+export type OutfitPickerItem = {
+  id: string;
+  code: string;
+  name: string;
+  category: LookupOption | null;
+  brand: LookupOption | null;
+  primary_image_url: string | null;
+};
+
+export type OutfitItemDetail = OutfitItemRow & {
+  item: OutfitPickerItem | null;
+};
+
+export type OutfitListRow = Omit<OutfitRow, "season"> & {
+  occasion: LookupOption | null;
+  season: LookupOption | null;
+  itemCount: number;
+};
+
+export type OutfitDetail = Omit<OutfitRow, "season"> & {
+  occasion: LookupOption | null;
+  season: LookupOption | null;
+  items: OutfitItemDetail[];
+};
+
+export type OutfitSlotSelection = Partial<Record<OutfitSlot, OutfitPickerItem | null>>;
+
+export type SaveOutfitInput = {
+  name: string;
+  occasion_id?: string | null;
+  season_id?: string | null;
+  rating?: number | null;
+  items: { item_id: string; slot: OutfitSlot }[];
+};
+
+export type UpdateOutfitInput = SaveOutfitInput & {
+  id: string;
+};
+
+export type OutfitLookups = {
+  occasions: LookupOption[];
+  seasons: LookupOption[];
+  categories: LookupOption[];
+};
+
 export type PurchaseStatus = "active" | "returned" | "pending" | "cancelled";
 
 export type PurchaseRow = {
@@ -580,6 +658,77 @@ export const USAGE_FREQUENCIES: UsageFrequency[] = [
   "frequent",
   "hero",
 ];
+
+export const OUTFIT_SLOT_DEFINITIONS: OutfitSlotDefinition[] = [
+  {
+    slot: "top",
+    label: "Top",
+    optional: false,
+    categoryKeywords: ["top", "shirt", "tee", "blouse", "sweater", "hoodie", "knit"],
+  },
+  {
+    slot: "bottom",
+    label: "Bottom",
+    optional: false,
+    categoryKeywords: ["bottom", "pant", "trouser", "jean", "short", "skirt"],
+  },
+  {
+    slot: "footwear",
+    label: "Footwear",
+    optional: false,
+    categoryKeywords: ["footwear", "shoe", "sneaker", "boot", "loafer"],
+  },
+  {
+    slot: "outerwear",
+    label: "Outerwear",
+    optional: true,
+    categoryKeywords: ["outerwear", "jacket", "coat", "blazer", "vest"],
+  },
+  {
+    slot: "watch",
+    label: "Watch",
+    optional: true,
+    categoryKeywords: ["watch", "watches"],
+  },
+  {
+    slot: "belt",
+    label: "Belt",
+    optional: true,
+    categoryKeywords: ["belt", "belts"],
+  },
+  {
+    slot: "fragrance",
+    label: "Fragrance",
+    optional: true,
+    categoryKeywords: ["fragrance", "cologne", "perfume", "scent"],
+  },
+  {
+    slot: "accessory",
+    label: "Accessory",
+    optional: true,
+    categoryKeywords: ["accessory", "accessories", "hat", "scarf", "bag", "tie"],
+  },
+];
+
+export function categoryMatchesOutfitSlot(
+  categoryName: string | null | undefined,
+  slot: OutfitSlot,
+): boolean {
+  if (!categoryName) {
+    return false;
+  }
+
+  const normalized = categoryName.toLowerCase();
+  const definition = OUTFIT_SLOT_DEFINITIONS.find((entry) => entry.slot === slot);
+
+  if (!definition) {
+    return false;
+  }
+
+  return definition.categoryKeywords.some((keyword) =>
+    normalized.includes(keyword),
+  );
+}
 
 export const PURCHASE_STATUSES: PurchaseStatus[] = [
   "active",

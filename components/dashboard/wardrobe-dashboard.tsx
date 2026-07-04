@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutGridIcon, RefreshCwIcon, ShirtIcon, CalendarDaysIcon, ReceiptIcon } from "lucide-react";
+import { LayoutGridIcon, RefreshCwIcon, ShirtIcon, CalendarDaysIcon, ReceiptIcon, LayersIcon } from "lucide-react";
 
 import {
   DashboardSummaryCards,
@@ -83,6 +83,10 @@ export function WardrobeDashboard() {
           <Button variant="outline" render={<Link href="/wear-logs" />}>
             <CalendarDaysIcon />
             Wear logs
+          </Button>
+          <Button variant="outline" render={<Link href="/outfits" />}>
+            <LayersIcon />
+            Outfits
           </Button>
           <Button variant="outline" render={<Link href="/inventory" />}>
             <ShirtIcon />

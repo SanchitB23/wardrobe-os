@@ -30,6 +30,16 @@ import {
   updatePurchase,
 } from "@/lib/wardrobe/purchases";
 import {
+  createOutfit,
+  deleteOutfit,
+  duplicateOutfit,
+  fetchOutfitById,
+  fetchOutfitLookups,
+  fetchOutfitPickerItems,
+  fetchOutfits,
+  updateOutfit,
+} from "@/lib/wardrobe/outfits";
+import {
   createWearLog,
   deleteWearLog,
   fetchItemWearSummary,
@@ -63,6 +73,9 @@ import type {
   PurchaseFilters,
   CreatePurchaseInput,
   UpdatePurchaseInput,
+  SaveOutfitInput,
+  UpdateOutfitInput,
+  OutfitSlot,
 } from "@/types/wardrobe";
 
 function unwrapData<T>(result: { data: T | null; error: Error | null }): T {
@@ -489,6 +502,104 @@ export function useUpdatePurchaseMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update purchase");
+    },
+  });
+}
+
+export function useOutfits() {
+  return useQuery({
+    queryKey: wardrobeKeys.outfits(),
+    queryFn: async () => unwrapData(await fetchOutfits()),
+  });
+}
+
+export function useOutfit(id: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.outfit(id),
+    queryFn: async () => unwrapData(await fetchOutfitById(id)),
+    enabled: Boolean(id),
+  });
+}
+
+export function useOutfitLookups() {
+  return useQuery({
+    queryKey: wardrobeKeys.outfitLookups(),
+    queryFn: async () => unwrapData(await fetchOutfitLookups()),
+  });
+}
+
+export function useOutfitPickerItems(slot: OutfitSlot, search: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.outfitPickerItems(slot, search),
+    queryFn: async () =>
+      unwrapData(await fetchOutfitPickerItems(slot, search)),
+    enabled: Boolean(slot),
+  });
+}
+
+export function useCreateOutfitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: SaveOutfitInput) =>
+      unwrapData(await createOutfit(input)),
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Outfit saved");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save outfit");
+    },
+  });
+}
+
+export function useUpdateOutfitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: UpdateOutfitInput) =>
+      unwrapData(await updateOutfit(input)),
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Outfit updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update outfit");
+    },
+  });
+}
+
+export function useDeleteOutfitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await deleteOutfit(id);
+      if (error) {
+        throw error;
+      }
+    },
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Outfit deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete outfit");
+    },
+  });
+}
+
+export function useDuplicateOutfitMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => unwrapData(await duplicateOutfit(id)),
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Outfit duplicated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to duplicate outfit");
     },
   });
 }

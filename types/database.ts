@@ -317,6 +317,57 @@ export type Database = {
         };
         Relationships: [];
       };
+      outfits: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          name: string;
+          notes: string | null;
+          occasion_id: string | null;
+          rating: number | null;
+          season: string | null;
+          weather_notes: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          name: string;
+          notes?: string | null;
+          occasion_id?: string | null;
+          rating?: number | null;
+          season?: string | null;
+          weather_notes?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          name?: string;
+          notes?: string | null;
+          occasion_id?: string | null;
+          rating?: number | null;
+          season?: string | null;
+          weather_notes?: string | null;
+        };
+        Relationships: [];
+      };
+      outfit_items: {
+        Row: {
+          item_id: string;
+          outfit_id: string;
+          role: string;
+        };
+        Insert: {
+          item_id: string;
+          outfit_id: string;
+          role: string;
+        };
+        Update: {
+          item_id?: string;
+          outfit_id?: string;
+          role?: string;
+        };
+        Relationships: [];
+      };
       wear_logs: {
         Row: {
           comfort_rating: number | null;

@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGridIcon, PlusIcon, UploadIcon, CalendarDaysIcon, ReceiptIcon } from "lucide-react";
+import { LayoutGridIcon, PlusIcon, UploadIcon, CalendarDaysIcon, ReceiptIcon, LayersIcon } from "lucide-react";
 
 import { BulkActionsToolbar } from "@/components/inventory/bulk-actions-toolbar";
 import { CategoryFilterCards } from "@/components/inventory/category-filter-cards";
@@ -214,6 +214,10 @@ export function InventoryDashboard() {
           <Button variant="outline" render={<Link href="/wear-logs" />}>
             <CalendarDaysIcon />
             Wear logs
+          </Button>
+          <Button variant="outline" render={<Link href="/outfits" />}>
+            <LayersIcon />
+            Outfits
           </Button>
           <Button variant="outline" render={<Link href="/dashboard" />}>
             <LayoutGridIcon />
