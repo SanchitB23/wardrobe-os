@@ -56,6 +56,7 @@ import { cn } from "@/lib/utils";
 import {
   CSV_IMPORT_COLUMNS,
   type ImportPreviewRow,
+  type JsonBulkImportResult,
   type ValidatedImportRow,
   type ValidatedJsonImportRow,
 } from "@/types/wardrobe";
@@ -66,7 +67,13 @@ function displayCell(value: string) {
   return value.trim() ? value : "—";
 }
 
-function PreviewTable({ rows }: { rows: ImportPreviewRow[] }) {
+function PreviewTable({
+  rows,
+  showSyncAction = false,
+}: {
+  rows: ImportPreviewRow[];
+  showSyncAction?: boolean;
+}) {
   return (
     <div className="overflow-hidden rounded-xl border">
       <div className="overflow-x-auto">
@@ -75,6 +82,9 @@ function PreviewTable({ rows }: { rows: ImportPreviewRow[] }) {
             <TableRow className="hover:bg-transparent">
               <TableHead className="w-[52px]">Row</TableHead>
               <TableHead className="w-[90px]">Status</TableHead>
+              {showSyncAction && (
+                <TableHead className="w-[100px]">Action</TableHead>
+              )}
               <TableHead className="min-w-[100px]">Code</TableHead>
               <TableHead className="min-w-[160px]">Name</TableHead>
               <TableHead className="min-w-[120px]">Category</TableHead>
@@ -104,6 +114,17 @@ function PreviewTable({ rows }: { rows: ImportPreviewRow[] }) {
                     </Badge>
                   )}
                 </TableCell>
+                {showSyncAction && (
+                  <TableCell>
+                    {row.syncAction === "update" ? (
+                      <Badge variant="outline">Update</Badge>
+                    ) : row.syncAction === "insert" ? (
+                      <Badge variant="secondary">Insert</Badge>
+                    ) : (
+                      <span className="text-sm text-muted-foreground">—</span>
+                    )}
+                  </TableCell>
+                )}
                 <TableCell className="font-mono text-xs">
                   {displayCell(row.code)}
                 </TableCell>
@@ -118,7 +139,9 @@ function PreviewTable({ rows }: { rows: ImportPreviewRow[] }) {
                       ))}
                     </ul>
                   ) : (
-                    <span className="text-sm text-muted-foreground">Ready to import</span>
+                    <span className="text-sm text-muted-foreground">
+                      {showSyncAction ? "Ready to sync" : "Ready to import"}
+                    </span>
                   )}
                 </TableCell>
               </TableRow>
@@ -138,6 +161,8 @@ function ImportPreviewSection({
   isParsing,
   importLabel,
   onImport,
+  showSyncAction = false,
+  syncingLabel = "Importing…",
 }: {
   previewRows: ImportPreviewRow[];
   validCount: number;
@@ -146,6 +171,8 @@ function ImportPreviewSection({
   isParsing: boolean;
   importLabel: string;
   onImport: () => void;
+  showSyncAction?: boolean;
+  syncingLabel?: string;
 }) {
   if (previewRows.length === 0) {
     return null;
@@ -155,7 +182,9 @@ function ImportPreviewSection({
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="space-y-1">
-          <h2 className="text-lg font-medium">Import preview</h2>
+          <h2 className="text-lg font-medium">
+            {showSyncAction ? "Sync preview" : "Import preview"}
+          </h2>
           <p className="text-sm text-muted-foreground">
             {validCount} valid, {invalidCount} invalid out of {previewRows.length}{" "}
             rows
@@ -165,11 +194,69 @@ function ImportPreviewSection({
           onClick={onImport}
           disabled={validCount === 0 || isImporting || isParsing}
         >
-          {isImporting ? "Importing…" : importLabel}
+          {isImporting ? syncingLabel : importLabel}
         </Button>
       </div>
-      <PreviewTable rows={previewRows} />
+      <PreviewTable rows={previewRows} showSyncAction={showSyncAction} />
     </section>
+  );
+}
+
+function SyncResultSummary({ result }: { result: JsonBulkImportResult }) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Sync complete</CardTitle>
+        <CardDescription>
+          Items are matched by code. Re-importing the same JSON is idempotent.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="rounded-lg border px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Inserted
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {result.inserted}
+            </p>
+          </div>
+          <div className="rounded-lg border px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Updated
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {result.updated}
+            </p>
+          </div>
+          <div className="rounded-lg border px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Failed
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {result.failed.length}
+            </p>
+          </div>
+          <div className="rounded-lg border px-4 py-3">
+            <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+              Skipped
+            </p>
+            <p className="mt-1 text-2xl font-semibold tabular-nums">
+              {result.skipped}
+            </p>
+          </div>
+        </div>
+        {result.failed.length > 0 && (
+          <ul className="mt-4 space-y-1 text-sm text-destructive">
+            {result.failed.map((entry) => (
+              <li key={entry.code}>
+                <span className="font-mono">{entry.code}</span>: {entry.error}
+              </li>
+            ))}
+          </ul>
+        )}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -232,6 +319,9 @@ export function InventoryImportView() {
   const [isParsingCsv, setIsParsingCsv] = useState(false);
   const [isParsingJson, setIsParsingJson] = useState(false);
   const [jsonLookupCounts, setJsonLookupCounts] = useState<ImportLookupCounts | null>(
+    null,
+  );
+  const [jsonSyncResult, setJsonSyncResult] = useState<JsonBulkImportResult | null>(
     null,
   );
 
@@ -373,6 +463,7 @@ export function InventoryImportView() {
       );
 
       setJsonValidatedRows(validation.rows);
+      setJsonSyncResult(null);
     } catch (error) {
       setJsonParseError(
         error instanceof Error ? error.message : "Failed to read JSON file.",
@@ -409,7 +500,12 @@ export function InventoryImportView() {
     }
 
     try {
-      const result = await jsonImportMutation.mutateAsync(payloads);
+      const result = await jsonImportMutation.mutateAsync({
+        payloads,
+        skipped: jsonInvalidRows.length,
+      });
+
+      setJsonSyncResult(result);
 
       if (result.failed.length === 0) {
         setJsonValidatedRows([]);
@@ -435,6 +531,7 @@ export function InventoryImportView() {
             {
               ...row,
               isValid: false,
+              syncAction: null,
               payload: null,
               errors: row.errors.includes(failureMessage)
                 ? row.errors
@@ -452,15 +549,21 @@ export function InventoryImportView() {
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8 lg:px-8 lg:py-10">
       <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
         <div className="space-y-2">
-          <Button variant="outline" size="sm" render={<Link href="/inventory" />}>
-            <ArrowLeftIcon />
-            Back to Inventory
-          </Button>
+          <div className="flex flex-wrap gap-2">
+            <Button variant="outline" size="sm" render={<Link href="/inventory" />}>
+              <ArrowLeftIcon />
+              Back to Inventory
+            </Button>
+            <Button variant="outline" size="sm" render={<Link href="/inventory/review" />}>
+              Import review
+            </Button>
+          </div>
           <div>
             <h1 className="text-3xl font-semibold tracking-tight">Bulk import</h1>
             <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Import wardrobe items from CSV or JSON. JSON imports can include
-              materials, seasons, styles, tags, occasions, and care profiles.
+              Import wardrobe items from CSV or JSON. JSON syncs by item code —
+              existing codes are updated and relations replaced; new codes are
+              inserted.
             </p>
           </div>
         </div>
@@ -598,7 +701,7 @@ export function InventoryImportView() {
                 <CardTitle>JSON structure</CardTitle>
                 <CardDescription>
                   Root object with version, import_type, and items array. Each item
-                  can include wardrobe fields plus related lookup arrays and care.
+                  is synced by code — updates replace all related metadata.
                   Lookup tables are fetched fresh from Supabase on every upload.
                 </CardDescription>
               </CardHeader>
@@ -639,8 +742,8 @@ export function InventoryImportView() {
               <CardHeader>
                 <CardTitle>Upload JSON</CardTitle>
                 <CardDescription>
-                  Validates lookup names against a fresh Supabase fetch and imports
-                  each valid item with its relationships.
+                  Validates lookup names against a fresh Supabase fetch, then syncs
+                  each valid item and its relationships by code.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -687,13 +790,17 @@ export function InventoryImportView() {
 
             {jsonLookupCounts && <LookupCountsSummary counts={jsonLookupCounts} />}
 
+            {jsonSyncResult && <SyncResultSummary result={jsonSyncResult} />}
+
             <ImportPreviewSection
               previewRows={jsonPreviewRows}
               validCount={jsonValidRows.length}
               invalidCount={jsonInvalidRows.length}
               isImporting={jsonImportMutation.isPending}
               isParsing={isParsingJson}
-              importLabel={`Import ${jsonValidRows.length} valid row${jsonValidRows.length === 1 ? "" : "s"}`}
+              importLabel={`Sync ${jsonValidRows.length} valid item${jsonValidRows.length === 1 ? "" : "s"}`}
+              syncingLabel="Syncing…"
+              showSyncAction
               onImport={handleJsonImport}
             />
           </>

@@ -213,6 +213,8 @@ export type JsonImportPayload = {
   } | null;
 };
 
+export type JsonSyncAction = "insert" | "update";
+
 export type ValidatedJsonImportRow = {
   rowNumber: number;
   code: string;
@@ -221,6 +223,7 @@ export type ValidatedJsonImportRow = {
   brand: string;
   errors: string[];
   isValid: boolean;
+  syncAction: JsonSyncAction | null;
   payload: JsonImportPayload | null;
 };
 
@@ -230,8 +233,10 @@ export type JsonImportValidationResult = {
 };
 
 export type JsonBulkImportResult = {
-  imported: number;
+  inserted: number;
+  updated: number;
   failed: { code: string; error: string }[];
+  skipped: number;
 };
 
 export type ImportPreviewRow = {
@@ -242,6 +247,53 @@ export type ImportPreviewRow = {
   brand: string;
   errors: string[];
   isValid: boolean;
+  syncAction?: JsonSyncAction | null;
+};
+
+export type ItemOccasionRelation = {
+  id: string;
+  score: number | null;
+  notes: string | null;
+  occasion: LookupOption | null;
+};
+
+export type ItemCareProfile = {
+  wash: string | null;
+  storage: string | null;
+  notes: string | null;
+  storage_type: LookupOption | null;
+};
+
+export type WardrobeItemRelations = {
+  materials: LookupOption[];
+  seasons: LookupOption[];
+  styles: LookupOption[];
+  features: LookupOption[];
+  tags: LookupOption[];
+  occasions: ItemOccasionRelation[];
+  care: ItemCareProfile | null;
+};
+
+export type DuplicateMatchReason = "same_code" | "similar_name";
+
+export type DuplicateGroup = {
+  id: string;
+  reason: DuplicateMatchReason;
+  label: string;
+  items: WardrobeItemRow[];
+};
+
+export type ReviewCleanupResult = {
+  groups: DuplicateGroup[];
+  totalItems: number;
+  duplicateItemCount: number;
+};
+
+export type BulkCleanupMode = "retire" | "hard_delete";
+
+export type BulkCleanupResult = {
+  processed: number;
+  mode: BulkCleanupMode;
 };
 
 export const ITEM_STATUSES: ItemStatus[] = ["active", "retired", "returned"];

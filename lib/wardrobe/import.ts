@@ -7,13 +7,13 @@ import type {
   ImportPreviewRow,
   ImportValidationResult,
   ItemStatus,
-  JsonBulkImportResult,
   JsonImportCareInput,
   JsonImportFile,
   JsonImportItemInput,
   JsonImportOccasionInput,
   JsonImportPayload,
   JsonImportValidationResult,
+  JsonSyncAction,
   OwnershipType,
   UsageFrequency,
   ValidatedImportRow,
@@ -598,6 +598,7 @@ export function toImportPreviewRows(
       brand: row.brand,
       errors: row.errors,
       isValid: row.isValid,
+      syncAction: row.syncAction,
     };
   });
 }
@@ -726,11 +727,9 @@ function validateJsonImportItem(
     const normalizedCode = code.toLowerCase();
     if (seenCodes.has(normalizedCode)) {
       errors.push("Duplicate code in JSON file.");
+    } else {
+      seenCodes.add(normalizedCode);
     }
-    if (existingCodes.has(normalizedCode)) {
-      errors.push("Code already exists in inventory.");
-    }
-    seenCodes.add(normalizedCode);
   }
 
   if (!name) {
@@ -866,6 +865,13 @@ function validateJsonImportItem(
   const notes =
     typeof raw.notes === "string" && raw.notes.trim() ? raw.notes.trim() : null;
 
+  const syncAction: JsonSyncAction | null =
+    code && errors.every((message) => !message.includes("Duplicate code"))
+      ? existingCodes.has(code.toLowerCase())
+        ? "update"
+        : "insert"
+      : null;
+
   const payload: JsonImportPayload | null =
     errors.length === 0 &&
     code &&
@@ -908,6 +914,7 @@ function validateJsonImportItem(
     brand: brandResult.display,
     errors,
     isValid: errors.length === 0 && payload !== null,
+    syncAction: payload ? syncAction : null,
     payload,
   };
 }
@@ -1051,159 +1058,4 @@ export async function fetchImportExistingCodes(): Promise<{
   return { data: (data ?? []).map((row) => row.code), error: null };
 }
 
-async function deleteImportedItem(itemId: string) {
-  const supabase = createClient();
-  await supabase.from("wardrobe_items").delete().eq("id", itemId);
-}
-
-async function insertJsonItemRelations(
-  itemId: string,
-  payload: JsonImportPayload,
-): Promise<Error | null> {
-  const supabase = createClient();
-
-  if (payload.materialIds.length > 0) {
-    const { error } = await supabase.from("item_materials").insert(
-      payload.materialIds.map((materialId) => ({
-        item_id: itemId,
-        material_id: materialId,
-      })),
-    );
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  if (payload.seasonIds.length > 0) {
-    const { error } = await supabase.from("item_seasons").insert(
-      payload.seasonIds.map((seasonId) => ({
-        item_id: itemId,
-        season_id: seasonId,
-      })),
-    );
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  if (payload.styleIds.length > 0) {
-    const { error } = await supabase.from("item_styles").insert(
-      payload.styleIds.map((styleId) => ({
-        item_id: itemId,
-        style_id: styleId,
-      })),
-    );
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  if (payload.featureIds.length > 0) {
-    const { error } = await supabase.from("item_features").insert(
-      payload.featureIds.map((featureId) => ({
-        item_id: itemId,
-        feature_id: featureId,
-      })),
-    );
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  if (payload.tagIds.length > 0) {
-    const { error } = await supabase.from("item_tags").insert(
-      payload.tagIds.map((tagId) => ({
-        item_id: itemId,
-        tag_id: tagId,
-      })),
-    );
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  if (payload.occasions.length > 0) {
-    const { error } = await supabase.from("item_occasions").insert(
-      payload.occasions.map((occasion) => ({
-        item_id: itemId,
-        occasion_id: occasion.occasion_id,
-        score: occasion.score,
-      })),
-    );
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  if (payload.care) {
-    const { error } = await supabase.from("care_profiles").insert({
-      item_id: itemId,
-      storage_type_id: payload.care.storage_type_id,
-      storage: payload.care.storage,
-      wash: payload.care.wash,
-      notes: payload.care.notes,
-    });
-    if (error) {
-      return toImportError(error.message);
-    }
-  }
-
-  return null;
-}
-
-export async function importJsonWardrobeItem(
-  payload: JsonImportPayload,
-): Promise<{ success: boolean; code: string; error: string | null }> {
-  const supabase = createClient();
-
-  const { data: item, error: itemError } = await supabase
-    .from("wardrobe_items")
-    .insert(buildWardrobeItemInsert(payload.item))
-    .select("id")
-    .single();
-
-  if (itemError || !item) {
-    return {
-      success: false,
-      code: payload.item.code,
-      error: itemError?.message ?? "Failed to create wardrobe item.",
-    };
-  }
-
-  const relationError = await insertJsonItemRelations(item.id, payload);
-  if (relationError) {
-    await deleteImportedItem(item.id);
-    return {
-      success: false,
-      code: payload.item.code,
-      error: relationError.message,
-    };
-  }
-
-  return { success: true, code: payload.item.code, error: null };
-}
-
-export async function bulkImportJsonWardrobeItems(
-  payloads: JsonImportPayload[],
-): Promise<{ data: JsonBulkImportResult | null; error: Error | null }> {
-  if (payloads.length === 0) {
-    return { data: { imported: 0, failed: [] }, error: null };
-  }
-
-  const failed: { code: string; error: string }[] = [];
-  let imported = 0;
-
-  for (const payload of payloads) {
-    const result = await importJsonWardrobeItem(payload);
-    if (result.success) {
-      imported += 1;
-    } else {
-      failed.push({
-        code: result.code,
-        error: result.error ?? "Import failed.",
-      });
-    }
-  }
-
-  return { data: { imported, failed }, error: null };
-}
+export { bulkSyncJsonWardrobeItems } from "@/lib/wardrobe/json-sync";

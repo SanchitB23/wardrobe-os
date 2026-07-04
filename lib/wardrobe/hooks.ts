@@ -16,20 +16,26 @@ import {
   updateWardrobeItem,
 } from "@/lib/wardrobe/queries";
 import {
-  bulkImportJsonWardrobeItems,
   fetchImportLookups,
 } from "@/lib/wardrobe/import";
+import { bulkSyncJsonWardrobeItems, type JsonSyncInput } from "@/lib/wardrobe/json-sync";
+import {
+  buildDuplicateReview,
+  bulkCleanupWardrobeItems,
+  fetchAllItemsForReview,
+} from "@/lib/wardrobe/review";
 import {
   fetchItemImagesForItem,
   fetchPrimaryImageUrl,
   fetchPrimaryImageUrlsForItems,
   uploadPrimaryItemImage,
 } from "@/lib/wardrobe/images";
+import { fetchWardrobeItemRelations } from "@/lib/wardrobe/relations";
 import { wardrobeKeys, type CategoryCountFilters } from "@/lib/wardrobe/query-keys";
 import type {
+  BulkCleanupMode,
   CreateWardrobeItemInput,
   InventoryFilters,
-  JsonImportPayload,
   UpdateWardrobeItemInput,
   WardrobeItemRow,
 } from "@/types/wardrobe";
@@ -102,6 +108,14 @@ export function useItemImages(itemId: string) {
   return useQuery({
     queryKey: wardrobeKeys.itemImages(itemId),
     queryFn: async () => unwrapData(await fetchItemImagesForItem(itemId)),
+    enabled: Boolean(itemId),
+  });
+}
+
+export function useWardrobeItemRelations(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemRelations(itemId),
+    queryFn: async () => unwrapData(await fetchWardrobeItemRelations(itemId)),
     enabled: Boolean(itemId),
   });
 }
@@ -223,23 +237,73 @@ export function useBulkImportJsonWardrobeItemsMutation() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payloads: JsonImportPayload[]) =>
-      unwrapData(await bulkImportJsonWardrobeItems(payloads)),
+    mutationFn: async (input: JsonSyncInput) =>
+      unwrapData(await bulkSyncJsonWardrobeItems(input)),
     onSuccess: async (result) => {
       await invalidateInventoryQueries(queryClient);
-      if (result.imported > 0) {
-        toast.success(
-          `Imported ${result.imported} item${result.imported === 1 ? "" : "s"}`,
-        );
+
+      const parts: string[] = [];
+      if (result.inserted > 0) {
+        parts.push(`${result.inserted} inserted`);
       }
+      if (result.updated > 0) {
+        parts.push(`${result.updated} updated`);
+      }
+      if (result.skipped > 0) {
+        parts.push(`${result.skipped} skipped`);
+      }
+
+      if (parts.length > 0) {
+        toast.success(`Sync complete: ${parts.join(", ")}`);
+      }
+
       if (result.failed.length > 0) {
         toast.error(
-          `${result.failed.length} item${result.failed.length === 1 ? "" : "s"} failed during import`,
+          `${result.failed.length} item${result.failed.length === 1 ? "" : "s"} failed during sync`,
         );
       }
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to import JSON items. Please try again.");
+      toast.error(error.message || "Failed to sync JSON items. Please try again.");
+    },
+  });
+}
+
+export function useReviewCleanupData() {
+  return useQuery({
+    queryKey: wardrobeKeys.review(),
+    queryFn: async () => {
+      const items = unwrapData(await fetchAllItemsForReview());
+      return buildDuplicateReview(items);
+    },
+  });
+}
+
+type BulkCleanupInput = {
+  ids: string[];
+  mode: BulkCleanupMode;
+};
+
+export function useBulkCleanupMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ ids, mode }: BulkCleanupInput) =>
+      unwrapData(await bulkCleanupWardrobeItems(ids, mode)),
+    onSuccess: async (result) => {
+      await invalidateInventoryQueries(queryClient);
+      if (result.mode === "hard_delete") {
+        toast.success(
+          `Permanently deleted ${result.processed} item${result.processed === 1 ? "" : "s"}`,
+        );
+      } else {
+        toast.success(
+          `Retired ${result.processed} item${result.processed === 1 ? "" : "s"}`,
+        );
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Cleanup failed. Please try again.");
     },
   });
 }

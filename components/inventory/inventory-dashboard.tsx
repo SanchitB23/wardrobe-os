@@ -183,6 +183,9 @@ export function InventoryDashboard() {
             <UploadIcon />
             Import
           </Button>
+          <Button variant="outline" render={<Link href="/inventory/review" />}>
+            Review
+          </Button>
           <Button onClick={openCreateDialog}>
             <PlusIcon />
             Add item

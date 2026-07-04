@@ -4,8 +4,6 @@ import Link from "next/link";
 import { useState } from "react";
 import {
   ArrowLeftIcon,
-  DnaIcon,
-  DropletsIcon,
   HistoryIcon,
   ImageIcon,
   PencilIcon,
@@ -28,6 +26,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   useItemImages,
   useWardrobeItem,
+  useWardrobeItemRelations,
   useWardrobeLookups,
 } from "@/lib/wardrobe/hooks";
 import { buildItemImageAltText } from "@/lib/wardrobe/images";
@@ -35,9 +34,13 @@ import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
   formatRating,
+  type ItemCareProfile,
   type ItemImageRow,
+  type ItemOccasionRelation,
   type ItemStatus,
+  type LookupOption,
   type UsageFrequency,
+  type WardrobeItemRelations,
   type WardrobeItemRow,
 } from "@/types/wardrobe";
 
@@ -193,80 +196,219 @@ function ImageGallery({
   );
 }
 
-function OverviewCard({ item }: { item: WardrobeItemRow }) {
+function BadgeGroup({
+  label,
+  items,
+}: {
+  label: string;
+  items: LookupOption[];
+}) {
+  return (
+    <div className="space-y-2">
+      <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+        {label}
+      </p>
+      {items.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {items.map((item) => (
+            <Badge key={item.id} variant="secondary">
+              {item.name}
+            </Badge>
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">None assigned</p>
+      )}
+    </div>
+  );
+}
+
+function MetadataCard({
+  title,
+  description,
+  children,
+}: {
+  title: string;
+  description?: string;
+  children: React.ReactNode;
+}) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Overview</CardTitle>
-        <CardDescription>Core catalog attributes for this piece.</CardDescription>
+        <CardTitle>{title}</CardTitle>
+        {description ? <CardDescription>{description}</CardDescription> : null}
       </CardHeader>
-      <CardContent className="space-y-6">
-        <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          <DetailField label="Code">
-            <span className="font-mono text-sm">{item.code}</span>
-          </DetailField>
-          <DetailField label="Category">
-            {displayText(item.category?.name)}
-          </DetailField>
-          <DetailField label="Subcategory">
-            {displayText(item.subcategory?.name)}
-          </DetailField>
-          <DetailField label="Brand">
-            {displayText(item.brand?.name)}
-          </DetailField>
-          <DetailField label="Primary color">
-            {displayText(item.primary_color?.name)}
-          </DetailField>
-          <DetailField label="Status">
-            {item.status ? (
-              <Badge variant={statusBadgeVariant(item.status)}>
-                {formatEnumLabel(item.status)}
-              </Badge>
-            ) : (
-              "—"
-            )}
-          </DetailField>
-          <DetailField label="Ownership">
-            {item.ownership ? formatEnumLabel(item.ownership) : "—"}
-          </DetailField>
-          <DetailField label="Fit">
-            {item.fit ? formatEnumLabel(item.fit) : "—"}
-          </DetailField>
-          <DetailField label="Formality">
-            {item.formality ? formatEnumLabel(item.formality) : "—"}
-          </DetailField>
-          <DetailField label="Usage">
-            {item.usage ? (
-              <Badge variant={usageBadgeVariant(item.usage)}>
-                {formatEnumLabel(item.usage)}
-              </Badge>
-            ) : (
-              "—"
-            )}
-          </DetailField>
-          <DetailField label="Rating">
-            {item.rating !== null ? (
-              <span className="inline-flex items-center gap-1 tabular-nums">
-                <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
-                <span className="font-medium">{formatRating(item.rating)}</span>
-                <span className="text-xs text-muted-foreground">/10</span>
-              </span>
-            ) : (
-              "—"
-            )}
-          </DetailField>
-        </dl>
-
-        <div className="space-y-1 border-t pt-4">
-          <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Notes
-          </dt>
-          <dd className="text-sm whitespace-pre-wrap text-muted-foreground">
-            {item.notes?.trim() ? item.notes : "No notes yet."}
-          </dd>
-        </div>
-      </CardContent>
+      <CardContent className="space-y-5">{children}</CardContent>
     </Card>
+  );
+}
+
+function CoreInfoCard({
+  item,
+  materials,
+}: {
+  item: WardrobeItemRow;
+  materials: LookupOption[];
+}) {
+  return (
+    <MetadataCard
+      title="Core Info"
+      description="Catalog attributes and fabric composition."
+    >
+      <dl className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <DetailField label="Code">
+          <span className="font-mono text-sm">{item.code}</span>
+        </DetailField>
+        <DetailField label="Category">
+          {displayText(item.category?.name)}
+        </DetailField>
+        <DetailField label="Subcategory">
+          {displayText(item.subcategory?.name)}
+        </DetailField>
+        <DetailField label="Brand">
+          {displayText(item.brand?.name)}
+        </DetailField>
+        <DetailField label="Primary color">
+          {displayText(item.primary_color?.name)}
+        </DetailField>
+        <DetailField label="Status">
+          {item.status ? (
+            <Badge variant={statusBadgeVariant(item.status)}>
+              {formatEnumLabel(item.status)}
+            </Badge>
+          ) : (
+            "—"
+          )}
+        </DetailField>
+        <DetailField label="Ownership">
+          {item.ownership ? formatEnumLabel(item.ownership) : "—"}
+        </DetailField>
+        <DetailField label="Fit">
+          {item.fit ? formatEnumLabel(item.fit) : "—"}
+        </DetailField>
+        <DetailField label="Formality">
+          {item.formality ? formatEnumLabel(item.formality) : "—"}
+        </DetailField>
+        <DetailField label="Usage">
+          {item.usage ? (
+            <Badge variant={usageBadgeVariant(item.usage)}>
+              {formatEnumLabel(item.usage)}
+            </Badge>
+          ) : (
+            "—"
+          )}
+        </DetailField>
+        <DetailField label="Rating">
+          {item.rating !== null ? (
+            <span className="inline-flex items-center gap-1 tabular-nums">
+              <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
+              <span className="font-medium">{formatRating(item.rating)}</span>
+              <span className="text-xs text-muted-foreground">/10</span>
+            </span>
+          ) : (
+            "—"
+          )}
+        </DetailField>
+      </dl>
+      <BadgeGroup label="Materials" items={materials} />
+    </MetadataCard>
+  );
+}
+
+function StyleDnaCard({ relations }: { relations: WardrobeItemRelations }) {
+  return (
+    <MetadataCard
+      title="Style DNA"
+      description="Seasonality, aesthetic signals, and descriptive tags."
+    >
+      <BadgeGroup label="Seasons" items={relations.seasons} />
+      <BadgeGroup label="Styles" items={relations.styles} />
+      <BadgeGroup label="Features" items={relations.features} />
+      <BadgeGroup label="Tags" items={relations.tags} />
+    </MetadataCard>
+  );
+}
+
+function OccasionBadge({ occasion }: { occasion: ItemOccasionRelation }) {
+  const name = occasion.occasion?.name ?? "Unknown occasion";
+
+  return (
+    <Badge variant="outline" className="gap-1.5 tabular-nums">
+      <span>{name}</span>
+      {occasion.score !== null && (
+        <span className="text-muted-foreground">· {occasion.score}/10</span>
+      )}
+    </Badge>
+  );
+}
+
+function UsageOccasionsCard({
+  occasions,
+}: {
+  occasions: ItemOccasionRelation[];
+}) {
+  return (
+    <MetadataCard
+      title="Usage & Occasions"
+      description="Where this piece fits in your rotation, ranked by suitability."
+    >
+      {occasions.length > 0 ? (
+        <div className="flex flex-wrap gap-2">
+          {occasions.map((occasion) => (
+            <OccasionBadge key={occasion.id} occasion={occasion} />
+          ))}
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">No occasions linked yet.</p>
+      )}
+    </MetadataCard>
+  );
+}
+
+function CareCard({ care }: { care: ItemCareProfile | null }) {
+  return (
+    <MetadataCard
+      title="Care"
+      description="Washing, storage, and maintenance guidance."
+    >
+      {care ? (
+        <dl className="grid gap-4 sm:grid-cols-2">
+          <DetailField label="Wash">
+            {displayText(care.wash)}
+          </DetailField>
+          <DetailField label="Storage">
+            {displayText(care.storage)}
+          </DetailField>
+          <DetailField label="Storage type">
+            {displayText(care.storage_type?.name)}
+          </DetailField>
+          {care.notes?.trim() ? (
+            <div className="space-y-1 sm:col-span-2">
+              <dt className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
+                Care notes
+              </dt>
+              <dd className="text-sm whitespace-pre-wrap text-muted-foreground">
+                {care.notes}
+              </dd>
+            </div>
+          ) : null}
+        </dl>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No care profile recorded for this item.
+        </p>
+      )}
+    </MetadataCard>
+  );
+}
+
+function NotesCard({ notes }: { notes: string | null }) {
+  return (
+    <MetadataCard title="Notes" description="Free-form context and reminders.">
+      <p className="text-sm whitespace-pre-wrap text-muted-foreground">
+        {notes?.trim() ? notes : "No notes yet."}
+      </p>
+    </MetadataCard>
   );
 }
 
@@ -311,6 +453,8 @@ function ItemDetailSkeleton() {
         <div className="space-y-4">
           <Skeleton className="h-8 w-64" />
           <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-48 w-full rounded-xl" />
+          <Skeleton className="h-40 w-full rounded-xl" />
           <Skeleton className="h-32 w-full rounded-xl" />
         </div>
       </div>
@@ -339,14 +483,28 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
 
   const itemQuery = useWardrobeItem(itemId);
   const imagesQuery = useItemImages(itemId);
+  const relationsQuery = useWardrobeItemRelations(itemId);
   const lookupsQuery = useWardrobeLookups();
 
-  const isLoading = itemQuery.isPending || imagesQuery.isPending;
+  const isLoading =
+    itemQuery.isPending || imagesQuery.isPending || relationsQuery.isPending;
   const error =
-    itemQuery.error?.message ?? imagesQuery.error?.message ?? null;
+    itemQuery.error?.message ??
+    imagesQuery.error?.message ??
+    relationsQuery.error?.message ??
+    null;
 
   const item = itemQuery.data;
   const images = imagesQuery.data ?? [];
+  const relations = relationsQuery.data ?? {
+    materials: [],
+    seasons: [],
+    styles: [],
+    features: [],
+    tags: [],
+    occasions: [],
+    care: null,
+  };
   const lookups = lookupsQuery.data ?? {
     categories: [],
     subcategories: [],
@@ -362,7 +520,11 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
     null;
 
   function handleRetry() {
-    void Promise.all([itemQuery.refetch(), imagesQuery.refetch()]);
+    void Promise.all([
+      itemQuery.refetch(),
+      imagesQuery.refetch(),
+      relationsQuery.refetch(),
+    ]);
   }
 
   if (isLoading) {
@@ -375,7 +537,11 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
         <InventoryErrorState
           message={error}
           onRetry={handleRetry}
-          isRetrying={itemQuery.isFetching || imagesQuery.isFetching}
+          isRetrying={
+            itemQuery.isFetching ||
+            imagesQuery.isFetching ||
+            relationsQuery.isFetching
+          }
         />
       </div>
     );
@@ -433,19 +599,15 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
             </div>
           </div>
 
-          <OverviewCard item={item} />
+          <CoreInfoCard item={item} materials={relations.materials} />
 
-          <PlaceholderCard
-            title="Style DNA"
-            description="AI-powered style attributes and pairing signals."
-            icon={DnaIcon}
-          />
+          <StyleDnaCard relations={relations} />
 
-          <PlaceholderCard
-            title="Care"
-            description="Washing, storage, and maintenance guidance."
-            icon={DropletsIcon}
-          />
+          <UsageOccasionsCard occasions={relations.occasions} />
+
+          <CareCard care={relations.care} />
+
+          <NotesCard notes={item.notes} />
 
           <PlaceholderCard
             title="Wear History"
@@ -460,7 +622,12 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
         open={formOpen}
         item={item}
         lookups={lookups}
-        onOpenChange={setFormOpen}
+        onOpenChange={(open) => {
+          setFormOpen(open);
+          if (!open) {
+            void relationsQuery.refetch();
+          }
+        }}
       />
     </div>
   );

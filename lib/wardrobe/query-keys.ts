@@ -10,7 +10,10 @@ export const wardrobeKeys = {
   item: (id: string) => [...wardrobeKeys.all, "item", id] as const,
   itemImages: (itemId: string) =>
     [...wardrobeKeys.all, "item-images", itemId] as const,
+  itemRelations: (itemId: string) =>
+    [...wardrobeKeys.all, "item-relations", itemId] as const,
   categoryCounts: (filters: CategoryCountFilters) =>
     [...wardrobeKeys.all, "category-counts", filters] as const,
   lookups: () => [...wardrobeKeys.all, "lookups"] as const,
+  review: () => [...wardrobeKeys.all, "review"] as const,
 };
