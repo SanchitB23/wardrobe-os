@@ -12,6 +12,10 @@ import {
   retireWardrobeItem,
   updateWardrobeItem,
 } from "@/lib/wardrobe/queries";
+import {
+  fetchPrimaryImageUrlsForItems,
+  uploadPrimaryItemImage,
+} from "@/lib/wardrobe/images";
 import { wardrobeKeys, type CategoryCountFilters } from "@/lib/wardrobe/query-keys";
 import type {
   CreateWardrobeItemInput,
@@ -44,7 +48,17 @@ export function useInventorySummary() {
 export function useWardrobeItems(filters: InventoryFilters) {
   return useQuery({
     queryKey: wardrobeKeys.items(filters),
-    queryFn: async () => unwrapData(await fetchWardrobeItems(filters)),
+    queryFn: async () => {
+      const items = unwrapData(await fetchWardrobeItems(filters));
+      const imageMap = unwrapData(
+        await fetchPrimaryImageUrlsForItems(items.map((item) => item.id)),
+      );
+
+      return items.map((item) => ({
+        ...item,
+        primary_image_url: imageMap[item.id] ?? null,
+      }));
+    },
   });
 }
 
@@ -112,6 +126,27 @@ export function useRetireWardrobeItemMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to retire item");
+    },
+  });
+}
+
+type UploadPrimaryImageInput = {
+  itemId: string;
+  file: File;
+};
+
+export function useUploadPrimaryItemImageMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ itemId, file }: UploadPrimaryImageInput) =>
+      unwrapData(await uploadPrimaryItemImage(itemId, file)),
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Image uploaded");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to upload image");
     },
   });
 }

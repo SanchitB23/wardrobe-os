@@ -5,6 +5,7 @@ export type OwnershipType = Enums<"ownership_type">;
 export type FitType = Enums<"fit_type">;
 export type FormalityEnum = Enums<"formality_enum">;
 export type UsageFrequency = Enums<"usage_frequency">;
+export type ImageType = Enums<"image_type_enum">;
 
 export type LookupOption = {
   id: string;
@@ -42,6 +43,16 @@ export type WardrobeItemRow = {
   subcategory: LookupOption | null;
   brand: LookupOption | null;
   primary_color: LookupOption | null;
+  primary_image_url: string | null;
+};
+
+export type ItemImageRow = {
+  id: string;
+  item_id: string | null;
+  image_url: string;
+  image_type: ImageType | null;
+  is_primary: boolean | null;
+  created_at: string | null;
 };
 
 export type InventorySortField = "rating" | "name" | "category" | "created_at";
@@ -144,6 +155,10 @@ export const DEFAULT_INVENTORY_SORT: InventorySort = {
 };
 
 export const UNCATEGORIZED_CATEGORY_ID = "__uncategorized__";
+
+export const DEFAULT_PRIMARY_IMAGE_TYPE: ImageType = "worn";
+
+export const WARDROBE_IMAGES_BUCKET = "wardrobe-images";
 
 export function formatEnumLabel(value: string): string {
   return value

@@ -78,6 +78,33 @@ export type Database = {
         Update: { description?: string | null; id?: string; name?: string };
         Relationships: [];
       };
+      item_images: {
+        Row: {
+          created_at: string | null;
+          id: string;
+          image_type: Database["public"]["Enums"]["image_type_enum"] | null;
+          image_url: string;
+          is_primary: boolean | null;
+          item_id: string | null;
+        };
+        Insert: {
+          created_at?: string | null;
+          id?: string;
+          image_type?: Database["public"]["Enums"]["image_type_enum"] | null;
+          image_url: string;
+          is_primary?: boolean | null;
+          item_id?: string | null;
+        };
+        Update: {
+          created_at?: string | null;
+          id?: string;
+          image_type?: Database["public"]["Enums"]["image_type_enum"] | null;
+          image_url?: string;
+          is_primary?: boolean | null;
+          item_id?: string | null;
+        };
+        Relationships: [];
+      };
       wardrobe_items: {
         Row: {
           brand_id: string | null;
@@ -181,6 +208,13 @@ export type Database = {
       item_status: "active" | "retired" | "returned";
       ownership_type: "owned" | "wishlist" | "considering";
       usage_frequency: "rare" | "occasional" | "regular" | "frequent" | "hero";
+      image_type_enum:
+        | "product"
+        | "flatlay"
+        | "hanger"
+        | "worn"
+        | "closeup"
+        | "label";
     };
     CompositeTypes: { [_ in never]: never };
   };

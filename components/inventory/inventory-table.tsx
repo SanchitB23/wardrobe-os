@@ -1,6 +1,6 @@
 "use client";
 
-import { ArchiveIcon, MoreHorizontalIcon, PencilIcon, StarIcon } from "lucide-react";
+import { ArchiveIcon, ImageIcon, MoreHorizontalIcon, PencilIcon, StarIcon } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -108,6 +108,28 @@ function ColorBadge({ name }: { name: string | null | undefined }) {
   );
 }
 
+function ItemThumbnail({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+  return (
+    <div
+      className={cn(
+        "flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted/40",
+        !imageUrl && "border-dashed",
+      )}
+    >
+      {imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img
+          src={imageUrl}
+          alt={`${name} thumbnail`}
+          className="size-full object-cover"
+        />
+      ) : (
+        <ImageIcon className="size-5 text-muted-foreground/70" aria-hidden />
+      )}
+    </div>
+  );
+}
+
 export function InventoryTable({
   items,
   onEdit,
@@ -119,6 +141,9 @@ export function InventoryTable({
         <Table>
           <TableHeader>
             <TableRow className="hover:bg-transparent">
+              <TableHead className="w-[68px]">
+                <span className="sr-only">Image</span>
+              </TableHead>
               <TableHead className="min-w-[100px]">Code</TableHead>
               <TableHead className="min-w-[180px]">Name</TableHead>
               <TableHead className="min-w-[120px]">Category</TableHead>
@@ -133,6 +158,12 @@ export function InventoryTable({
           <TableBody>
             {items.map((item) => (
               <TableRow key={item.id}>
+                <TableCell>
+                  <ItemThumbnail
+                    imageUrl={item.primary_image_url}
+                    name={item.name}
+                  />
+                </TableCell>
                 <TableCell className="font-mono text-xs text-muted-foreground">
                   {item.code}
                 </TableCell>
@@ -216,6 +247,7 @@ export function InventoryTableSkeleton() {
       <div className="space-y-0 divide-y">
         {Array.from({ length: 8 }).map((_, index) => (
           <div key={index} className="flex h-14 items-center gap-4 px-4">
+            <div className="size-12 shrink-0 rounded-lg bg-muted" />
             <div className="h-3 w-16 rounded bg-muted" />
             <div className="h-3 w-40 rounded bg-muted" />
             <div className="hidden h-3 w-24 rounded bg-muted md:block" />

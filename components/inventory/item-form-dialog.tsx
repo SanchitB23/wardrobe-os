@@ -7,6 +7,7 @@ import {
   ItemFormFields,
   itemToFormState,
 } from "@/components/inventory/item-form-fields";
+import { ItemImageUpload } from "@/components/inventory/item-image-upload";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -19,6 +20,7 @@ import {
 import {
   useCreateWardrobeItemMutation,
   useUpdateWardrobeItemMutation,
+  useUploadPrimaryItemImageMutation,
 } from "@/lib/wardrobe/hooks";
 import type { WardrobeItemRow, WardrobeLookups } from "@/types/wardrobe";
 
@@ -39,10 +41,16 @@ export function ItemFormDialog({
 }: ItemFormDialogProps) {
   const [form, setForm] = useState(EMPTY_ITEM_FORM);
   const [validationError, setValidationError] = useState<string | null>(null);
+  const [imageFile, setImageFile] = useState<File | null>(null);
 
   const createMutation = useCreateWardrobeItemMutation();
   const updateMutation = useUpdateWardrobeItemMutation();
-  const submitting = createMutation.isPending || updateMutation.isPending;
+  const uploadImageMutation = useUploadPrimaryItemImageMutation();
+
+  const submitting =
+    createMutation.isPending ||
+    updateMutation.isPending ||
+    uploadImageMutation.isPending;
 
   const filteredSubcategories = useMemo(() => {
     if (!form.category_id) {
@@ -57,8 +65,10 @@ export function ItemFormDialog({
     if (!open) {
       setForm(EMPTY_ITEM_FORM);
       setValidationError(null);
+      setImageFile(null);
       createMutation.reset();
       updateMutation.reset();
+      uploadImageMutation.reset();
       return;
     }
 
@@ -67,7 +77,8 @@ export function ItemFormDialog({
     } else {
       setForm(EMPTY_ITEM_FORM);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset mutations only when dialog closes
+    setImageFile(null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- reset when dialog closes
   }, [open, mode, item]);
 
   useEffect(() => {
@@ -91,11 +102,18 @@ export function ItemFormDialog({
     }
 
     try {
-      if (mode === "edit" && item) {
-        await updateMutation.mutateAsync({ id: item.id, ...form });
-      } else {
-        await createMutation.mutateAsync(form);
+      const savedItem =
+        mode === "edit" && item
+          ? await updateMutation.mutateAsync({ id: item.id, ...form })
+          : await createMutation.mutateAsync(form);
+
+      if (imageFile) {
+        await uploadImageMutation.mutateAsync({
+          itemId: savedItem.id,
+          file: imageFile,
+        });
       }
+
       onOpenChange(false);
     } catch {
       // Mutation onError shows toast; keep dialog open for retry.
@@ -103,7 +121,10 @@ export function ItemFormDialog({
   }
 
   const isEdit = mode === "edit";
-  const mutationError = createMutation.error ?? updateMutation.error;
+  const mutationError =
+    createMutation.error ??
+    updateMutation.error ??
+    uploadImageMutation.error;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -114,12 +135,19 @@ export function ItemFormDialog({
           </DialogTitle>
           <DialogDescription>
             {isEdit
-              ? "Update item details. Lookup values come from your database tables."
-              : "Create a new item in your inventory."}
+              ? "Update item details and optionally replace the primary photo."
+              : "Create a new item and optionally add a primary photo."}
           </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <ItemImageUpload
+            existingImageUrl={isEdit ? item?.primary_image_url : null}
+            disabled={submitting}
+            onFileChange={setImageFile}
+            inputId={isEdit ? "edit-item-image-upload" : "item-image-upload"}
+          />
+
           <ItemFormFields
             form={form}
             lookups={lookups}
@@ -158,7 +186,9 @@ export function ItemFormDialog({
             </Button>
             <Button type="submit" disabled={submitting}>
               {submitting
-                ? "Saving…"
+                ? uploadImageMutation.isPending
+                  ? "Uploading image…"
+                  : "Saving…"
                 : isEdit
                   ? "Save changes"
                   : "Add item"}
