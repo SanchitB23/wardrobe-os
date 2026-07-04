@@ -4,15 +4,21 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
 import {
+  bulkCreateWardrobeItems,
   createWardrobeItem,
   fetchCategoryCounts,
   fetchInventorySummary,
   fetchLookups,
   fetchWardrobeItemById,
+  fetchWardrobeItemCodes,
   fetchWardrobeItems,
   retireWardrobeItem,
   updateWardrobeItem,
 } from "@/lib/wardrobe/queries";
+import {
+  bulkImportJsonWardrobeItems,
+  fetchImportLookups,
+} from "@/lib/wardrobe/import";
 import {
   fetchItemImagesForItem,
   fetchPrimaryImageUrl,
@@ -23,6 +29,7 @@ import { wardrobeKeys, type CategoryCountFilters } from "@/lib/wardrobe/query-ke
 import type {
   CreateWardrobeItemInput,
   InventoryFilters,
+  JsonImportPayload,
   UpdateWardrobeItemInput,
   WardrobeItemRow,
 } from "@/types/wardrobe";
@@ -114,6 +121,14 @@ export function useWardrobeLookups() {
   });
 }
 
+export function useImportLookups() {
+  return useQuery({
+    queryKey: [...wardrobeKeys.all, "import-lookups"] as const,
+    queryFn: async () => unwrapData(await fetchImportLookups()),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
 export function useCreateWardrobeItemMutation() {
   const queryClient = useQueryClient();
 
@@ -184,6 +199,47 @@ export function useUploadPrimaryItemImageMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to upload image. Please try again.");
+    },
+  });
+}
+
+export function useBulkImportWardrobeItemsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (inputs: CreateWardrobeItemInput[]) =>
+      unwrapData(await bulkCreateWardrobeItems(inputs)),
+    onSuccess: async (items) => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success(`Imported ${items.length} item${items.length === 1 ? "" : "s"}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to import items. Please try again.");
+    },
+  });
+}
+
+export function useBulkImportJsonWardrobeItemsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (payloads: JsonImportPayload[]) =>
+      unwrapData(await bulkImportJsonWardrobeItems(payloads)),
+    onSuccess: async (result) => {
+      await invalidateInventoryQueries(queryClient);
+      if (result.imported > 0) {
+        toast.success(
+          `Imported ${result.imported} item${result.imported === 1 ? "" : "s"}`,
+        );
+      }
+      if (result.failed.length > 0) {
+        toast.error(
+          `${result.failed.length} item${result.failed.length === 1 ? "" : "s"} failed during import`,
+        );
+      }
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to import JSON items. Please try again.");
     },
   });
 }

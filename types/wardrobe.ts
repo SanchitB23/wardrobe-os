@@ -23,6 +23,16 @@ export type WardrobeLookups = {
   colors: LookupOption[];
 };
 
+export type WardrobeImportLookups = WardrobeLookups & {
+  materials: LookupOption[];
+  seasons: LookupOption[];
+  styles: LookupOption[];
+  features: LookupOption[];
+  tags: LookupOption[];
+  occasions: LookupOption[];
+  storage_types: LookupOption[];
+};
+
 export type WardrobeItemRow = {
   id: string;
   code: string;
@@ -108,6 +118,130 @@ export type CreateWardrobeItemInput = {
 
 export type UpdateWardrobeItemInput = CreateWardrobeItemInput & {
   id: string;
+};
+
+export type BulkImportResult = {
+  imported: number;
+};
+
+export const CSV_IMPORT_COLUMNS = [
+  "code",
+  "name",
+  "category",
+  "subcategory",
+  "brand",
+  "primary_color",
+  "status",
+  "ownership",
+  "fit",
+  "formality",
+  "rating",
+  "usage",
+  "notes",
+] as const;
+
+export type CsvImportColumn = (typeof CSV_IMPORT_COLUMNS)[number];
+
+export type ValidatedImportRow = {
+  rowNumber: number;
+  raw: Record<CsvImportColumn, string>;
+  input: CreateWardrobeItemInput | null;
+  errors: string[];
+  isValid: boolean;
+};
+
+export type ImportValidationResult = {
+  rows: ValidatedImportRow[];
+  fileError: string | null;
+};
+
+export type JsonImportOccasionInput = {
+  name: string;
+  score?: number | null;
+};
+
+export type JsonImportCareInput = {
+  storage?: string | null;
+  wash?: string | null;
+  notes?: string | null;
+};
+
+export type JsonImportItemInput = {
+  code: string;
+  name: string;
+  category: string;
+  subcategory: string;
+  brand: string;
+  primary_color: string;
+  status?: string | null;
+  ownership?: string | null;
+  fit?: string | null;
+  formality?: string | null;
+  rating?: number | null;
+  usage?: string | null;
+  purchase_year?: number | null;
+  favorite?: boolean | null;
+  notes?: string | null;
+  materials?: string[];
+  seasons?: string[];
+  styles?: string[];
+  features?: string[];
+  tags?: string[];
+  occasions?: JsonImportOccasionInput[];
+  care?: JsonImportCareInput | null;
+};
+
+export type JsonImportFile = {
+  version: string;
+  import_type: string;
+  items: JsonImportItemInput[];
+};
+
+export type JsonImportPayload = {
+  item: CreateWardrobeItemInput;
+  materialIds: string[];
+  seasonIds: string[];
+  styleIds: string[];
+  featureIds: string[];
+  tagIds: string[];
+  occasions: { occasion_id: string; score: number | null }[];
+  care: {
+    storage_type_id: string | null;
+    storage: string | null;
+    wash: string | null;
+    notes: string | null;
+  } | null;
+};
+
+export type ValidatedJsonImportRow = {
+  rowNumber: number;
+  code: string;
+  name: string;
+  category: string;
+  brand: string;
+  errors: string[];
+  isValid: boolean;
+  payload: JsonImportPayload | null;
+};
+
+export type JsonImportValidationResult = {
+  rows: ValidatedJsonImportRow[];
+  fileError: string | null;
+};
+
+export type JsonBulkImportResult = {
+  imported: number;
+  failed: { code: string; error: string }[];
+};
+
+export type ImportPreviewRow = {
+  rowNumber: number;
+  code: string;
+  name: string;
+  category: string;
+  brand: string;
+  errors: string[];
+  isValid: boolean;
 };
 
 export const ITEM_STATUSES: ItemStatus[] = ["active", "retired", "returned"];

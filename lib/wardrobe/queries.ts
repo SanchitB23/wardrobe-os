@@ -355,3 +355,42 @@ export async function retireWardrobeItem(
 
   return { data: data as WardrobeItemRow, error: null };
 }
+
+export async function fetchWardrobeItemCodes(): Promise<{
+  data: string[] | null;
+  error: Error | null;
+}> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase.from("wardrobe_items").select("code");
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return {
+    data: (data ?? []).map((row) => row.code),
+    error: null,
+  };
+}
+
+export async function bulkCreateWardrobeItems(
+  inputs: CreateWardrobeItemInput[],
+): Promise<{ data: WardrobeItemRow[] | null; error: Error | null }> {
+  if (inputs.length === 0) {
+    return { data: [], error: null };
+  }
+
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("wardrobe_items")
+    .insert(inputs.map((input) => buildItemPayload(input)))
+    .select(WARDROBE_ITEM_SELECT);
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: (data ?? []) as WardrobeItemRow[], error: null };
+}

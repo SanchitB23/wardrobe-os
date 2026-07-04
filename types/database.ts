@@ -194,6 +194,120 @@ export type Database = {
           },
         ];
       };
+      materials: {
+        Row: { id: string; name: string };
+        Insert: { id?: string; name: string };
+        Update: { id?: string; name?: string };
+        Relationships: [];
+      };
+      seasons: {
+        Row: { id: string; name: string };
+        Insert: { id?: string; name: string };
+        Update: { id?: string; name?: string };
+        Relationships: [];
+      };
+      features: {
+        Row: { id: string; name: string };
+        Insert: { id?: string; name: string };
+        Update: { id?: string; name?: string };
+        Relationships: [];
+      };
+      tags: {
+        Row: { id: string; name: string };
+        Insert: { id?: string; name: string };
+        Update: { id?: string; name?: string };
+        Relationships: [];
+      };
+      occasions: {
+        Row: { description: string | null; id: string; name: string };
+        Insert: { description?: string | null; id?: string; name: string };
+        Update: { description?: string | null; id?: string; name?: string };
+        Relationships: [];
+      };
+      storage_types: {
+        Row: { id: string; name: string };
+        Insert: { id?: string; name: string };
+        Update: { id?: string; name?: string };
+        Relationships: [];
+      };
+      item_materials: {
+        Row: { item_id: string; material_id: string };
+        Insert: { item_id: string; material_id: string };
+        Update: { item_id?: string; material_id?: string };
+        Relationships: [];
+      };
+      item_seasons: {
+        Row: { item_id: string; season_id: string };
+        Insert: { item_id: string; season_id: string };
+        Update: { item_id?: string; season_id?: string };
+        Relationships: [];
+      };
+      item_styles: {
+        Row: { item_id: string; style_id: string };
+        Insert: { item_id: string; style_id: string };
+        Update: { item_id?: string; style_id?: string };
+        Relationships: [];
+      };
+      item_features: {
+        Row: { item_id: string; feature_id: string };
+        Insert: { item_id: string; feature_id: string };
+        Update: { item_id?: string; feature_id?: string };
+        Relationships: [];
+      };
+      item_tags: {
+        Row: { item_id: string; tag_id: string };
+        Insert: { item_id: string; tag_id: string };
+        Update: { item_id?: string; tag_id?: string };
+        Relationships: [];
+      };
+      item_occasions: {
+        Row: {
+          id: string;
+          item_id: string | null;
+          occasion_id: string | null;
+          notes: string | null;
+          score: number | null;
+        };
+        Insert: {
+          id?: string;
+          item_id?: string | null;
+          occasion_id?: string | null;
+          notes?: string | null;
+          score?: number | null;
+        };
+        Update: {
+          id?: string;
+          item_id?: string | null;
+          occasion_id?: string | null;
+          notes?: string | null;
+          score?: number | null;
+        };
+        Relationships: [];
+      };
+      care_profiles: {
+        Row: {
+          item_id: string;
+          notes: string | null;
+          storage: string | null;
+          storage_type_id: string | null;
+          wash: string | null;
+        };
+        Insert: {
+          item_id: string;
+          notes?: string | null;
+          storage?: string | null;
+          storage_type_id?: string | null;
+          wash?: string | null;
+        };
+        Update: {
+          item_id?: string;
+          notes?: string | null;
+          storage?: string | null;
+          storage_type_id?: string | null;
+          wash?: string | null;
+        };
+        Relationships: [];
+      };
     };
     Views: { [_ in never]: never };
     Functions: { [_ in never]: never };

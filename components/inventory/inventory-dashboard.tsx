@@ -1,7 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { PlusIcon } from "lucide-react";
+import { PlusIcon, UploadIcon } from "lucide-react";
 
 import { CategoryFilterCards } from "@/components/inventory/category-filter-cards";
 import { DeleteItemDialog } from "@/components/inventory/delete-item-dialog";
@@ -177,10 +178,16 @@ export function InventoryDashboard() {
             best pieces.
           </p>
         </div>
-        <Button onClick={openCreateDialog} className="shrink-0">
-          <PlusIcon />
-          Add item
-        </Button>
+        <div className="flex shrink-0 gap-2">
+          <Button variant="outline" render={<Link href="/inventory/import" />}>
+            <UploadIcon />
+            Import
+          </Button>
+          <Button onClick={openCreateDialog}>
+            <PlusIcon />
+            Add item
+          </Button>
+        </div>
       </header>
 
       {isInitialLoading ? (
