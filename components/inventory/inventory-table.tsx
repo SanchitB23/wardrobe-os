@@ -1,7 +1,9 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { ArchiveIcon, ImageIcon, MoreHorizontalIcon, PencilIcon, StarIcon } from "lucide-react";
 
+import { ItemImage } from "@/components/inventory/item-image";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,6 +20,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { buildItemImageAltText } from "@/lib/wardrobe/images";
 import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
@@ -32,6 +35,10 @@ type InventoryTableProps = {
   onEdit: (item: WardrobeItemRow) => void;
   onDelete: (item: WardrobeItemRow) => void;
 };
+
+function stopRowNavigation(event: React.SyntheticEvent) {
+  event.stopPropagation();
+}
 
 function statusBadgeVariant(
   status: ItemStatus,
@@ -108,24 +115,33 @@ function ColorBadge({ name }: { name: string | null | undefined }) {
   );
 }
 
-function ItemThumbnail({ imageUrl, name }: { imageUrl: string | null; name: string }) {
+function ItemThumbnail({
+  imageUrl,
+  name,
+}: {
+  imageUrl: string | null;
+  name: string;
+}) {
+  if (!imageUrl) {
+    return (
+      <div
+        className="flex size-12 shrink-0 items-center justify-center rounded-lg border border-dashed bg-muted/30 ring-1 ring-foreground/5"
+        aria-hidden
+      >
+        <ImageIcon className="size-5 text-muted-foreground/60" />
+      </div>
+    );
+  }
+
   return (
-    <div
-      className={cn(
-        "flex size-12 shrink-0 items-center justify-center overflow-hidden rounded-lg border bg-muted/40",
-        !imageUrl && "border-dashed",
-      )}
-    >
-      {imageUrl ? (
-        // eslint-disable-next-line @next/next/no-img-element
-        <img
-          src={imageUrl}
-          alt={`${name} thumbnail`}
-          className="size-full object-cover"
-        />
-      ) : (
-        <ImageIcon className="size-5 text-muted-foreground/70" aria-hidden />
-      )}
+    <div className="size-12 shrink-0 overflow-hidden rounded-lg bg-muted/30 shadow-sm ring-1 ring-foreground/10">
+      <ItemImage
+        src={imageUrl}
+        alt={buildItemImageAltText(name, "thumbnail")}
+        containerClassName="size-12"
+        className="size-12 object-cover"
+        fallback={<ImageIcon className="size-5 text-muted-foreground/60" aria-hidden />}
+      />
     </div>
   );
 }
@@ -135,6 +151,12 @@ export function InventoryTable({
   onEdit,
   onDelete,
 }: InventoryTableProps) {
+  const router = useRouter();
+
+  function navigateToItem(itemId: string) {
+    router.push(`/inventory/${itemId}`);
+  }
+
   return (
     <div className="overflow-hidden rounded-xl border bg-card">
       <div className="overflow-x-auto">
@@ -157,7 +179,24 @@ export function InventoryTable({
           </TableHeader>
           <TableBody>
             {items.map((item) => (
-              <TableRow key={item.id}>
+              <TableRow
+                key={item.id}
+                tabIndex={0}
+                role="link"
+                aria-label={`View ${item.name}`}
+                className={cn(
+                  "cursor-pointer transition-colors",
+                  "hover:bg-muted/60",
+                  "focus-visible:bg-muted/60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset",
+                )}
+                onClick={() => navigateToItem(item.id)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter" || event.key === " ") {
+                    event.preventDefault();
+                    navigateToItem(item.id);
+                  }
+                }}
+              >
                 <TableCell>
                   <ItemThumbnail
                     imageUrl={item.primary_image_url}
@@ -203,7 +242,12 @@ export function InventoryTable({
                 <TableCell>
                   <RatingCell rating={item.rating} />
                 </TableCell>
-                <TableCell className="text-right">
+                <TableCell
+                  className="text-right"
+                  onClick={stopRowNavigation}
+                  onMouseDown={stopRowNavigation}
+                  onPointerDown={stopRowNavigation}
+                >
                   <DropdownMenu>
                     <DropdownMenuTrigger
                       render={
@@ -211,12 +255,18 @@ export function InventoryTable({
                           variant="ghost"
                           size="icon-sm"
                           aria-label={`Actions for ${item.name}`}
+                          onClick={stopRowNavigation}
+                          onMouseDown={stopRowNavigation}
                         />
                       }
                     >
                       <MoreHorizontalIcon />
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
+                    <DropdownMenuContent
+                      align="end"
+                      onClick={stopRowNavigation}
+                      onMouseDown={stopRowNavigation}
+                    >
                       <DropdownMenuItem onClick={() => onEdit(item)}>
                         <PencilIcon />
                         Edit

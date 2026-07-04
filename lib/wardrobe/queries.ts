@@ -171,6 +171,24 @@ export async function fetchInventorySummary(): Promise<{
   };
 }
 
+export async function fetchWardrobeItemById(
+  id: string,
+): Promise<{ data: WardrobeItemRow | null; error: Error | null }> {
+  const supabase = createClient();
+
+  const { data, error } = await supabase
+    .from("wardrobe_items")
+    .select(WARDROBE_ITEM_SELECT)
+    .eq("id", id)
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: (data as WardrobeItemRow | null) ?? null, error: null };
+}
+
 export async function fetchWardrobeItems(
   filters: InventoryFilters = {},
 ): Promise<{ data: WardrobeItemRow[] | null; error: Error | null }> {

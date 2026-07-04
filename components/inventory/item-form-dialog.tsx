@@ -142,8 +142,10 @@ export function ItemFormDialog({
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <ItemImageUpload
+            itemName={form.name.trim() || item?.name || "wardrobe item"}
             existingImageUrl={isEdit ? item?.primary_image_url : null}
             disabled={submitting}
+            isUploading={uploadImageMutation.isPending}
             onFileChange={setImageFile}
             inputId={isEdit ? "edit-item-image-upload" : "item-image-upload"}
           />

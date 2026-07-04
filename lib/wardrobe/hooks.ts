@@ -8,11 +8,14 @@ import {
   fetchCategoryCounts,
   fetchInventorySummary,
   fetchLookups,
+  fetchWardrobeItemById,
   fetchWardrobeItems,
   retireWardrobeItem,
   updateWardrobeItem,
 } from "@/lib/wardrobe/queries";
 import {
+  fetchItemImagesForItem,
+  fetchPrimaryImageUrl,
   fetchPrimaryImageUrlsForItems,
   uploadPrimaryItemImage,
 } from "@/lib/wardrobe/images";
@@ -59,6 +62,40 @@ export function useWardrobeItems(filters: InventoryFilters) {
         primary_image_url: imageMap[item.id] ?? null,
       }));
     },
+  });
+}
+
+export function useWardrobeItem(id: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.item(id),
+    queryFn: async () => {
+      const result = await fetchWardrobeItemById(id);
+      if (result.error) {
+        throw result.error;
+      }
+      if (!result.data) {
+        return null;
+      }
+
+      const primaryResult = await fetchPrimaryImageUrl(id);
+      if (primaryResult.error) {
+        throw primaryResult.error;
+      }
+
+      return {
+        ...result.data,
+        primary_image_url: primaryResult.data,
+      };
+    },
+    enabled: Boolean(id),
+  });
+}
+
+export function useItemImages(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemImages(itemId),
+    queryFn: async () => unwrapData(await fetchItemImagesForItem(itemId)),
+    enabled: Boolean(itemId),
   });
 }
 
@@ -143,10 +180,10 @@ export function useUploadPrimaryItemImageMutation() {
       unwrapData(await uploadPrimaryItemImage(itemId, file)),
     onSuccess: async () => {
       await invalidateInventoryQueries(queryClient);
-      toast.success("Image uploaded");
+      toast.success("Primary image uploaded successfully");
     },
     onError: (error: Error) => {
-      toast.error(error.message || "Failed to upload image");
+      toast.error(error.message || "Failed to upload image. Please try again.");
     },
   });
 }
