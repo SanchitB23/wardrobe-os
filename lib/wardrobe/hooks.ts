@@ -21,6 +21,7 @@ import {
   applyBulkEdit,
   fetchBulkEditLookups,
 } from "@/lib/wardrobe/bulk-actions";
+import { fetchWardrobeDashboardAnalytics } from "@/lib/wardrobe/analytics";
 import { bulkSyncJsonWardrobeItems, type JsonSyncInput } from "@/lib/wardrobe/json-sync";
 import {
   buildDuplicateReview,
@@ -63,6 +64,13 @@ export function useInventorySummary() {
   return useQuery({
     queryKey: wardrobeKeys.summary(),
     queryFn: async () => unwrapData(await fetchInventorySummary()),
+  });
+}
+
+export function useWardrobeDashboard() {
+  return useQuery({
+    queryKey: wardrobeKeys.dashboard(),
+    queryFn: async () => unwrapData(await fetchWardrobeDashboardAnalytics()),
   });
 }
 

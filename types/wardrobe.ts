@@ -90,6 +90,52 @@ export type InventorySummary = {
   averageRating: number | null;
 };
 
+export type DashboardSummary = InventorySummary & {
+  favorites: number;
+};
+
+export type AnalyticsDistributionItem = {
+  id: string | null;
+  name: string;
+  count: number;
+};
+
+export type AnalyticsColorDistributionItem = AnalyticsDistributionItem & {
+  hex: string | null;
+};
+
+export type AnalyticsEnumDistributionItem = {
+  value: string;
+  label: string;
+  count: number;
+};
+
+export type AnalyticsInsightItem = {
+  id: string;
+  code: string;
+  name: string;
+  rating: number | null;
+  usage: UsageFrequency | null;
+  category: string | null;
+};
+
+export type WardrobeDashboardAnalytics = {
+  summary: DashboardSummary;
+  categories: AnalyticsDistributionItem[];
+  subcategories: AnalyticsDistributionItem[];
+  brands: AnalyticsDistributionItem[];
+  colors: AnalyticsColorDistributionItem[];
+  usage: AnalyticsEnumDistributionItem[];
+  formality: AnalyticsEnumDistributionItem[];
+  seasons: AnalyticsDistributionItem[];
+  insights: {
+    highestRated: AnalyticsInsightItem[];
+    lowestRatedActive: AnalyticsInsightItem[];
+    rareUsage: AnalyticsInsightItem[];
+    highCountCategories: AnalyticsDistributionItem[];
+  };
+};
+
 export type CategoryCount = LookupOption & {
   count: number;
 };

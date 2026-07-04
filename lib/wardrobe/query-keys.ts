@@ -19,4 +19,5 @@ export const wardrobeKeys = {
   lookups: () => [...wardrobeKeys.all, "lookups"] as const,
   review: () => [...wardrobeKeys.all, "review"] as const,
   bulkEditLookups: () => [...wardrobeKeys.all, "bulk-edit-lookups"] as const,
+  dashboard: () => [...wardrobeKeys.all, "dashboard"] as const,
 };
