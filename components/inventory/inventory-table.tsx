@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { ArchiveIcon, ImageIcon, MoreHorizontalIcon, PencilIcon, StarIcon } from "lucide-react";
+import { ArchiveIcon, CalendarPlusIcon, ImageIcon, MoreHorizontalIcon, PencilIcon, StarIcon } from "lucide-react";
 
 import { ItemImage } from "@/components/inventory/item-image";
 import { Badge } from "@/components/ui/badge";
@@ -36,6 +36,7 @@ type InventoryTableProps = {
   onSelectedIdsChange: (ids: Set<string>) => void;
   onEdit: (item: WardrobeItemRow) => void;
   onDelete: (item: WardrobeItemRow) => void;
+  onLogWear: (item: WardrobeItemRow) => void;
 };
 
 function stopRowNavigation(event: React.SyntheticEvent) {
@@ -154,6 +155,7 @@ export function InventoryTable({
   onSelectedIdsChange,
   onEdit,
   onDelete,
+  onLogWear,
 }: InventoryTableProps) {
   const router = useRouter();
 
@@ -326,6 +328,10 @@ export function InventoryTable({
                       <DropdownMenuItem onClick={() => onEdit(item)}>
                         <PencilIcon />
                         Edit
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onLogWear(item)}>
+                        <CalendarPlusIcon />
+                        Log wear
                       </DropdownMenuItem>
                       <DropdownMenuItem
                         variant="destructive"

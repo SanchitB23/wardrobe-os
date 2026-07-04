@@ -134,6 +134,67 @@ export type WardrobeDashboardAnalytics = {
     rareUsage: AnalyticsInsightItem[];
     highCountCategories: AnalyticsDistributionItem[];
   };
+  wearInsights: WearLogAnalytics;
+};
+
+export type WearLogRow = {
+  id: string;
+  item_id: string;
+  worn_on: string;
+  outfit_id: string | null;
+  occasion_id: string | null;
+  comfort_rating: number | null;
+  notes: string | null;
+  created_at: string | null;
+};
+
+export type WearLogListRow = WearLogRow & {
+  item: {
+    id: string;
+    code: string;
+    name: string;
+    category: LookupOption | null;
+  } | null;
+  occasion: LookupOption | null;
+};
+
+export type CreateWearLogInput = {
+  item_id: string;
+  worn_on: string;
+  occasion_id?: string | null;
+  comfort_rating?: number | null;
+  notes?: string | null;
+};
+
+export type WearLogFilters = {
+  itemId?: string;
+  categoryId?: string;
+  occasionId?: string;
+  wornFrom?: string;
+  wornTo?: string;
+};
+
+export type ItemWearSummary = {
+  totalWears: number;
+  lastWornOn: string | null;
+  averageComfortRating: number | null;
+  recentLogs: WearLogListRow[];
+};
+
+export type WearAnalyticsItem = {
+  id: string;
+  code: string;
+  name: string;
+  category: string | null;
+  wearCount: number;
+  lastWornOn: string | null;
+};
+
+export type WearLogAnalytics = {
+  mostWorn: WearAnalyticsItem[];
+  leastWornActive: WearAnalyticsItem[];
+  notWornYet: WearAnalyticsItem[];
+  recentlyWorn: WearAnalyticsItem[];
 };
 
 export type CategoryCount = LookupOption & {

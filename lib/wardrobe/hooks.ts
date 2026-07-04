@@ -22,6 +22,13 @@ import {
   fetchBulkEditLookups,
 } from "@/lib/wardrobe/bulk-actions";
 import { fetchWardrobeDashboardAnalytics } from "@/lib/wardrobe/analytics";
+import {
+  createWearLog,
+  deleteWearLog,
+  fetchItemWearSummary,
+  fetchOccasions,
+  fetchWearLogs,
+} from "@/lib/wardrobe/wear-logs";
 import { bulkSyncJsonWardrobeItems, type JsonSyncInput } from "@/lib/wardrobe/json-sync";
 import {
   buildDuplicateReview,
@@ -44,6 +51,8 @@ import type {
   InventoryFilters,
   UpdateWardrobeItemInput,
   WardrobeItemRow,
+  WearLogFilters,
+  CreateWearLogInput,
 } from "@/types/wardrobe";
 
 function unwrapData<T>(result: { data: T | null; error: Error | null }): T {
@@ -357,6 +366,65 @@ export function useBulkCleanupMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Cleanup failed. Please try again.");
+    },
+  });
+}
+
+export function useOccasions() {
+  return useQuery({
+    queryKey: wardrobeKeys.occasions(),
+    queryFn: async () => unwrapData(await fetchOccasions()),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useWearLogs(filters: WearLogFilters) {
+  return useQuery({
+    queryKey: wardrobeKeys.wearLogs(filters),
+    queryFn: async () => unwrapData(await fetchWearLogs(filters)),
+  });
+}
+
+export function useItemWearSummary(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemWearSummary(itemId),
+    queryFn: async () => unwrapData(await fetchItemWearSummary(itemId)),
+    enabled: Boolean(itemId),
+  });
+}
+
+export function useCreateWearLogMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: CreateWearLogInput) =>
+      unwrapData(await createWearLog(input)),
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Wear logged");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to log wear");
+    },
+  });
+}
+
+export function useDeleteWearLogMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const result = await deleteWearLog(id);
+      if (result.error) {
+        throw result.error;
+      }
+    },
+    onSuccess: async () => {
+      await invalidateInventoryQueries(queryClient);
+      toast.success("Wear log deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete wear log");
     },
   });
 }

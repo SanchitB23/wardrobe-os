@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGridIcon, PlusIcon, UploadIcon } from "lucide-react";
+import { LayoutGridIcon, PlusIcon, UploadIcon, CalendarDaysIcon } from "lucide-react";
 
 import { BulkActionsToolbar } from "@/components/inventory/bulk-actions-toolbar";
 import { CategoryFilterCards } from "@/components/inventory/category-filter-cards";
 import { DeleteItemDialog } from "@/components/inventory/delete-item-dialog";
+import { LogWearDialog } from "@/components/wear-logs/log-wear-dialog";
 import { InventoryErrorState } from "@/components/inventory/inventory-error-state";
 import { InventoryEmptyState } from "@/components/inventory/inventory-empty-state";
 import { InventoryFiltersPanel } from "@/components/inventory/inventory-filters";
@@ -55,6 +56,10 @@ export function InventoryDashboard() {
   );
   const [deleteOpen, setDeleteOpen] = useState(false);
   const [itemToDelete, setItemToDelete] = useState<WardrobeItemRow | null>(
+    null,
+  );
+  const [logWearOpen, setLogWearOpen] = useState(false);
+  const [itemToLogWear, setItemToLogWear] = useState<WardrobeItemRow | null>(
     null,
   );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -152,6 +157,11 @@ export function InventoryDashboard() {
     setDeleteOpen(true);
   }
 
+  function openLogWearDialog(item: WardrobeItemRow) {
+    setItemToLogWear(item);
+    setLogWearOpen(true);
+  }
+
   function handleCategorySelect(categoryId: string | undefined) {
     setFilters((current) => ({
       ...current,
@@ -197,6 +207,10 @@ export function InventoryDashboard() {
           </p>
         </div>
         <div className="flex shrink-0 gap-2">
+          <Button variant="outline" render={<Link href="/wear-logs" />}>
+            <CalendarDaysIcon />
+            Wear logs
+          </Button>
           <Button variant="outline" render={<Link href="/dashboard" />}>
             <LayoutGridIcon />
             Dashboard
@@ -273,6 +287,7 @@ export function InventoryDashboard() {
           onSelectedIdsChange={handleSelectedIdsChange}
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
+          onLogWear={openLogWearDialog}
         />
       )}
 
@@ -295,6 +310,12 @@ export function InventoryDashboard() {
         item={itemToDelete}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
+      />
+
+      <LogWearDialog
+        item={itemToLogWear}
+        open={logWearOpen}
+        onOpenChange={setLogWearOpen}
       />
     </div>
   );

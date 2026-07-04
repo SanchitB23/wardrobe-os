@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { ArrowLeftIcon, ImageIcon, PencilIcon, StarIcon } from "lucide-react";
+import { ArrowLeftIcon, CalendarPlusIcon, ImageIcon, PencilIcon, StarIcon } from "lucide-react";
 
 import { InventoryErrorState } from "@/components/inventory/inventory-error-state";
 import { ItemFormDialog } from "@/components/inventory/item-form-dialog";
 import { ItemImage } from "@/components/inventory/item-image";
+import { LogWearDialog } from "@/components/wear-logs/log-wear-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -19,10 +20,20 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  useItemWearSummary,
   useWardrobeItemDetail,
   useWardrobeLookups,
 } from "@/lib/wardrobe/hooks";
 import { buildItemImageAltText } from "@/lib/wardrobe/images";
+import { formatWearLogDisplayDate } from "@/lib/wardrobe/wear-logs";
 import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
@@ -31,6 +42,7 @@ import {
   type ItemImageRow,
   type ItemOccasionRelation,
   type ItemStatus,
+  type ItemWearSummary,
   type LookupOption,
   type UsageFrequency,
   type WardrobeItemRow,
@@ -428,6 +440,108 @@ function NotesCard({ notes }: { notes: string | null }) {
   );
 }
 
+function WearSummaryCard({
+  summary,
+  isLoading,
+}: {
+  summary: ItemWearSummary | undefined;
+  isLoading: boolean;
+}) {
+  if (isLoading) {
+    return (
+      <SectionCard
+        title="Wear tracking"
+        description="Logged wears and comfort over time."
+      >
+        <div className="grid gap-4 sm:grid-cols-3">
+          {Array.from({ length: 3 }).map((_, index) => (
+            <Skeleton key={index} className="h-16 w-full rounded-lg" />
+          ))}
+        </div>
+      </SectionCard>
+    );
+  }
+
+  const wearSummary = summary ?? {
+    totalWears: 0,
+    lastWornOn: null,
+    averageComfortRating: null,
+    recentLogs: [],
+  };
+
+  return (
+    <SectionCard
+      title="Wear tracking"
+      description="Logged wears and comfort over time."
+    >
+      <dl className="grid gap-4 sm:grid-cols-3">
+        <DetailField label="Total wears">
+          <span className="text-2xl font-semibold tabular-nums">
+            {wearSummary.totalWears}
+          </span>
+        </DetailField>
+        <DetailField label="Last worn">
+          {wearSummary.lastWornOn
+            ? formatWearLogDisplayDate(wearSummary.lastWornOn)
+            : "—"}
+        </DetailField>
+        <DetailField label="Average comfort">
+          {wearSummary.averageComfortRating !== null ? (
+            <div className="inline-flex items-center gap-1 tabular-nums">
+              <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
+              <span className="font-medium">
+                {formatRating(wearSummary.averageComfortRating)}
+              </span>
+              <span className="text-xs text-muted-foreground">/10</span>
+            </div>
+          ) : (
+            "—"
+          )}
+        </DetailField>
+      </dl>
+
+      <Separator className="my-4" />
+
+      {wearSummary.recentLogs.length > 0 ? (
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow className="hover:bg-transparent">
+                <TableHead>Date</TableHead>
+                <TableHead>Occasion</TableHead>
+                <TableHead>Comfort</TableHead>
+                <TableHead>Notes</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {wearSummary.recentLogs.map((log) => (
+                <TableRow key={log.id}>
+                  <TableCell className="whitespace-nowrap tabular-nums">
+                    {formatWearLogDisplayDate(log.worn_on)}
+                  </TableCell>
+                  <TableCell>{log.occasion?.name ?? "—"}</TableCell>
+                  <TableCell className="tabular-nums">
+                    {log.comfort_rating !== null
+                      ? `${formatRating(log.comfort_rating)}/10`
+                      : "—"}
+                  </TableCell>
+                  <TableCell className="max-w-[240px] truncate">
+                    {log.notes?.trim() || "—"}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          No wear logs yet. Log your first wear to start tracking this item.
+        </p>
+      )}
+    </SectionCard>
+  );
+}
+
 function ItemDetailSkeleton() {
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8 lg:px-8 lg:py-10">
@@ -465,9 +579,11 @@ function ItemNotFound() {
 
 export function ItemDetailView({ itemId }: ItemDetailViewProps) {
   const [formOpen, setFormOpen] = useState(false);
+  const [logWearOpen, setLogWearOpen] = useState(false);
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const detailQuery = useWardrobeItemDetail(itemId);
+  const wearSummaryQuery = useItemWearSummary(itemId);
   const lookupsQuery = useWardrobeLookups();
 
   const detail = detailQuery.data;
@@ -515,10 +631,16 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
           <ArrowLeftIcon />
           Back to Inventory
         </Button>
-        <Button onClick={() => setFormOpen(true)}>
-          <PencilIcon />
-          Edit
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" onClick={() => setLogWearOpen(true)}>
+            <CalendarPlusIcon />
+            Log wear
+          </Button>
+          <Button onClick={() => setFormOpen(true)}>
+            <PencilIcon />
+            Edit
+          </Button>
+        </div>
       </header>
 
       <div className="space-y-6">
@@ -531,6 +653,11 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
         />
 
         <CoreInfoCard item={item} />
+
+        <WearSummaryCard
+          summary={wearSummaryQuery.data}
+          isLoading={wearSummaryQuery.isPending}
+        />
 
         <div className="grid gap-6 lg:grid-cols-2">
           <StyleDnaCard
@@ -548,6 +675,17 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
           <NotesCard notes={item.notes} />
         </div>
       </div>
+
+      <LogWearDialog
+        item={item}
+        open={logWearOpen}
+        onOpenChange={(open) => {
+          setLogWearOpen(open);
+          if (!open) {
+            void wearSummaryQuery.refetch();
+          }
+        }}
+      />
 
       <ItemFormDialog
         mode="edit"

@@ -284,6 +284,39 @@ export type Database = {
         };
         Relationships: [];
       };
+      wear_logs: {
+        Row: {
+          comfort_rating: number | null;
+          created_at: string | null;
+          id: string;
+          item_id: string;
+          notes: string | null;
+          occasion_id: string | null;
+          outfit_id: string | null;
+          worn_on: string;
+        };
+        Insert: {
+          comfort_rating?: number | null;
+          created_at?: string | null;
+          id?: string;
+          item_id: string;
+          notes?: string | null;
+          occasion_id?: string | null;
+          outfit_id?: string | null;
+          worn_on: string;
+        };
+        Update: {
+          comfort_rating?: number | null;
+          created_at?: string | null;
+          id?: string;
+          item_id?: string;
+          notes?: string | null;
+          occasion_id?: string | null;
+          outfit_id?: string | null;
+          worn_on?: string;
+        };
+        Relationships: [];
+      };
       care_profiles: {
         Row: {
           item_id: string;

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/client";
+import { fetchWearLogAnalytics } from "@/lib/wardrobe/wear-logs";
 import type {
   AnalyticsColorDistributionItem,
   AnalyticsDistributionItem,
@@ -377,6 +378,21 @@ export async function fetchWardrobeDashboardAnalytics(): Promise<{
       return left.name.localeCompare(right.name);
     });
 
+  const wearAnalyticsResult = await fetchWearLogAnalytics(
+    items.map((item) => ({
+      id: item.id,
+      code: item.code,
+      name: item.name,
+      category_id: item.category_id,
+      status: item.status,
+    })),
+    categoryNameById,
+  );
+
+  if (wearAnalyticsResult.error) {
+    return { data: null, error: wearAnalyticsResult.error };
+  }
+
   return {
     data: {
       summary: buildSummary(items),
@@ -388,6 +404,12 @@ export async function fetchWardrobeDashboardAnalytics(): Promise<{
       formality: buildEnumDistribution(items, "formality", FORMALITY_LEVELS),
       seasons: buildSeasonDistribution(seasonLinks, seasons),
       insights: buildInsights(items, categoryDistribution, categoryNameById),
+      wearInsights: wearAnalyticsResult.data ?? {
+        mostWorn: [],
+        leastWornActive: [],
+        notWornYet: [],
+        recentlyWorn: [],
+      },
     },
     error: null,
   };
