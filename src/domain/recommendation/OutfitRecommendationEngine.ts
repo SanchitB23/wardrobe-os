@@ -51,6 +51,12 @@ export interface OutfitRecommendation {
     engineVersion: string;
     source: "saved_outfit" | "generated_combo";
   };
+  /** Transparent score derivation (debug mode). */
+  debug: {
+    eligible: true;
+    baseScore: number;
+    adjustments: { label: string; delta: number }[];
+  };
 }
 
 /** An outfit excluded before scoring because it failed context eligibility. */
@@ -88,17 +94,22 @@ const SOFT_RECENT_PENALTY = 0.6;
 const STALE_ITEM_PENALTY_EACH = 0.4;
 const STALE_PENALTY_CAP = 1.5;
 const RETIRED_ITEM_PENALTY = 3;
-/** Capped so a favorite can nudge, but never override a context mismatch (Rule 6). */
-const FAVORITE_BOOST = 0.75;
+/** Max favorite boost. Capped so it can never override a hard context mismatch
+ *  (mismatches are rejected before scoring). */
+const FAVORITE_BOOST = 1;
 const OCCASION_MATCH_BOOST = 1.2;
-/** Eligible-but-untagged for the requested occasion → medium mismatch penalty (Rule 7). */
+/** Eligible-but-untagged for the requested occasion → medium mismatch penalty. */
 const OCCASION_MISMATCH_PENALTY = 1.5;
 const SEASON_MATCH_BOOST = 0.8;
 const WEATHER_FIT_BOOST = 0.5;
-/** Fragile footwear (e.g. white/suede sneakers) in rough weather while travelling. */
-const FRAGILE_TRAVEL_PENALTY = 1;
 const TRAVEL_COMFORT_BOOST = 0.6;
 const COMMUTE_BOOST = 0.6;
+/** Per delicate (high-care) item; scaled up when travelling. */
+const CARE_PENALTY_EACH = 0.25;
+const CARE_PENALTY_TRAVEL_EACH = 0.6;
+const CARE_PENALTY_CAP = 1.5;
+/** Protected items exposed to rough weather / travel. */
+const PROTECTED_PENALTY = 1.5;
 /** Top-K items per slot considered when generating fallback combos. */
 const COMBO_TOP_K = 3;
 
@@ -170,13 +181,22 @@ function toWeatherContext(weather: WeatherSnapshot): WeatherContext {
 // from each item's derived StyleDNA (its occasion suitability + slot).
 // ---------------------------------------------------------------------------
 
-export type OccasionKey = "gym" | "office" | "wedding" | "travel";
+export type OccasionKey = "gym" | "office" | "wedding" | "dinner" | "travel";
 
 const REQUIRED_SLOTS: OutfitSlot[] = ["top", "bottom", "footwear"];
-/** Occasions with hard rules; travel stays soft (prioritized in scoring). */
-const HARD_OCCASIONS = new Set<OccasionKey>(["gym", "office", "wedding"]);
+/** Occasions with hard eligibility rules; travel stays soft (heavily scored). */
+const HARD_OCCASIONS = new Set<OccasionKey>(["gym", "office", "wedding", "dinner"]);
 /** StyleDNA occasion suitability below this reads as "not suitable". */
 const ELIGIBILITY_FLOOR = 1;
+
+/** Requested occasion → the StyleDNA occasion key it maps to for suitability. */
+const STYLE_OCCASION_FOR: Record<OccasionKey, StyleOccasionKey> = {
+  gym: "gym",
+  office: "office",
+  wedding: "wedding",
+  dinner: "social",
+  travel: "travel",
+};
 
 function resolveOccasionKey(occasion: string | null | undefined): OccasionKey | null {
   const value = normalize(occasion);
@@ -184,8 +204,16 @@ function resolveOccasionKey(occasion: string | null | undefined): OccasionKey | 
   if (value === "gym" || value === "workout" || value === "fitness") return "gym";
   if (value === "office" || value === "work") return "office";
   if (value === "wedding" || value === "formal") return "wedding";
+  if (["dinner", "date", "brewery", "party", "social"].includes(value)) return "dinner";
   if (value === "travel" || value === "vacation") return "travel";
   return null;
+}
+
+function itemSuitability(
+  item: WardrobeItemSnapshot,
+  occasionKey: OccasionKey,
+): number {
+  return item.styleDNA.occasion.suitability[STYLE_OCCASION_FOR[occasionKey]];
 }
 
 type Eligibility = { rejected: boolean; reasons: string[] };
@@ -205,7 +233,7 @@ function assessEligibility(
 
   if (occasionKey && HARD_OCCASIONS.has(occasionKey)) {
     for (const item of items) {
-      if (item.styleDNA.occasion.suitability[occasionKey] < ELIGIBILITY_FLOOR) {
+      if (itemSuitability(item, occasionKey) < ELIGIBILITY_FLOOR) {
         reasons.push(`contains ${item.name} — not suitable for ${occasionKey}`);
       }
     }
@@ -219,7 +247,7 @@ function isEligibleItem(
   occasionKey: OccasionKey | null,
 ): boolean {
   if (!occasionKey || !HARD_OCCASIONS.has(occasionKey)) return true;
-  return item.styleDNA.occasion.suitability[occasionKey] >= ELIGIBILITY_FLOOR;
+  return itemSuitability(item, occasionKey) >= ELIGIBILITY_FLOOR;
 }
 
 // ---------------------------------------------------------------------------
@@ -412,25 +440,14 @@ function scoreCandidate(
     }
   }
 
-  // Rule 4 (travel) — StyleDNA travel-friendliness; avoid fragile shoes in
-  // rough weather.
+  // Rule 4 (travel) — reward travel-friendly, low-maintenance, comfortable
+  // pieces. (Protected-item risk is handled by the shared penalty below.)
   if (occasionKey === "travel") {
     const travelFit = mean(
       candidate.items.map((i) => i.styleDNA.compatibility.travelFriendliness),
     );
     if (travelFit >= 6) {
       boosts.push({ label: "Travel-friendly & comfortable", delta: TRAVEL_COMFORT_BOOST });
-    }
-    const roughWeather =
-      context.weather.condition === "rainy" || context.weather.condition === "cold";
-    const fragileShoe = candidate.items.some(
-      (i) => i.styleDNA.slot === "footwear" && i.styleDNA.compatibility.travelFriendliness <= 3,
-    );
-    if (roughWeather && fragileShoe) {
-      penalties.push({
-        label: "Fragile footwear for rough travel weather",
-        delta: -FRAGILE_TRAVEL_PENALTY,
-      });
     }
   }
 
@@ -460,6 +477,31 @@ function scoreCandidate(
         delta: COMMUTE_BOOST,
       });
     }
+  }
+
+  // Care-complexity penalty — high-maintenance pieces cost effort, more so when
+  // travelling.
+  const delicateCount = candidate.items.filter(
+    (i) => i.styleDNA.texture.careComplexity === "delicate",
+  ).length;
+  if (delicateCount > 0) {
+    const each = occasionKey === "travel" ? CARE_PENALTY_TRAVEL_EACH : CARE_PENALTY_EACH;
+    penalties.push({
+      label: `${delicateCount} high-care item${delicateCount === 1 ? "" : "s"}`,
+      delta: -Math.min(CARE_PENALTY_CAP, delicateCount * each),
+    });
+  }
+
+  // Protected-item penalty — hype/light footwear at risk when travelling or in
+  // rough weather.
+  const protectedItems = candidate.items.filter((i) => i.styleDNA.compatibility.protected);
+  const roughWeather =
+    context.weather.condition === "rainy" || context.weather.condition === "cold";
+  if (protectedItems.length > 0 && (occasionKey === "travel" || roughWeather)) {
+    penalties.push({
+      label: `${protectedItems.length} protected item${protectedItems.length === 1 ? "" : "s"} at risk`,
+      delta: -PROTECTED_PENALTY,
+    });
   }
 
   const totalDelta =
@@ -506,6 +548,11 @@ function scoreCandidate(
       generatedAt,
       engineVersion: OUTFIT_RECOMMENDATION_ENGINE_VERSION,
       source: candidate.source,
+    },
+    debug: {
+      eligible: true,
+      baseScore: round1(analysis.overallScore),
+      adjustments: [...boosts, ...penalties],
     },
   };
 }

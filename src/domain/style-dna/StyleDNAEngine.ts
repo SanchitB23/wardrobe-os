@@ -248,10 +248,22 @@ function weatherProfile(item: StyleDNAItem, weight: FabricWeight): WeatherProfil
 type Verdict = "allowed" | "disallowed" | "optional";
 const OPTIONAL_SLOTS = new Set<OutfitSlot>(["fragrance", "accessory", "watch", "belt"]);
 
+/** "Hype"/fragile sneaker markers that scuff or stain easily. */
+const PROTECTED_KW = ["air force", "af1", "force 1", "jordan", "yeezy", "574", "990", "suede", "white leather"];
+
+/** Footwear that is risky in rough conditions: hype/suede or light-coloured. */
+function isProtectedFootwear(item: StyleDNAItem, slot: OutfitSlot): boolean {
+  if (slot !== "footwear") return false;
+  if (PROTECTED_KW.some((k) => hay(item).includes(k))) return true;
+  return colorProfile(item).lightness > 0.7;
+}
+
 function gymVerdict(item: StyleDNAItem, slot: OutfitSlot): Verdict {
   if (OPTIONAL_SLOTS.has(slot)) return "optional";
   const gym = hasGymSignal(item);
   if (slot === "footwear") {
+    // Fragile/protected sneakers don't belong at the gym.
+    if (isProtectedFootwear(item, slot)) return "disallowed";
     if (hasKw(item, KW.athleticShoe) || gym) return "allowed";
     if (hasKw(item, KW.dressShoe) || hasKw(item, KW.sandal)) return "disallowed";
     if (hasKw(item, KW.sneaker)) return "allowed";
@@ -327,10 +339,10 @@ function occasionProfile(item: StyleDNAItem, slot: OutfitSlot): OccasionProfile 
         : 6
       : 2;
 
-  // social (dinner/date/brewery)
+  // social (dinner/date/brewery) — gym-only and loungewear are unsuitable.
   const socialTag = hasAny(set, ["dinner", "date", "brewery", "party", "brunch"]);
   let social: number;
-  if (activewear) social = 1;
+  if (activewear || hasKw(item, KW.pajama)) social = 0;
   else if (socialTag || (rank >= FORMALITY_RANK.smart_casual && rank <= FORMALITY_RANK.business_formal)) social = 8;
   else social = 5;
 
@@ -404,12 +416,14 @@ function compatibilityProfile(
   if (color.neutral) versatility += 2;
   if (item.formality === "smart_casual" || item.formality === "business_casual") versatility += 1.5;
 
+  const protectedFootwear = isProtectedFootwear(item, slot);
+
   let travel = 5;
   travel += texture.careComplexity === "easy" ? 2 : texture.careComplexity === "delicate" ? -2 : 0;
   travel += texture.fabricWeight === "heavy" ? -1 : 1;
   if (slot === "footwear") travel += hasKw(item, KW.sneaker) || hasKw(item, KW.athleticShoe) ? 1 : hasKw(item, KW.dressShoe) ? -2 : 0;
-  // Fragile: light-coloured or suede footwear is risky to travel in.
-  if (slot === "footwear" && (texture.texture === "leather" || color.lightness > 0.7)) travel -= 2;
+  // Protected footwear (hype/suede/light) is risky to travel in.
+  if (protectedFootwear) travel -= 3;
   travel += color.neutral ? 1 : 0;
 
   let commute = 6;
@@ -427,6 +441,7 @@ function compatibilityProfile(
     travelFriendliness: clamp0To10(travel),
     commuteFriendliness: clamp0To10(commute),
     visualBoldness,
+    protected: protectedFootwear,
   };
 }
 

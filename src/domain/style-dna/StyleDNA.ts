@@ -109,6 +109,11 @@ export interface CompatibilityProfile {
   commuteFriendliness: number;
   /** 0–10 how visually loud the piece is. */
   visualBoldness: number;
+  /**
+   * True for pieces that are risky to wear in rough conditions — white/suede
+   * or "hype" sneakers (e.g. Air Force 1) that scuff or stain easily.
+   */
+  protected: boolean;
 }
 
 export interface StyleDNA {

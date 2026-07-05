@@ -362,3 +362,92 @@ describe("recommendOutfits — hard eligibility", () => {
     expect(favorite.score - plain.score).toBeLessThanOrEqual(1);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Travel / dinner calibration + debug output.
+// ---------------------------------------------------------------------------
+
+const TRAVEL_ITEMS: WardrobeItemInput[] = [
+  item({ id: "tTop", name: "Cotton Polo", category: "Top", subcategory: "Polo", formality: "smart_casual", tags: ["Travel", "Casual"], styles: ["Smart Casual"] }),
+  item({ id: "tBottom", name: "Travel Chinos", category: "Bottom", subcategory: "Chinos", formality: "smart_casual", tags: ["Travel"], styles: ["Smart Casual"] }),
+  item({ id: "af1", name: "Nike Air Force 1", category: "Footwear", subcategory: "Sneakers", color: "White", formality: "smart_casual", tags: ["Casual"], styles: ["Streetwear"] }),
+  item({ id: "trainer", name: "Canvas Trainers", category: "Footwear", subcategory: "Sneakers", color: "Grey", formality: "smart_casual", tags: ["Travel", "Casual"], styles: ["Smart Casual"] }),
+];
+
+const DINNER_ITEMS: WardrobeItemInput[] = [
+  ...GYM_ITEMS,
+  item({ id: "dPolo", name: "Knit Polo", category: "Top", subcategory: "Polo", formality: "smart_casual", tags: ["Dinner", "Casual"], styles: ["Smart Casual"] }),
+  item({ id: "dChino", name: "Dark Chinos", category: "Bottom", subcategory: "Chinos", formality: "smart_casual", styles: ["Smart Casual"] }),
+  item({ id: "dShoe", name: "Suede Chukka", category: "Footwear", subcategory: "Boot", color: "Brown", formality: "smart_casual", styles: ["Smart Casual"] }),
+];
+
+function contextWithItems(
+  savedOutfits: Parameters<typeof buildRecommendationContext>[0]["savedOutfits"],
+  items: WardrobeItemInput[],
+) {
+  return buildRecommendationContext(
+    { health: health(), wardrobeItems: items, savedOutfits },
+    { generatedAt: GENERATED_AT },
+  );
+}
+
+describe("recommendOutfits — travel, dinner, debug", () => {
+  it("penalizes protected AF1-type footwear for travel", () => {
+    const recs = recommendOutfits(
+      contextWithItems(
+        [
+          { id: "af", name: "AF1 look", itemIds: ["tTop", "tBottom", "af1"] },
+          { id: "plain", name: "Trainer look", itemIds: ["tTop", "tBottom", "trainer"] },
+        ],
+        TRAVEL_ITEMS,
+      ),
+      { occasion: "Travel" },
+    );
+
+    const af = recs.find((r) => r.outfitId === "af");
+    const plain = recs.find((r) => r.outfitId === "plain");
+    expect(af).toBeDefined();
+    expect(plain).toBeDefined();
+    // Both are travel-eligible (soft), but the protected AF1 ranks lower.
+    expect(plain!.score).toBeGreaterThan(af!.score);
+    expect(af!.tradeoffs.some((t) => /protected/i.test(t))).toBe(true);
+  });
+
+  it("Dinner rejects gym-only outfits and keeps smart-casual ones", () => {
+    const { recommendations, rejected } = generateOutfitRecommendations(
+      contextWithItems(
+        [
+          { id: "gym", name: "Gym look", itemIds: ["gymTop", "gymShorts", "runShoe"] },
+          { id: "smart", name: "Dinner look", itemIds: ["dPolo", "dChino", "dShoe"] },
+        ],
+        DINNER_ITEMS,
+      ),
+      { occasion: "Dinner" },
+    );
+
+    expect(recommendations.some((r) => r.outfitId === "smart")).toBe(true);
+    expect(recommendations.some((r) => r.outfitId === "gym")).toBe(false);
+    expect(rejected.some((r) => r.outfitId === "gym")).toBe(true);
+  });
+
+  it("exposes a score breakdown and rejection reasons in debug output", () => {
+    const { recommendations, rejected } = generateOutfitRecommendations(
+      contextWith([OFFICE_OUTFIT_DEBUG, GYM_OUTFIT_DEBUG]),
+      { occasion: "Gym" },
+    );
+
+    const rec = recommendations[0];
+    expect(rec.debug.eligible).toBe(true);
+    expect(typeof rec.debug.baseScore).toBe("number");
+    expect(Array.isArray(rec.debug.adjustments)).toBe(true);
+    // Boosts/penalties carry a label + numeric delta.
+    for (const adj of rec.debug.adjustments) {
+      expect(typeof adj.label).toBe("string");
+      expect(typeof adj.delta).toBe("number");
+    }
+    expect(rejected[0]?.reasons.length).toBeGreaterThan(0);
+  });
+});
+
+const OFFICE_OUTFIT_DEBUG = { id: "officeDbg", name: "Office", itemIds: ["shirt", "chino", "dressShoe"] };
+const GYM_OUTFIT_DEBUG = { id: "gymDbg", name: "Gym", itemIds: ["gymTop", "gymShorts", "runShoe"] };
