@@ -111,6 +111,7 @@ export type Database = {
           category_id: string | null;
           code: string;
           created_at: string | null;
+          favorite: boolean;
           fit: Database["public"]["Enums"]["fit_type"] | null;
           formality: Database["public"]["Enums"]["formality_enum"] | null;
           formality_level: number | null;
@@ -130,6 +131,7 @@ export type Database = {
           category_id?: string | null;
           code: string;
           created_at?: string | null;
+          favorite?: boolean;
           fit?: Database["public"]["Enums"]["fit_type"] | null;
           formality?: Database["public"]["Enums"]["formality_enum"] | null;
           formality_level?: number | null;
@@ -149,6 +151,7 @@ export type Database = {
           category_id?: string | null;
           code?: string;
           created_at?: string | null;
+          favorite?: boolean;
           fit?: Database["public"]["Enums"]["fit_type"] | null;
           formality?: Database["public"]["Enums"]["formality_enum"] | null;
           formality_level?: number | null;

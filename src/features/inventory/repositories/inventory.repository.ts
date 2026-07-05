@@ -30,6 +30,7 @@ export const WARDROBE_ITEM_SELECT = `
   rating,
   usage,
   notes,
+  favorite,
   created_at,
   category:categories(id, name),
   subcategory:subcategories(id, name),
@@ -266,6 +267,25 @@ export async function updateWardrobeItemById(
   const { data, error } = await supabase
     .from("wardrobe_items")
     .update(payload)
+    .eq("id", id)
+    .select(WARDROBE_ITEM_SELECT)
+    .single();
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: data as WardrobeItemRow, error: null };
+}
+
+export async function updateWardrobeItemFavoriteById(
+  id: string,
+  favorite: boolean,
+): Promise<{ data: WardrobeItemRow | null; error: Error | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("wardrobe_items")
+    .update({ favorite })
     .eq("id", id)
     .select(WARDROBE_ITEM_SELECT)
     .single();

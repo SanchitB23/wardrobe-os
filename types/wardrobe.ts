@@ -48,6 +48,7 @@ export type WardrobeItemRow = {
   rating: number | null;
   usage: UsageFrequency | null;
   notes: string | null;
+  favorite: boolean;
   created_at: string | null;
   category: LookupOption | null;
   subcategory: LookupOption | null;

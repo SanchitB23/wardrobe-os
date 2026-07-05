@@ -12,6 +12,7 @@ import {
   selectWardrobeItemCodes,
   selectWardrobeItems,
   updateWardrobeItemById,
+  updateWardrobeItemFavoriteById,
   type WardrobeItemInsertPayload,
 } from "@/features/inventory/repositories/inventory.repository";
 import type {
@@ -65,6 +66,13 @@ export async function fetchWardrobeItemById(
   id: string,
 ): Promise<{ data: WardrobeItemRow | null; error: Error | null }> {
   return selectWardrobeItemById(id);
+}
+
+export async function setWardrobeItemFavorite(
+  id: string,
+  favorite: boolean,
+): Promise<{ data: WardrobeItemRow | null; error: Error | null }> {
+  return updateWardrobeItemFavoriteById(id, favorite);
 }
 
 export async function fetchWardrobeItems(

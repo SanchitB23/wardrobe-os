@@ -28,6 +28,7 @@ import {
   fetchWardrobeItemById,
   fetchWardrobeItems,
   retireWardrobeItem,
+  setWardrobeItemFavorite,
   updateWardrobeItem,
 } from "@/features/inventory/services/inventory.service";
 import {
@@ -205,6 +206,24 @@ export function useUpdateWardrobeItemMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to update item");
+    },
+  });
+}
+
+export function useToggleWardrobeItemFavoriteMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { id: string; favorite: boolean }) =>
+      unwrapData(await setWardrobeItemFavorite(input.id, input.favorite)),
+    onSuccess: async (item: WardrobeItemRow) => {
+      await invalidateWardrobeQueries(queryClient);
+      toast.success(
+        item.favorite ? "Added to favorites" : "Removed from favorites",
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update favorite");
     },
   });
 }
