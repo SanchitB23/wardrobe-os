@@ -223,6 +223,21 @@ export function InventoryDashboard() {
     [selectedIds, visibleItemIds],
   );
 
+  // Per-row toggle: apply as a functional update so the handler never depends
+  // on a captured `selectedIds` snapshot. This keeps it referentially stable
+  // (safe for the memoized rows) while always operating on the latest state.
+  const handleToggleItem = useCallback((id: string, checked: boolean) => {
+    setSelectedIds((current) => {
+      const next = new Set(current);
+      if (checked) {
+        next.add(id);
+      } else {
+        next.delete(id);
+      }
+      return next;
+    });
+  }, []);
+
   const handleSelectedIdsChange = useCallback(
     (nextVisible: Set<string>) => {
       setSelectedIds((current) => {
@@ -558,6 +573,7 @@ export function InventoryDashboard() {
           sortRules={sortRules}
           onToggleSort={handleToggleSort}
           selectedIds={visibleSelectedIds}
+          onToggleItem={handleToggleItem}
           onSelectedIdsChange={handleSelectedIdsChange}
           onEdit={openEditDialog}
           onDelete={openDeleteDialog}
