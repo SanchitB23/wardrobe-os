@@ -1,4 +1,4 @@
-import { OutfitsView } from "@/components/outfits/outfits-view";
+import { OutfitsView } from "@/features/outfits/components/outfits-view";
 
 export default function OutfitsPage() {
   return <OutfitsView />;

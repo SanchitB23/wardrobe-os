@@ -1,4 +1,4 @@
-import { ItemDetailView } from "@/components/inventory/item-detail-view";
+import { ItemDetailView } from "@/features/inventory/components/item-detail-view";
 
 type ItemDetailPageProps = {
   params: Promise<{ id: string }>;
@@ -6,6 +6,5 @@ type ItemDetailPageProps = {
 
 export default async function ItemDetailPage({ params }: ItemDetailPageProps) {
   const { id } = await params;
-
   return <ItemDetailView itemId={id} />;
 }

@@ -16,7 +16,7 @@ import {
   EmptyMedia,
   EmptyTitle,
 } from "@/components/ui/empty";
-import { createClient } from "@/lib/supabase/server";
+import { getSupabaseHealthStatus } from "@/shared/services/health.service";
 
 const SEED_COUNTS = [
   { table: "styles", count: 13 },
@@ -30,14 +30,8 @@ const SEED_COUNTS = [
 ] as const;
 
 export default async function Home() {
-  const supabase = await createClient();
-  const { data: styles, error } = await supabase
-    .from("styles")
-    .select("name")
-    .order("name");
-
-  const connected = !error;
-  const rlsBlocking = connected && (styles?.length ?? 0) === 0;
+  const health = await getSupabaseHealthStatus();
+  const { connected, rlsBlocking, errorMessage, styles } = health;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-8 px-6 py-16">
@@ -72,11 +66,11 @@ export default async function Home() {
             )}
           </div>
 
-          {error && (
+          {errorMessage && (
             <Alert variant="destructive">
               <AlertCircleIcon />
               <AlertTitle>Connection error</AlertTitle>
-              <AlertDescription>{error.message}</AlertDescription>
+              <AlertDescription>{errorMessage}</AlertDescription>
             </Alert>
           )}
 

@@ -1,4 +1,4 @@
-import { OutfitBuilderPageShell } from "@/components/outfits/outfit-builder";
+import { OutfitBuilderPageShell } from "@/features/outfits/components/outfit-builder";
 
 export default function NewOutfitPage() {
   return (

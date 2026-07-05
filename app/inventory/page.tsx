@@ -1,4 +1,4 @@
-import { InventoryDashboard } from "@/components/inventory/inventory-dashboard";
+import { InventoryDashboard } from "@/features/inventory/components/inventory-dashboard";
 
 export default function InventoryPage() {
   return <InventoryDashboard />;
