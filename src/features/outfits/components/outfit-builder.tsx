@@ -32,6 +32,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 import { OutfitItemPicker } from "@/features/outfits/components/outfit-item-picker";
 import { OutfitPreview } from "@/features/outfits/components/outfit-preview";
 import { WearOutfitDialog } from "@/features/outfits/components/wear-outfit-dialog";
@@ -86,6 +87,7 @@ type OutfitBuilderFormProps = {
   initialOccasionId: string | null;
   initialSeasonId: string | null;
   initialRating: string;
+  initialNotes: string;
   initialSelection: OutfitSlotSelection;
 };
 
@@ -95,6 +97,7 @@ function OutfitBuilderForm({
   initialOccasionId,
   initialSeasonId,
   initialRating,
+  initialNotes,
   initialSelection,
 }: OutfitBuilderFormProps) {
   const router = useRouter();
@@ -104,6 +107,7 @@ function OutfitBuilderForm({
   const [occasionId, setOccasionId] = useState<string | null>(initialOccasionId);
   const [seasonId, setSeasonId] = useState<string | null>(initialSeasonId);
   const [rating, setRating] = useState(initialRating);
+  const [notes, setNotes] = useState(initialNotes);
   const [selection, setSelection] = useState<OutfitSlotSelection>(initialSelection);
   const [activeSlot, setActiveSlot] = useState<OutfitSlot | null>(null);
   const [validationError, setValidationError] = useState<string | null>(null);
@@ -189,18 +193,19 @@ function OutfitBuilderForm({
       occasion_id: occasionId,
       season_id: seasonId,
       rating: parsedRating,
+      notes: notes.trim() || null,
       items: slotSelectionToItems(selection),
     };
 
     try {
       if (isEdit && outfitId) {
         await updateMutation.mutateAsync({ ...payload, id: outfitId });
-        router.push("/outfits");
+        router.push(`/outfits/${outfitId}`);
         return;
       }
 
-      await createMutation.mutateAsync(payload);
-      router.push("/outfits");
+      const created = await createMutation.mutateAsync(payload);
+      router.push(created ? `/outfits/${created.id}` : "/outfits");
     } catch {
       // Mutation onError shows toast.
     }
@@ -215,7 +220,7 @@ function OutfitBuilderForm({
               <CardHeader>
                 <CardTitle>Outfit details</CardTitle>
                 <CardDescription>
-                  Name your outfit and set occasion, season, and rating.
+                  Name your outfit and set occasion, season, rating, and notes.
                 </CardDescription>
               </CardHeader>
               <CardContent className="grid gap-4 sm:grid-cols-2">
@@ -301,6 +306,16 @@ function OutfitBuilderForm({
                   <div className="flex h-9 items-center rounded-md border bg-muted/20 px-3 text-sm tabular-nums">
                     {itemCount}
                   </div>
+                </div>
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label htmlFor="outfit-notes">Notes</Label>
+                  <Textarea
+                    id="outfit-notes"
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="Styling notes, fit reminders, when to wear…"
+                    rows={3}
+                  />
                 </div>
               </CardContent>
             </Card>
@@ -426,7 +441,9 @@ function OutfitBuilderForm({
           <Button
             type="button"
             variant="outline"
-            render={<Link href="/outfits" />}
+            render={
+              <Link href={isEdit && outfitId ? `/outfits/${outfitId}` : "/outfits"} />
+            }
             disabled={isSaving}
           >
             Cancel
@@ -506,6 +523,7 @@ export function OutfitBuilder({ outfitId }: OutfitBuilderProps) {
           ? String(outfit.rating)
           : ""
       }
+      initialNotes={outfit?.notes ?? ""}
       initialSelection={
         outfit ? outfitDetailToSlotSelection(outfit) : {}
       }

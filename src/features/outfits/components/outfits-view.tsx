@@ -15,7 +15,12 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteOutfitDialog } from "@/features/outfits/components/delete-outfit-dialog";
 import { OutfitCard } from "@/features/outfits/components/outfit-card";
-import { useDuplicateOutfitMutation, useOutfits } from "@/features/outfits/hooks";
+import { WearOutfitDialog } from "@/features/outfits/components/wear-outfit-dialog";
+import {
+  useDuplicateOutfitMutation,
+  useOutfit,
+  useOutfits,
+} from "@/features/outfits/hooks";
 import type { OutfitListRow } from "@/features/outfits/types";
 
 function OutfitsGridSkeleton() {
@@ -34,7 +39,10 @@ export function OutfitsView() {
   const [outfitToDelete, setOutfitToDelete] = useState<OutfitListRow | null>(
     null,
   );
+  const [outfitToWear, setOutfitToWear] = useState<OutfitListRow | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+
+  const wearDetailQuery = useOutfit(outfitToWear?.id ?? "");
 
   const outfits = outfitsQuery.data ?? [];
   const isInitialLoading = outfitsQuery.isPending && !outfitsQuery.data;
@@ -132,6 +140,7 @@ export function OutfitsView() {
               outfit={outfit}
               onDelete={setOutfitToDelete}
               onDuplicate={handleDuplicate}
+              onWear={setOutfitToWear}
               isDuplicating={duplicatingId === outfit.id}
             />
           ))}
@@ -144,6 +153,16 @@ export function OutfitsView() {
         onOpenChange={(open) => {
           if (!open) {
             setOutfitToDelete(null);
+          }
+        }}
+      />
+
+      <WearOutfitDialog
+        outfit={wearDetailQuery.data ?? null}
+        open={outfitToWear !== null && Boolean(wearDetailQuery.data)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setOutfitToWear(null);
           }
         }}
       />

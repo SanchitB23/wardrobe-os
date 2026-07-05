@@ -1,17 +1,11 @@
-import { OutfitBuilderPageShell } from "@/features/outfits/components/outfit-builder";
+import { OutfitDetailView } from "@/features/outfits/components/outfit-detail-view";
 
-type EditOutfitPageProps = {
+type OutfitDetailPageProps = {
   params: Promise<{ id: string }>;
 };
 
-export default async function EditOutfitPage({ params }: EditOutfitPageProps) {
+export default async function OutfitDetailPage({ params }: OutfitDetailPageProps) {
   const { id } = await params;
 
-  return (
-    <OutfitBuilderPageShell
-      title="Edit outfit"
-      description="Update slots, metadata, or replace items in this saved outfit."
-      outfitId={id}
-    />
-  );
+  return <OutfitDetailView outfitId={id} />;
 }

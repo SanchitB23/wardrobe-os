@@ -275,6 +275,7 @@ export async function createOutfit(
       occasion_id: input.occasion_id ?? null,
       season: seasonName,
       rating: input.rating ?? null,
+      notes: input.notes?.trim() || null,
     });
 
     if (insertResult.error || !insertResult.data) {
@@ -306,6 +307,7 @@ export async function updateOutfit(
       occasion_id: input.occasion_id ?? null,
       season: seasonName,
       rating: input.rating ?? null,
+      notes: input.notes?.trim() || null,
     });
 
     if (updateResult.error || !updateResult.data) {
@@ -357,6 +359,7 @@ export async function duplicateOutfit(
     occasion_id: source.occasion_id,
     season: source.season?.name ?? null,
     rating: source.rating,
+    notes: source.notes,
   });
 
   if (insertResult.error || !insertResult.data) {

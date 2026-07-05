@@ -203,6 +203,7 @@ export type SaveOutfitInput = {
   occasion_id?: string | null;
   season_id?: string | null;
   rating?: number | null;
+  notes?: string | null;
   items: { item_id: string; slot: OutfitSlot }[];
 };
 

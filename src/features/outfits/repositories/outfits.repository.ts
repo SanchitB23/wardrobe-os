@@ -265,6 +265,7 @@ export async function insertOutfitRow(input: {
   occasion_id: string | null;
   season: string | null;
   rating: number | null;
+  notes: string | null;
 }): Promise<{ data: OutfitRow | null; error: Error | null }> {
   const supabase = createClient();
   const { data, error } = await supabase
@@ -287,6 +288,7 @@ export async function updateOutfitRow(
     occasion_id: string | null;
     season: string | null;
     rating: number | null;
+    notes: string | null;
   },
 ): Promise<{ data: OutfitRow | null; error: Error | null }> {
   const supabase = createClient();

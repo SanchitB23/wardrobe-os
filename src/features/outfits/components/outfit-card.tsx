@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
+  CalendarDaysIcon,
   CopyIcon,
   LayersIcon,
   MoreHorizontalIcon,
@@ -33,6 +34,7 @@ type OutfitCardProps = {
   outfit: OutfitListRow;
   onDelete: (outfit: OutfitListRow) => void;
   onDuplicate: (outfit: OutfitListRow) => void;
+  onWear: (outfit: OutfitListRow) => void;
   isDuplicating?: boolean;
 };
 
@@ -40,6 +42,7 @@ export function OutfitCard({
   outfit,
   onDelete,
   onDuplicate,
+  onWear,
   isDuplicating = false,
 }: OutfitCardProps) {
   const router = useRouter();
@@ -75,7 +78,16 @@ export function OutfitCard({
               <MoreHorizontalIcon />
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => router.push(`/outfits/${outfit.id}`)}>
+              <DropdownMenuItem
+                disabled={outfit.itemCount === 0}
+                onClick={() => onWear(outfit)}
+              >
+                <CalendarDaysIcon />
+                Wear
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => router.push(`/outfits/${outfit.id}/edit`)}
+              >
                 <PencilIcon />
                 Edit
               </DropdownMenuItem>
@@ -132,7 +144,7 @@ export function OutfitCard({
         <Button
           variant="outline"
           className="w-full"
-          render={<Link href={`/outfits/${outfit.id}`} />}
+          render={<Link href={`/outfits/${outfit.id}/edit`} />}
         >
           <PencilIcon />
           Edit outfit
