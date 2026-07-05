@@ -1,9 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  ArrowLeftIcon,
   CheckCircle2Icon,
   DownloadIcon,
   FileJsonIcon,
@@ -12,6 +10,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
+import { PageHeader } from "@/features/layout";
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -522,27 +521,11 @@ export function InventoryImportView() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8 lg:px-8 lg:py-10">
-      <header className="flex flex-wrap items-start justify-between gap-4 border-b pb-6">
-        <div className="space-y-2">
-          <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" render={<Link href="/inventory" />}>
-              <ArrowLeftIcon />
-              Back to Inventory
-            </Button>
-            <Button variant="outline" size="sm" render={<Link href="/inventory/review" />}>
-              Import review
-            </Button>
-          </div>
-          <div>
-            <h1 className="text-3xl font-semibold tracking-tight">Bulk import</h1>
-            <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-              Import wardrobe items from CSV or JSON. JSON syncs by item code —
-              existing codes are updated and relations replaced; new codes are
-              inserted.
-            </p>
-          </div>
-        </div>
-      </header>
+      <PageHeader
+        className="border-b pb-6"
+        title="Bulk import"
+        description="Import wardrobe items from CSV or JSON. JSON syncs by item code — existing codes are updated and relations replaced; new codes are inserted."
+      />
 
       <Tabs value={mode} onValueChange={(value) => setMode(value as ImportMode)}>
         <TabsList>

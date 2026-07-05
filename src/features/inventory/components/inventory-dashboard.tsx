@@ -1,9 +1,9 @@
 "use client";
 
-import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
-import { LayoutGridIcon, PlusIcon, UploadIcon, CalendarDaysIcon, ReceiptIcon, LayersIcon } from "lucide-react";
+import { PlusIcon } from "lucide-react";
 
+import { PageHeader } from "@/features/layout";
 import { BulkActionsToolbar } from "@/features/inventory/components/bulk-actions-toolbar";
 import { CategoryFilterCards } from "@/features/inventory/components/category-filter-cards";
 import { DeleteItemDialog } from "@/features/inventory/components/delete-item-dialog";
@@ -192,15 +192,11 @@ export function InventoryDashboard() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-6 py-8 pb-28 lg:px-8 lg:py-10">
-      <header className="flex items-start justify-between gap-6 border-b pb-6">
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-muted-foreground">
-            Wardrobe OS
-          </p>
-          <div className="flex flex-wrap items-center gap-3">
-            <h1 className="text-3xl font-semibold tracking-tight">
-              Inventory
-            </h1>
+      <PageHeader
+        className="border-b pb-6"
+        title="Inventory"
+        badge={
+          <>
             {!isInitialLoading && !error && (
               <Badge variant="secondary" className="tabular-nums">
                 {items.length} shown
@@ -211,42 +207,16 @@ export function InventoryDashboard() {
                 Updating…
               </Badge>
             )}
-          </div>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Manage your wardrobe catalog, filter by attributes, and track your
-            best pieces.
-          </p>
-        </div>
-        <div className="flex shrink-0 gap-2">
-          <Button variant="outline" render={<Link href="/purchases" />}>
-            <ReceiptIcon />
-            Purchases
-          </Button>
-          <Button variant="outline" render={<Link href="/wear-logs" />}>
-            <CalendarDaysIcon />
-            Wear logs
-          </Button>
-          <Button variant="outline" render={<Link href="/outfits" />}>
-            <LayersIcon />
-            Outfits
-          </Button>
-          <Button variant="outline" render={<Link href="/dashboard" />}>
-            <LayoutGridIcon />
-            Dashboard
-          </Button>
-          <Button variant="outline" render={<Link href="/inventory/import" />}>
-            <UploadIcon />
-            Import
-          </Button>
-          <Button variant="outline" render={<Link href="/inventory/review" />}>
-            Review
-          </Button>
+          </>
+        }
+        description="Manage your wardrobe catalog, filter by attributes, and track your best pieces."
+        actions={
           <Button onClick={openCreateDialog}>
             <PlusIcon />
             Add item
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {isInitialLoading ? (
         <InventorySummaryCardsSkeleton />

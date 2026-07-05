@@ -9,9 +9,9 @@ import {
   RefreshCwIcon,
   SearchIcon,
   SearchXIcon,
-  ShirtIcon,
 } from "lucide-react";
 
+import { PageHeader } from "@/features/layout";
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -181,11 +181,11 @@ export function OutfitsView() {
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="space-y-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-semibold tracking-tight">Outfits</h1>
+    <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        title="Outfits"
+        badge={
+          <>
             {!isInitialLoading && !outfitsQuery.error ? (
               <Badge variant="secondary" className="tabular-nums">
                 {outfits.length} saved
@@ -196,33 +196,28 @@ export function OutfitsView() {
                 Updating…
               </Badge>
             ) : null}
-          </div>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Build complete looks from your wardrobe — assign tops, bottoms,
-            footwear, and optional layers.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="outline" render={<Link href="/inventory" />}>
-            <ShirtIcon />
-            Inventory
-          </Button>
-          <Button
-            variant="outline"
-            onClick={handleRetry}
-            disabled={outfitsQuery.isFetching}
-          >
-            <RefreshCwIcon
-              className={outfitsQuery.isFetching ? "animate-spin" : undefined}
-            />
-            Refresh
-          </Button>
-          <Button render={<Link href="/outfits/new" />}>
-            <PlusIcon />
-            Create outfit
-          </Button>
-        </div>
-      </header>
+          </>
+        }
+        description="Build complete looks from your wardrobe — assign tops, bottoms, footwear, and optional layers."
+        actions={
+          <>
+            <Button
+              variant="outline"
+              onClick={handleRetry}
+              disabled={outfitsQuery.isFetching}
+            >
+              <RefreshCwIcon
+                className={outfitsQuery.isFetching ? "animate-spin" : undefined}
+              />
+              Refresh
+            </Button>
+            <Button render={<Link href="/outfits/new" />}>
+              <PlusIcon />
+              Create outfit
+            </Button>
+          </>
+        }
+      />
 
       {!outfitsQuery.error ? (
         <div className="grid gap-3 rounded-xl border p-4 sm:grid-cols-2 lg:grid-cols-6">
@@ -436,6 +431,6 @@ export function OutfitsView() {
           }
         }}
       />
-    </main>
+    </div>
   );
 }

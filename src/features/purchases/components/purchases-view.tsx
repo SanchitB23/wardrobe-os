@@ -2,8 +2,9 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
-import { RefreshCwIcon, ShirtIcon } from "lucide-react";
+import { RefreshCwIcon } from "lucide-react";
 
+import { PageHeader } from "@/features/layout";
 import { SpendingChart } from "@/features/purchases/components/spending-chart";
 import {
   usePurchaseCharts,
@@ -121,28 +122,17 @@ export function PurchasesView() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight">
-              Purchase history
-            </h1>
-            {!purchasesQuery.isPending && !purchasesQuery.error ? (
-              <Badge variant="secondary" className="tabular-nums">
-                {purchases.length} purchases
-              </Badge>
-            ) : null}
-          </div>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Track spending, filter purchase records, and review cost patterns
-            across your wardrobe.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="outline" render={<Link href="/inventory" />}>
-            <ShirtIcon />
-            Inventory
-          </Button>
+      <PageHeader
+        title="Purchase history"
+        badge={
+          !purchasesQuery.isPending && !purchasesQuery.error ? (
+            <Badge variant="secondary" className="tabular-nums">
+              {purchases.length} purchases
+            </Badge>
+          ) : null
+        }
+        description="Track spending, filter purchase records, and review cost patterns across your wardrobe."
+        actions={
           <Button
             variant="outline"
             onClick={handleRetry}
@@ -157,8 +147,8 @@ export function PurchasesView() {
             />
             Refresh
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       <Card>
         <CardHeader>

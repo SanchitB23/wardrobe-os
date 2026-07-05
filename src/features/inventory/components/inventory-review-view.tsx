@@ -3,13 +3,13 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
-  ArrowLeftIcon,
   CopyIcon,
   PencilIcon,
   SearchIcon,
   Trash2Icon,
 } from "lucide-react";
 
+import { PageHeader } from "@/features/layout";
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
 import { ItemFormDialog } from "@/features/inventory/components/item-form-dialog";
 import { ReviewCleanupDialog } from "@/features/inventory/components/review-cleanup-dialog";
@@ -306,25 +306,11 @@ export function InventoryReviewView() {
 
   return (
     <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8 pb-28 lg:px-8 lg:py-10">
-      <header className="space-y-4 border-b pb-6">
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" render={<Link href="/inventory" />}>
-            <ArrowLeftIcon />
-            Inventory
-          </Button>
-          <Button variant="outline" size="sm" render={<Link href="/inventory/import" />}>
-            Import
-          </Button>
-        </div>
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Import review</h1>
-          <p className="mt-2 max-w-2xl text-sm text-muted-foreground">
-            Find duplicate or test items after import, fix metadata quickly, and
-            clean up in bulk. Default cleanup retires items; hard delete requires
-            explicit confirmation.
-          </p>
-        </div>
-      </header>
+      <PageHeader
+        className="border-b pb-6"
+        title="Import review"
+        description="Find duplicate or test items after import, fix metadata quickly, and clean up in bulk. Default cleanup retires items; hard delete requires explicit confirmation."
+      />
 
       <div className="grid gap-4 sm:grid-cols-3">
         <Card>

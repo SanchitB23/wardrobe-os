@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutGridIcon, RefreshCwIcon, ShirtIcon, CalendarDaysIcon, ReceiptIcon, LayersIcon } from "lucide-react";
+import { LayoutGridIcon, RefreshCwIcon } from "lucide-react";
 
 import {
   DashboardSummaryCards,
@@ -14,6 +14,7 @@ import { PurchaseAnalyticsPanel } from "@/features/dashboard/components/purchase
 import { useWardrobeDashboard } from "@/features/dashboard/hooks";
 import type { DashboardSummary } from "@/features/dashboard/types";
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
+import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -55,10 +56,10 @@ export function WardrobeDashboard() {
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div className="flex flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-3xl font-semibold tracking-tight">Dashboard</h1>
+      <PageHeader
+        title="Dashboard"
+        badge={
+          <>
             {!isInitialLoading && !error && analytics ? (
               <Badge variant="secondary" className="tabular-nums">
                 {analytics.summary.totalItems} items
@@ -69,29 +70,10 @@ export function WardrobeDashboard() {
                 Updating…
               </Badge>
             ) : null}
-          </div>
-          <p className="max-w-2xl text-sm text-muted-foreground">
-            Analytics across your wardrobe catalog — categories, brands, usage,
-            and health insights.
-          </p>
-        </div>
-        <div className="flex shrink-0 flex-wrap gap-2">
-          <Button variant="outline" render={<Link href="/purchases" />}>
-            <ReceiptIcon />
-            Purchases
-          </Button>
-          <Button variant="outline" render={<Link href="/wear-logs" />}>
-            <CalendarDaysIcon />
-            Wear logs
-          </Button>
-          <Button variant="outline" render={<Link href="/outfits" />}>
-            <LayersIcon />
-            Outfits
-          </Button>
-          <Button variant="outline" render={<Link href="/inventory" />}>
-            <ShirtIcon />
-            Inventory
-          </Button>
+          </>
+        }
+        description="Analytics across your wardrobe catalog — categories, brands, usage, and health insights."
+        actions={
           <Button
             variant="outline"
             onClick={handleRetry}
@@ -102,8 +84,8 @@ export function WardrobeDashboard() {
             />
             Refresh
           </Button>
-        </div>
-      </header>
+        }
+      />
 
       {error ? (
         <InventoryErrorState
