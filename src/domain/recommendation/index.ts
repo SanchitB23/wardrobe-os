@@ -6,3 +6,4 @@
 export * from "@/domain/recommendation/RecommendationContext";
 export * from "@/domain/recommendation/RecommendationContextBuilder";
 export * from "@/domain/recommendation/OutfitRecommendationEngine";
+export * from "@/domain/recommendation/UnifiedOutfitRecommendationEngine";
