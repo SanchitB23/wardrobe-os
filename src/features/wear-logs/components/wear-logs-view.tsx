@@ -75,6 +75,7 @@ export function WearLogsView() {
     subcategories: [],
     brands: [],
     colors: [],
+    seasons: [],
   };
   const occasions = occasionsQuery.data ?? [];
 

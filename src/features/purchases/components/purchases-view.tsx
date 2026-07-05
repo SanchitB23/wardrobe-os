@@ -93,6 +93,7 @@ export function PurchasesView() {
     subcategories: [],
     brands: [],
     colors: [],
+    seasons: [],
   };
 
   const selectedBrandName =

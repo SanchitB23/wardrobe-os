@@ -435,6 +435,7 @@ export function InventoryReviewView() {
             subcategories: [],
             brands: [],
             colors: [],
+            seasons: [],
           }
         }
         onOpenChange={(open) => {

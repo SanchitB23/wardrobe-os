@@ -23,6 +23,7 @@ import {
 import {
   countActiveFilters,
   formatEnumLabel,
+  FORMALITY_LEVELS,
   INVENTORY_SORT_OPTIONS,
   ITEM_STATUSES,
   type InventoryFilters,
@@ -291,6 +292,25 @@ export function InventoryFiltersPanel({
                 usage: usage as UsageFrequency | undefined,
               })
             }
+          />
+          <EnumFilterSelect
+            label="Formality"
+            value={filters.formality}
+            options={FORMALITY_LEVELS}
+            placeholder="All formality levels"
+            onChange={(formality) =>
+              onChange({
+                ...filters,
+                formality: formality as InventoryFilters["formality"],
+              })
+            }
+          />
+          <LookupFilterSelect
+            label="Season"
+            value={filters.seasonId}
+            options={lookups.seasons}
+            placeholder="All seasons"
+            onChange={(seasonId) => onChange({ ...filters, seasonId })}
           />
         </div>
 

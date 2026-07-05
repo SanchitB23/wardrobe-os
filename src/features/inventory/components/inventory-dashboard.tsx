@@ -241,6 +241,7 @@ export function InventoryDashboard() {
     subcategories: [],
     brands: [],
     colors: [],
+    seasons: [],
   };
 
   function handleRetry() {

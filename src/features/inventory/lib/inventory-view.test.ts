@@ -42,6 +42,12 @@ const LOOKUPS = {
   subcategories: [{ id: "s1", name: "T-Shirt" }] as LookupOption[],
   brands: [{ id: "b1", name: "Nike" }] as LookupOption[],
   colors: [{ id: "col1", name: "Black" }] as LookupOption[],
+  seasons: [] as LookupOption[],
+};
+
+const LOOKUPS_WITH_SEASON = {
+  ...LOOKUPS,
+  seasons: [{ id: "season-summer", name: "Summer" }] as LookupOption[],
 };
 
 describe("itemNeedsReview", () => {
@@ -180,5 +186,52 @@ describe("inventory URL params", () => {
     );
     expect(parsed.filters.categoryId).toBeUndefined();
     expect(parsed.filters.brandId).toBe("b1");
+  });
+
+  it("parses favorite=true into the favorites quick filter", () => {
+    const parsed = parseInventoryParams(
+      new URLSearchParams("favorite=true"),
+      LOOKUPS,
+    );
+    expect([...parsed.quickFilters]).toEqual(["favorites"]);
+  });
+
+  it("parses formality, season, and sort params", () => {
+    const parsed = parseInventoryParams(
+      new URLSearchParams(
+        "formality=business_casual&season=Summer&sort=rating_asc",
+      ),
+      LOOKUPS_WITH_SEASON,
+    );
+    expect(parsed.filters.formality).toBe("business_casual");
+    expect(parsed.filters.seasonId).toBe("season-summer");
+    expect(parsed.filters.sort).toEqual({ field: "rating", ascending: true });
+  });
+
+  it("round-trips formality and sort", () => {
+    const params = serializeInventoryParams(
+      {
+        filters: {
+          formality: "formal",
+          sort: { field: "rating", ascending: false },
+        },
+        quickFilters: new Set(),
+      },
+      LOOKUPS,
+    );
+    const parsed = new URLSearchParams(params);
+    expect(parsed.get("formality")).toBe("formal");
+    expect(parsed.get("sort")).toBe("rating_desc");
+  });
+
+  it("omits the default created_at sort from the URL", () => {
+    const params = serializeInventoryParams(
+      {
+        filters: { sort: { field: "created_at", ascending: false } },
+        quickFilters: new Set(),
+      },
+      LOOKUPS,
+    );
+    expect(new URLSearchParams(params).has("sort")).toBe(false);
   });
 });

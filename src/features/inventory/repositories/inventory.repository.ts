@@ -68,6 +68,10 @@ function applyInventoryFilters<T extends FilterableQuery>(
     next = next.eq("usage", filters.usage) as T;
   }
 
+  if (filters.formality) {
+    next = next.eq("formality", filters.formality) as T;
+  }
+
   if (filters.subcategoryId) {
     next = next.eq("subcategory_id", filters.subcategoryId) as T;
   }
@@ -154,9 +158,30 @@ export async function selectWardrobeItems(
 ): Promise<{ data: WardrobeItemRow[] | null; error: Error | null }> {
   const supabase = createClient();
 
+  // Season is a many-to-many relation; resolve matching item ids first.
+  let seasonItemIds: string[] | null = null;
+  if (filters.seasonId) {
+    const { data: seasonRows, error: seasonError } = await supabase
+      .from("item_seasons")
+      .select("item_id")
+      .eq("season_id", filters.seasonId);
+
+    if (seasonError) {
+      return { data: null, error: toError(seasonError.message) };
+    }
+
+    seasonItemIds = (seasonRows ?? []).map((row) => row.item_id);
+    if (seasonItemIds.length === 0) {
+      return { data: [], error: null };
+    }
+  }
+
   let query = supabase.from("wardrobe_items").select(WARDROBE_ITEM_SELECT);
 
   query = applyInventoryFilters(query, filters);
+  if (seasonItemIds) {
+    query = query.in("id", seasonItemIds);
+  }
   query = applySort(query, filters.sort ?? DEFAULT_INVENTORY_SORT);
 
   const { data, error } = await query;
@@ -210,22 +235,26 @@ export async function selectLookups(): Promise<{
 }> {
   const supabase = createClient();
 
-  const [categoriesResult, subcategoriesResult, brandsResult, colorsResult] =
-    await Promise.all([
-      supabase.from("categories").select("id, name").order("name"),
-      supabase
-        .from("subcategories")
-        .select("id, name, category_id")
-        .order("name"),
-      supabase.from("brands").select("id, name").order("name"),
-      supabase.from("colors").select("id, name").order("name"),
-    ]);
+  const [
+    categoriesResult,
+    subcategoriesResult,
+    brandsResult,
+    colorsResult,
+    seasonsResult,
+  ] = await Promise.all([
+    supabase.from("categories").select("id, name").order("name"),
+    supabase.from("subcategories").select("id, name, category_id").order("name"),
+    supabase.from("brands").select("id, name").order("name"),
+    supabase.from("colors").select("id, name").order("name"),
+    supabase.from("seasons").select("id, name").order("name"),
+  ]);
 
   const firstError =
     categoriesResult.error ??
     subcategoriesResult.error ??
     brandsResult.error ??
-    colorsResult.error;
+    colorsResult.error ??
+    seasonsResult.error;
 
   if (firstError) {
     return { data: null, error: toError(firstError.message) };
@@ -237,6 +266,7 @@ export async function selectLookups(): Promise<{
       subcategories: (subcategoriesResult.data ?? []) as SubcategoryOption[],
       brands: (brandsResult.data ?? []) as LookupOption[],
       colors: (colorsResult.data ?? []) as LookupOption[],
+      seasons: (seasonsResult.data ?? []) as LookupOption[],
     },
     error: null,
   };

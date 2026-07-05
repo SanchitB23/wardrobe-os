@@ -21,6 +21,7 @@ export type WardrobeLookups = {
   subcategories: SubcategoryOption[];
   brands: LookupOption[];
   colors: LookupOption[];
+  seasons: LookupOption[];
 };
 
 export type WardrobeImportLookups = WardrobeLookups & {
@@ -81,6 +82,8 @@ export type InventoryFilters = {
   primaryColorId?: string;
   status?: ItemStatus;
   usage?: UsageFrequency;
+  formality?: FormalityEnum;
+  seasonId?: string;
   sort?: InventorySort;
 };
 
@@ -736,6 +739,8 @@ export function countActiveFilters(filters: InventoryFilters): number {
   if (filters.primaryColorId) count += 1;
   if (filters.status) count += 1;
   if (filters.usage) count += 1;
+  if (filters.formality) count += 1;
+  if (filters.seasonId) count += 1;
   if (
     filters.sort &&
     (filters.sort.field !== DEFAULT_INVENTORY_SORT.field ||

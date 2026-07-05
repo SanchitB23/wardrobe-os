@@ -14,6 +14,7 @@ import { PurchaseAnalyticsPanel } from "@/features/dashboard/components/purchase
 import { useWardrobeDashboard } from "@/features/dashboard/hooks";
 import type { DashboardSummary } from "@/features/dashboard/types";
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
+import { buildInventoryHref as inventoryHref } from "@/features/inventory/lib/inventory-view";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -114,22 +115,26 @@ export function WardrobeDashboard() {
                   title="Category distribution"
                   description="Item count by category."
                   items={analytics?.categories ?? []}
+                  hrefFor={(row) => inventoryHref({ category: row.name })}
                 />
                 <DistributionPanel
                   title="Subcategory distribution"
                   description="Top subcategories by item count."
                   items={analytics?.subcategories ?? []}
+                  hrefFor={(row) => inventoryHref({ subcategory: row.name })}
                 />
                 <DistributionPanel
                   title="Brand distribution"
                   description="Top 10 brands in your wardrobe."
                   items={analytics?.brands ?? []}
+                  hrefFor={(row) => inventoryHref({ brand: row.name })}
                 />
                 <DistributionPanel
                   title="Color distribution"
                   description="Primary colors across items."
                   items={analytics?.colors ?? []}
                   showColorBadge
+                  hrefFor={(row) => inventoryHref({ color: row.name })}
                 />
               </section>
 
@@ -144,6 +149,9 @@ export function WardrobeDashboard() {
                       count: entry.count,
                     })) ?? []
                   }
+                  hrefFor={(row) =>
+                    row.id ? inventoryHref({ usage: row.id }) : "/inventory"
+                  }
                 />
                 <DistributionPanel
                   title="Formality distribution"
@@ -155,12 +163,16 @@ export function WardrobeDashboard() {
                       count: entry.count,
                     })) ?? []
                   }
+                  hrefFor={(row) =>
+                    row.id ? inventoryHref({ formality: row.id }) : "/inventory"
+                  }
                 />
                 <DistributionPanel
                   title="Season distribution"
                   description="Items tagged per season."
                   items={analytics?.seasons ?? []}
                   emptyMessage="No season tags yet."
+                  hrefFor={(row) => inventoryHref({ season: row.name })}
                 />
               </section>
 

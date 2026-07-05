@@ -1,11 +1,20 @@
 import type {
+  FormalityEnum,
   InventoryFilters,
+  InventorySortField,
   ItemStatus,
   LookupOption,
   UsageFrequency,
   WardrobeItemRow,
   WardrobeLookups,
 } from "@/types/wardrobe";
+
+const SORT_FIELDS: InventorySortField[] = [
+  "rating",
+  "name",
+  "category",
+  "created_at",
+];
 
 export type QuickFilterKey = "favorites" | "hero" | "rare" | "needs_review";
 
@@ -153,6 +162,12 @@ const QUICK_FILTER_KEYS = new Set<QuickFilterKey>(
   QUICK_FILTERS.map((entry) => entry.key),
 );
 
+/** Builds an /inventory href from raw query params (dashboard click-through). */
+export function buildInventoryHref(params: Record<string, string>): string {
+  const search = new URLSearchParams(params).toString();
+  return search ? `/inventory?${search}` : "/inventory";
+}
+
 /** Serializes the active view selection into a shareable query string. */
 export function serializeInventoryParams(
   selection: InventoryViewSelection,
@@ -175,7 +190,23 @@ export function serializeInventoryParams(
 
   if (filters.status) params.set("status", filters.status);
   if (filters.usage) params.set("usage", filters.usage);
+  if (filters.formality) params.set("formality", filters.formality);
+
+  const season = nameFor(filters.seasonId, lookups.seasons);
+  if (season) params.set("season", season);
+
   if (filters.search?.trim()) params.set("q", filters.search.trim());
+
+  // Only serialize a non-default sort to keep URLs clean.
+  if (
+    filters.sort &&
+    !(filters.sort.field === "created_at" && !filters.sort.ascending)
+  ) {
+    params.set(
+      "sort",
+      `${filters.sort.field}_${filters.sort.ascending ? "asc" : "desc"}`,
+    );
+  }
 
   if (quickFilters.size > 0) {
     params.set("quick", [...quickFilters].join(","));
@@ -209,8 +240,27 @@ export function parseInventoryParams(
   const usage = params.get("usage");
   if (usage) filters.usage = usage as UsageFrequency;
 
+  const formality = params.get("formality");
+  if (formality) filters.formality = formality as FormalityEnum;
+
+  const seasonId = idFor(params.get("season"), lookups.seasons);
+  if (seasonId) filters.seasonId = seasonId;
+
   const search = params.get("q");
   if (search) filters.search = search;
+
+  const sort = params.get("sort");
+  if (sort) {
+    const separator = sort.lastIndexOf("_");
+    const field = sort.slice(0, separator);
+    const direction = sort.slice(separator + 1);
+    if (SORT_FIELDS.includes(field as InventorySortField)) {
+      filters.sort = {
+        field: field as InventorySortField,
+        ascending: direction === "asc",
+      };
+    }
+  }
 
   const quickFilters = new Set<QuickFilterKey>();
   const quickParam = params.get("quick");
@@ -221,6 +271,10 @@ export function parseInventoryParams(
         quickFilters.add(key);
       }
     }
+  }
+  // `favorite=true` is sugar for the favorites quick filter.
+  if (params.get("favorite") === "true") {
+    quickFilters.add("favorites");
   }
 
   return { filters, quickFilters };
