@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { Toaster } from "sonner";
+import { ThemeProvider } from "next-themes";
 
 import { CommandPalette } from "@/features/command-palette";
+import { ThemedToaster } from "@/features/layout/components/themed-toaster";
 
 function makeQueryClient() {
   return new QueryClient({
@@ -33,10 +34,17 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   const [queryClient] = useState(getQueryClient);
 
   return (
-    <QueryClientProvider client={queryClient}>
-      {children}
-      <CommandPalette />
-      <Toaster richColors closeButton position="top-right" />
-    </QueryClientProvider>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+    >
+      <QueryClientProvider client={queryClient}>
+        {children}
+        <CommandPalette />
+        <ThemedToaster />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
 }

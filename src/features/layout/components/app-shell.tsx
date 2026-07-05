@@ -16,6 +16,7 @@ import {
   NAV_SECTIONS,
   resolveActiveHref,
 } from "@/features/layout/nav-config";
+import { ThemeToggle } from "@/features/layout/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 function BrandMark() {
@@ -147,7 +148,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <BrandMark />
           </div>
 
-          <div className="ml-auto">
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <GlobalActions />
           </div>
         </header>
