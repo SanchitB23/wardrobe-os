@@ -3,6 +3,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import {
+  fetchInsightReport,
   fetchUsageAnalytics,
   fetchWardrobeHealth,
 } from "@/features/analytics/services/analytics.service";
@@ -20,6 +21,13 @@ export function useUsageAnalytics() {
   return useQuery({
     queryKey: wardrobeKeys.usageAnalytics(),
     queryFn: async () => unwrapData(await fetchUsageAnalytics()),
+  });
+}
+
+export function useInsightReport() {
+  return useQuery({
+    queryKey: wardrobeKeys.insights(),
+    queryFn: async () => unwrapData(await fetchInsightReport()),
   });
 }
 

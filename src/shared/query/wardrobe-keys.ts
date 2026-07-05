@@ -22,6 +22,7 @@ export const wardrobeKeys = {
   dashboard: () => [...wardrobeKeys.all, "dashboard"] as const,
   wardrobeHealth: () => [...wardrobeKeys.all, "wardrobe-health"] as const,
   usageAnalytics: () => [...wardrobeKeys.all, "usage-analytics"] as const,
+  insights: () => [...wardrobeKeys.all, "insights"] as const,
   wearLogs: (filters: WearLogFilters) =>
     [...wardrobeKeys.all, "wear-logs", filters] as const,
   itemWearSummary: (itemId: string) =>

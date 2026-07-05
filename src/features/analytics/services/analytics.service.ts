@@ -11,10 +11,16 @@ import {
   type UsageItem,
 } from "@/domain/analytics/UsageAnalyticsEngine";
 import {
+  generateInsights,
+  type InsightReport,
+} from "@/domain/analytics/InsightEngine";
+import {
   selectActiveHealthItems,
   selectUsageAnalyticsData,
   type HealthItemRow,
 } from "@/features/analytics/repositories/analytics.repository";
+import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
+import { toError } from "@/shared/utils/data-result";
 
 export type WardrobeHealthReport = {
   health: WardrobeHealth;
@@ -116,4 +122,41 @@ export async function fetchUsageAnalytics(): Promise<{
     }),
     error: null,
   };
+}
+
+/**
+ * Orchestrates the Insight Center: runs the health, usage, and purchase
+ * analytics in parallel, then feeds them to the pure {@link generateInsights}
+ * engine. Purchase analytics is best-effort — if it fails the report is still
+ * produced without cost-per-wear insights.
+ */
+export async function fetchInsightReport(): Promise<{
+  data: InsightReport | null;
+  error: Error | null;
+}> {
+  const [healthResult, usageResult, purchaseResult] = await Promise.all([
+    fetchWardrobeHealth(),
+    fetchUsageAnalytics(),
+    fetchPurchaseAnalytics(),
+  ]);
+
+  if (healthResult.error) return { data: null, error: healthResult.error };
+  if (usageResult.error) return { data: null, error: usageResult.error };
+  if (!healthResult.data || !usageResult.data) {
+    return { data: null, error: toError("Analytics data unavailable.") };
+  }
+
+  const report = generateInsights(
+    {
+      wardrobeHealth: healthResult.data.health,
+      usageAnalytics: usageResult.data,
+      purchaseAnalytics:
+        purchaseResult.error || !purchaseResult.data
+          ? undefined
+          : purchaseResult.data,
+    },
+    { generatedAt: new Date().toISOString() },
+  );
+
+  return { data: report, error: null };
 }
