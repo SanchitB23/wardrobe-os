@@ -10,6 +10,7 @@ import {
   SettingsIcon,
   ShirtIcon,
   UploadIcon,
+  WandSparklesIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -45,6 +46,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { label: "Inventory", href: "/inventory", icon: ShirtIcon, matchNested: true },
       { label: "Outfits", href: "/outfits", icon: LayersIcon, matchNested: true },
+      { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
       { label: "Purchases", href: "/purchases", icon: ReceiptIcon },
       { label: "Wear Logs", href: "/wear-logs", icon: CalendarDaysIcon },
     ],

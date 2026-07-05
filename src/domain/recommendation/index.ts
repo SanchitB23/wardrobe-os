@@ -5,3 +5,4 @@
 
 export * from "@/domain/recommendation/RecommendationContext";
 export * from "@/domain/recommendation/RecommendationContextBuilder";
+export * from "@/domain/recommendation/OutfitRecommendationEngine";
