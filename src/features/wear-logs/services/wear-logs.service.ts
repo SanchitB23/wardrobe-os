@@ -1,10 +1,13 @@
 import * as wearLogsRepository from "@/features/wear-logs/repositories/wear-logs.repository";
+import {
+  buildItemWearSummary,
+  buildWearLogAnalytics,
+} from "@/domain/wardrobe/wear-analytics";
 import { toError } from "@/shared/utils/data-result";
 import type {
   CreateWearLogInput,
   ItemWearSummary,
   LookupOption,
-  WearAnalyticsItem,
   WearLogAnalytics,
   WearLogFilters,
   WearLogListRow,
@@ -201,41 +204,14 @@ export async function fetchItemWearSummary(
     return { data: null, error: enriched.error };
   }
 
-  const comfortRated = logs.filter((log) => log.comfort_rating !== null);
-  const comfortSum = comfortRated.reduce(
-    (sum, log) => sum + Number(log.comfort_rating),
-    0,
-  );
+  const summary = buildItemWearSummary(logs);
 
   return {
     data: {
-      totalWears: logs.length,
-      lastWornOn: logs[0]?.worn_on ?? null,
-      averageComfortRating:
-        comfortRated.length > 0
-          ? Math.round((comfortSum / comfortRated.length) * 10) / 10
-          : null,
+      ...summary,
       recentLogs: enriched.data ?? [],
     },
     error: null,
-  };
-}
-
-function toWearAnalyticsItem(
-  item: ItemSummaryRow,
-  categoryNameById: Map<string, string>,
-  wearCountByItem: Map<string, number>,
-  lastWornByItem: Map<string, string>,
-): WearAnalyticsItem {
-  return {
-    id: item.id,
-    code: item.code,
-    name: item.name,
-    category: item.category_id
-      ? (categoryNameById.get(item.category_id) ?? null)
-      : null,
-    wearCount: wearCountByItem.get(item.id) ?? 0,
-    lastWornOn: lastWornByItem.get(item.id) ?? null,
   };
 }
 
@@ -248,78 +224,8 @@ export async function fetchWearLogAnalytics(
     return { data: null, error: logsResult.error };
   }
 
-  const wearCountByItem = new Map<string, number>();
-  const lastWornByItem = new Map<string, string>();
-
-  for (const log of logsResult.data ?? []) {
-    wearCountByItem.set(
-      log.item_id,
-      (wearCountByItem.get(log.item_id) ?? 0) + 1,
-    );
-
-    const existingLastWorn = lastWornByItem.get(log.item_id);
-    if (!existingLastWorn || log.worn_on > existingLastWorn) {
-      lastWornByItem.set(log.item_id, log.worn_on);
-    }
-  }
-
-  const activeItems = items.filter((item) => item.status === "active");
-  const toAnalytics = (item: ItemSummaryRow) =>
-    toWearAnalyticsItem(
-      item,
-      categoryNameById,
-      wearCountByItem,
-      lastWornByItem,
-    );
-
-  const mostWorn = [...items]
-    .map(toAnalytics)
-    .filter((item) => item.wearCount > 0)
-    .sort((left, right) => {
-      if (right.wearCount !== left.wearCount) {
-        return right.wearCount - left.wearCount;
-      }
-      return left.name.localeCompare(right.name);
-    })
-    .slice(0, 5);
-
-  const leastWornActive = activeItems
-    .map(toAnalytics)
-    .filter((item) => item.wearCount > 0)
-    .sort((left, right) => {
-      if (left.wearCount !== right.wearCount) {
-        return left.wearCount - right.wearCount;
-      }
-      return left.name.localeCompare(right.name);
-    })
-    .slice(0, 5);
-
-  const notWornYet = activeItems
-    .filter((item) => (wearCountByItem.get(item.id) ?? 0) === 0)
-    .map(toAnalytics)
-    .sort((left, right) => left.name.localeCompare(right.name))
-    .slice(0, 8);
-
-  const recentlyWorn = [...items]
-    .map(toAnalytics)
-    .filter((item) => item.lastWornOn)
-    .sort((left, right) => {
-      const leftDate = left.lastWornOn ?? "";
-      const rightDate = right.lastWornOn ?? "";
-      if (rightDate !== leftDate) {
-        return rightDate.localeCompare(leftDate);
-      }
-      return left.name.localeCompare(right.name);
-    })
-    .slice(0, 5);
-
   return {
-    data: {
-      mostWorn,
-      leastWornActive,
-      notWornYet,
-      recentlyWorn,
-    },
+    data: buildWearLogAnalytics(items, categoryNameById, logsResult.data ?? []),
     error: null,
   };
 }

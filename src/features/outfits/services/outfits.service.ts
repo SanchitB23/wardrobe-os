@@ -18,8 +18,8 @@ import {
   type PickerItemRow,
 } from "@/features/outfits/repositories/outfits.repository";
 import { fetchPrimaryImageUrlsForItems } from "@/features/inventory/services/images.service";
+import { categoryMatchesOutfitSlot } from "@/domain/outfit/slot-matching";
 import {
-  categoryMatchesOutfitSlot,
   OUTFIT_SLOT_DEFINITIONS,
   type LookupOption,
   type OutfitDetail,

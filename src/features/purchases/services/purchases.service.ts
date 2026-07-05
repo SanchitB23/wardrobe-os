@@ -18,7 +18,6 @@ import type {
   LookupOption,
   MonthlySpendingItem,
   PurchaseAnalytics,
-  PurchaseAnalyticsItem,
   PurchaseFilters,
   PurchaseListRow,
   PurchaseRow,
@@ -26,16 +25,14 @@ import type {
   UpdatePurchaseInput,
 } from "@/features/purchases/types";
 import {
+  aggregateWearCounts,
   calculateCostPerWear,
-} from "@/types/wardrobe";
-
-type ItemLookupRow = {
-  id: string;
-  code: string;
-  name: string;
-  brand_id: string | null;
-  category_id: string | null;
-};
+} from "@/domain/wardrobe/cost-per-wear";
+import {
+  buildMonthlySpendingTimeline,
+  buildPurchaseAnalytics,
+  isReturnedPurchaseStatus,
+} from "@/domain/wardrobe/purchase-analytics";
 
 export function formatPurchaseDateInput(date: Date = new Date()): string {
   const year = date.getFullYear();
@@ -55,10 +52,6 @@ export function formatPurchaseDisplayDate(value: string): string {
   );
 }
 
-function isReturnedStatus(status: string | null | undefined): boolean {
-  return status === "returned";
-}
-
 async function fetchWearCountsByItem(): Promise<{
   data: Map<string, number> | null;
   error: Error | null;
@@ -69,12 +62,10 @@ async function fetchWearCountsByItem(): Promise<{
     return { data: null, error: result.error };
   }
 
-  const counts = new Map<string, number>();
-  for (const row of result.data ?? []) {
-    counts.set(row.item_id, (counts.get(row.item_id) ?? 0) + 1);
-  }
-
-  return { data: counts, error: null };
+  return {
+    data: aggregateWearCounts(result.data ?? []),
+    error: null,
+  };
 }
 
 async function resolveFilteredItemIds(
@@ -271,40 +262,6 @@ function formatMonthLabel(monthKey: string): string {
   );
 }
 
-function sumAmountsByKey(
-  purchases: PurchaseRow[],
-  itemById: Map<string, ItemLookupRow>,
-  key: "brand_id" | "category_id",
-  nameById: Map<string, string>,
-  nullLabel: string,
-): SpendingAmountItem[] {
-  const totals = new Map<string, number>();
-
-  for (const purchase of purchases) {
-    if (isReturnedStatus(purchase.status)) {
-      continue;
-    }
-
-    const item = itemById.get(purchase.item_id);
-    const rawKey = item?.[key] ?? null;
-    const mapKey = rawKey ?? "__none__";
-    totals.set(mapKey, (totals.get(mapKey) ?? 0) + Number(purchase.price));
-  }
-
-  return [...totals.entries()]
-    .map(([id, amount]) => ({
-      id: id === "__none__" ? null : id,
-      name: id === "__none__" ? nullLabel : (nameById.get(id) ?? "Unknown"),
-      amount: Math.round(amount * 100) / 100,
-    }))
-    .sort((left, right) => {
-      if (right.amount !== left.amount) {
-        return right.amount - left.amount;
-      }
-      return left.name.localeCompare(right.name);
-    });
-}
-
 export async function fetchPurchaseAnalytics(): Promise<{
   data: PurchaseAnalytics | null;
   error: Error | null;
@@ -329,10 +286,6 @@ export async function fetchPurchaseAnalytics(): Promise<{
     return { data: null, error: firstError };
   }
 
-  const wearCounts = wearCountsResult.data ?? new Map<string, number>();
-
-  const purchases = purchasesResult.data ?? [];
-  const items = itemsResult.data ?? [];
   const brandMap = new Map(
     ((brandsResult.data ?? []) as LookupOption[]).map((brand) => [brand.id, brand.name]),
   );
@@ -342,96 +295,16 @@ export async function fetchPurchaseAnalytics(): Promise<{
       category.name,
     ]),
   );
-  const itemById = new Map(items.map((item) => [item.id, item]));
-
-  const activePurchases = purchases.filter(
-    (purchase) => !isReturnedStatus(purchase.status),
-  );
-
-  const totalWardrobeValue = activePurchases.reduce(
-    (sum, purchase) => sum + Number(purchase.price),
-    0,
-  );
-
-  const totalWears = [...wearCounts.values()].reduce((sum, count) => sum + count, 0);
-  const averageCostPerWear =
-    totalWears > 0
-      ? Math.round((totalWardrobeValue / totalWears) * 100) / 100
-      : null;
-
-  const analyticsItems: PurchaseAnalyticsItem[] = activePurchases
-    .map((purchase) => {
-      const item = itemById.get(purchase.item_id);
-      if (!item) {
-        return null;
-      }
-
-      const wearCount = wearCounts.get(item.id) ?? 0;
-      return {
-        id: item.id,
-        code: item.code,
-        name: item.name,
-        price: Number(purchase.price),
-        brand: item.brand_id ? (brandMap.get(item.brand_id) ?? null) : null,
-        category: item.category_id
-          ? (categoryMap.get(item.category_id) ?? null)
-          : null,
-        wearCount,
-        costPerWear: calculateCostPerWear(Number(purchase.price), wearCount),
-      };
-    })
-    .filter((item): item is PurchaseAnalyticsItem => item !== null);
-
-  const sortedByPrice = [...analyticsItems].sort((left, right) => {
-    if (right.price !== left.price) {
-      return right.price - left.price;
-    }
-    return left.name.localeCompare(right.name);
-  });
-
-  const monthlyTotals = new Map<string, number>();
-  for (const purchase of activePurchases) {
-    const monthKey = purchase.purchase_date.slice(0, 7);
-    monthlyTotals.set(
-      monthKey,
-      (monthlyTotals.get(monthKey) ?? 0) + Number(purchase.price),
-    );
-  }
-
-  const monthlyTimeline: MonthlySpendingItem[] = [...monthlyTotals.entries()]
-    .map(([month, amount]) => ({
-      month,
-      label: formatMonthLabel(month),
-      amount: Math.round(amount * 100) / 100,
-    }))
-    .sort((left, right) => left.month.localeCompare(right.month));
-
-  const spendingByBrand = sumAmountsByKey(
-    activePurchases,
-    itemById,
-    "brand_id",
-    brandMap,
-    "Unknown brand",
-  );
-  const spendingByCategory = sumAmountsByKey(
-    activePurchases,
-    itemById,
-    "category_id",
-    categoryMap,
-    "Uncategorized",
-  );
 
   return {
-    data: {
-      totalWardrobeValue: Math.round(totalWardrobeValue * 100) / 100,
-      averageCostPerWear,
-      mostExpensiveItem: sortedByPrice[0] ?? null,
-      cheapestItem: sortedByPrice[sortedByPrice.length - 1] ?? null,
-      topBrandsByValue: spendingByBrand.slice(0, 10),
-      spendingByBrand,
-      spendingByCategory,
-      monthlyTimeline,
-    },
+    data: buildPurchaseAnalytics({
+      purchases: purchasesResult.data ?? [],
+      items: itemsResult.data ?? [],
+      wearCounts: wearCountsResult.data ?? new Map(),
+      brandNames: brandMap,
+      categoryNames: categoryMap,
+      formatMonthLabel,
+    }),
     error: null,
   };
 }
@@ -452,11 +325,9 @@ export async function fetchPurchaseChartData(
     return { data: null, error: purchasesResult.error };
   }
 
-  const purchases = purchasesResult.data ?? [];
-  const activePurchases = purchases.filter(
-    (purchase) => !isReturnedStatus(purchase.status),
+  const activePurchases = (purchasesResult.data ?? []).filter(
+    (purchase) => !isReturnedPurchaseStatus(purchase.status),
   );
-
   const monthlyTotals = new Map<string, number>();
   const brandTotals = new Map<string, SpendingAmountItem>();
   const categoryTotals = new Map<string, SpendingAmountItem>();
@@ -494,13 +365,7 @@ export async function fetchPurchaseChartData(
 
   return {
     data: {
-      monthly: [...monthlyTotals.entries()]
-        .map(([month, amount]) => ({
-          month,
-          label: formatMonthLabel(month),
-          amount: Math.round(amount * 100) / 100,
-        }))
-        .sort((left, right) => left.month.localeCompare(right.month)),
+      monthly: buildMonthlySpendingTimeline(activePurchases, formatMonthLabel),
       byBrand: [...brandTotals.values()].sort((left, right) => {
         if (right.amount !== left.amount) {
           return right.amount - left.amount;
@@ -517,3 +382,5 @@ export async function fetchPurchaseChartData(
     error: null,
   };
 }
+
+export { isReturnedPurchaseStatus };

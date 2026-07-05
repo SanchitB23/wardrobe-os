@@ -1,3 +1,4 @@
+import { buildInventorySummary } from "@/domain/wardrobe/inventory-summary";
 import type { CategoryCountFilters } from "@/shared/query/wardrobe-keys";
 import {
   bulkInsertWardrobeItems,
@@ -53,22 +54,9 @@ export async function fetchInventorySummary(): Promise<{
   }
 
   const rows = result.data ?? [];
-  const ratedItems = rows.filter((row) => row.rating !== null);
-  const ratingSum = ratedItems.reduce(
-    (sum, row) => sum + Number(row.rating),
-    0,
-  );
 
   return {
-    data: {
-      totalItems: rows.length,
-      activeItems: rows.filter((row) => row.status === "active").length,
-      heroPieces: rows.filter((row) => row.usage === "hero").length,
-      averageRating:
-        ratedItems.length > 0
-          ? Math.round((ratingSum / ratedItems.length) * 10) / 10
-          : null,
-    },
+    data: buildInventorySummary(rows),
     error: null,
   };
 }
