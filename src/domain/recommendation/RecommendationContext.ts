@@ -10,6 +10,7 @@
 
 import type { WardrobeHealth } from "@/domain/analytics/WardrobeHealthEngine";
 import type { UsageAnalytics } from "@/domain/analytics/UsageAnalyticsEngine";
+import type { StyleDNA } from "@/domain/style-dna";
 import type {
   FormalityEnum,
   ItemStatus,
@@ -38,6 +39,8 @@ export interface WardrobeItemSnapshot {
   seasons: string[];
   styles: string[];
   tags: string[];
+  /** Derived style profile — the lens downstream engines score against. */
+  styleDNA: StyleDNA;
 }
 
 export interface WardrobeSnapshot {

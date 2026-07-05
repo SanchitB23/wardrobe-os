@@ -10,6 +10,7 @@
  */
 
 import { colorFamilyFor } from "@/domain/analytics/WardrobeHealthEngine";
+import { deriveStyleDNA } from "@/domain/style-dna";
 import type { WardrobeHealth } from "@/domain/analytics/WardrobeHealthEngine";
 import type { UsageAnalytics } from "@/domain/analytics/UsageAnalyticsEngine";
 import type {
@@ -128,13 +129,14 @@ function wholeDaysBetween(from: Date, to: Date): number {
 }
 
 function toItemSnapshot(input: WardrobeItemInput): WardrobeItemSnapshot {
-  return {
+  const colorFamily = colorFamilyFor(input.color ?? null);
+  const base = {
     id: input.id,
     name: input.name,
     category: input.category ?? null,
     subcategory: input.subcategory ?? null,
     color: input.color ?? null,
-    colorFamily: colorFamilyFor(input.color ?? null),
+    colorFamily,
     brand: input.brand ?? null,
     formality: input.formality ?? null,
     usage: input.usage ?? null,
@@ -144,6 +146,7 @@ function toItemSnapshot(input: WardrobeItemInput): WardrobeItemSnapshot {
     styles: [...(input.styles ?? [])],
     tags: [...(input.tags ?? [])],
   };
+  return { ...base, styleDNA: deriveStyleDNA({ ...base, colorFamily }) };
 }
 
 // ---------------------------------------------------------------------------
