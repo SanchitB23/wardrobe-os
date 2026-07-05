@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   AlertTriangleIcon,
   ArrowLeftIcon,
+  BugIcon,
   CheckCircleIcon,
   LightbulbIcon,
   RefreshCwIcon,
@@ -18,6 +19,7 @@ import { PageHeader } from "@/features/layout";
 import {
   useOutfitRecommendations,
   type ItemPreview,
+  type RecommendationContextSummary,
   type RecommendationFilters,
 } from "@/features/recommendations/hooks";
 import { Badge } from "@/components/ui/badge";
@@ -35,6 +37,7 @@ import { cn } from "@/lib/utils";
 import type {
   CommuteMode,
   OutfitRecommendation,
+  RejectedOutfit,
   SeasonLabel,
   WeatherCondition,
 } from "@/domain/recommendation";
@@ -187,12 +190,51 @@ function ScoreConfidence({ rec }: { rec: OutfitRecommendation }) {
   );
 }
 
+function DebugBreakdown({ rec }: { rec: OutfitRecommendation }) {
+  return (
+    <div className="rounded-lg border border-dashed bg-muted/40 p-3 text-xs">
+      <p className="mb-1.5 flex items-center gap-1.5 font-medium text-muted-foreground">
+        <BugIcon className="size-3.5" />
+        Score breakdown · {rec.metadata.source} · {Math.round(rec.confidence * 100)}% confidence
+      </p>
+      <ul className="space-y-0.5 font-mono">
+        <li className="flex justify-between gap-3">
+          <span>Base outfit score</span>
+          <span className="tabular-nums">{rec.debug.baseScore.toFixed(1)}</span>
+        </li>
+        {rec.debug.adjustments.map((adj, index) => (
+          <li key={index} className="flex justify-between gap-3">
+            <span className="truncate">{adj.label}</span>
+            <span
+              className={cn(
+                "shrink-0 tabular-nums",
+                adj.delta >= 0
+                  ? "text-emerald-600 dark:text-emerald-400"
+                  : "text-destructive",
+              )}
+            >
+              {adj.delta >= 0 ? "+" : ""}
+              {adj.delta.toFixed(1)}
+            </span>
+          </li>
+        ))}
+        <li className="mt-1 flex justify-between gap-3 border-t pt-1 font-semibold">
+          <span>Final score</span>
+          <span className="tabular-nums">{rec.score.toFixed(1)}</span>
+        </li>
+      </ul>
+    </div>
+  );
+}
+
 function HeroCard({
   rec,
   previews,
+  debug,
 }: {
   rec: OutfitRecommendation;
   previews: Record<string, ItemPreview>;
+  debug: boolean;
 }) {
   return (
     <Card className="border-foreground/15 bg-gradient-to-br from-muted/40 to-background">
@@ -217,6 +259,7 @@ function HeroCard({
           <MetaList title="Tradeoffs" icon={AlertTriangleIcon} items={rec.tradeoffs} tone="text-amber-600 dark:text-amber-400" />
           <MetaList title="Suggestions" icon={LightbulbIcon} items={rec.suggestions} tone="text-blue-600 dark:text-blue-400" />
         </div>
+        {debug ? <DebugBreakdown rec={rec} /> : null}
         <ActionButtons rec={rec} />
       </CardContent>
     </Card>
@@ -226,9 +269,11 @@ function HeroCard({
 function RecommendationCard({
   rec,
   previews,
+  debug,
 }: {
   rec: OutfitRecommendation;
   previews: Record<string, ItemPreview>;
+  debug: boolean;
 }) {
   return (
     <Card className="flex h-full flex-col">
@@ -245,14 +290,105 @@ function RecommendationCard({
       <CardContent className="flex flex-1 flex-col gap-4">
         <OutfitPreview recommendation={rec} previews={previews} />
         <div className="space-y-3">
-          <MetaList title="Strengths" icon={CheckCircleIcon} items={rec.strengths.slice(0, 3)} tone="text-emerald-600 dark:text-emerald-400" />
-          <MetaList title="Tradeoffs" icon={AlertTriangleIcon} items={rec.tradeoffs.slice(0, 2)} tone="text-amber-600 dark:text-amber-400" />
+          <MetaList title="Strengths" icon={CheckCircleIcon} items={rec.strengths.slice(0, debug ? 99 : 3)} tone="text-emerald-600 dark:text-emerald-400" />
+          <MetaList title="Tradeoffs" icon={AlertTriangleIcon} items={rec.tradeoffs.slice(0, debug ? 99 : 2)} tone="text-amber-600 dark:text-amber-400" />
+          {debug ? (
+            <MetaList title="Suggestions" icon={LightbulbIcon} items={rec.suggestions} tone="text-blue-600 dark:text-blue-400" />
+          ) : null}
         </div>
+        {debug ? <DebugBreakdown rec={rec} /> : null}
         <div className="mt-auto pt-1">
           <ActionButtons rec={rec} />
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function ContextPanel({ context }: { context: RecommendationContextSummary }) {
+  const rows: [string, string][] = [
+    ["Occasion", context.occasion ?? "Any"],
+    ["Season", context.season],
+    ["Weather", context.weather],
+    ["Commute", context.commute],
+    ["Favorites only", context.favoritesOnly ? "Yes" : "No"],
+  ];
+  return (
+    <Card className="border-dashed">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <BugIcon className="size-4 text-muted-foreground" />
+          <CardTitle className="text-base">Selected context</CardTitle>
+        </div>
+        <CardDescription>What the engine scored recommendations against.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {rows.map(([label, value]) => (
+          <Badge key={label} variant="secondary" className="capitalize">
+            {label}: {value}
+          </Badge>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RejectedOutfitsSection({
+  rejected,
+  context,
+}: {
+  rejected: RejectedOutfit[];
+  context: RecommendationContextSummary;
+}) {
+  return (
+    <section className="space-y-3">
+      <div className="flex items-center gap-2">
+        <AlertTriangleIcon className="size-4 text-destructive" />
+        <h2 className="text-lg font-semibold">Rejected outfits</h2>
+        <Badge variant="secondary" className="tabular-nums">
+          {rejected.length}
+        </Badge>
+      </div>
+      {rejected.length === 0 ? (
+        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
+          No outfits were rejected for the {context.occasion ?? "current"} context.
+        </p>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          {rejected.map((entry, index) => (
+            <Card key={entry.outfitId ?? `rejected-${index}`} className="border-destructive/30">
+              <CardHeader className="pb-3">
+                <div className="flex items-center gap-2">
+                  <CardTitle className="text-base">{entry.name}</CardTitle>
+                  <Badge variant="outline" className="ml-auto capitalize">
+                    {entry.source === "saved_outfit" ? "Saved" : "Combo"}
+                  </Badge>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <ul className="space-y-0.5">
+                  {entry.reasons.map((reason, reasonIndex) => (
+                    <li key={reasonIndex} className="flex gap-2 text-destructive">
+                      <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
+                      <span>{reason}</span>
+                    </li>
+                  ))}
+                </ul>
+                {entry.disallowedItems.length > 0 ? (
+                  <p className="text-xs text-muted-foreground">
+                    Disallowed items: {entry.disallowedItems.join(", ")}
+                  </p>
+                ) : null}
+                <p className="text-xs text-muted-foreground">
+                  Context: {context.occasion ?? "any"} · {context.season} · {context.weather} ·{" "}
+                  {context.commute} commute
+                </p>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      )}
+    </section>
   );
 }
 
@@ -271,6 +407,7 @@ function RecommendationsSkeleton() {
 
 export function RecommendationCenterView() {
   const [filters, setFilters] = useState<RecommendationFilters>({});
+  const [showDebug, setShowDebug] = useState(false);
   const query = useOutfitRecommendations(filters);
   const data = query.data;
 
@@ -317,14 +454,24 @@ export function RecommendationCenterView() {
           </Button>
         }
         actions={
-          <Button
-            variant="outline"
-            onClick={() => void query.refetch()}
-            disabled={query.isFetching}
-          >
-            <RefreshCwIcon className={query.isFetching ? "animate-spin" : undefined} />
-            Refresh
-          </Button>
+          <>
+            <Button
+              variant={showDebug ? "default" : "outline"}
+              onClick={() => setShowDebug((value) => !value)}
+              aria-pressed={showDebug}
+            >
+              <BugIcon />
+              Debug
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => void query.refetch()}
+              disabled={query.isFetching}
+            >
+              <RefreshCwIcon className={query.isFetching ? "animate-spin" : undefined} />
+              Refresh
+            </Button>
+          </>
         }
       />
 
@@ -366,6 +513,8 @@ export function RecommendationCenterView() {
         </div>
       </div>
 
+      {showDebug && data ? <ContextPanel context={data.context} /> : null}
+
       {query.isPending ? <RecommendationsSkeleton /> : null}
 
       {query.error ? (
@@ -393,7 +542,7 @@ export function RecommendationCenterView() {
       {hero ? (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Hero recommendation</h2>
-          <HeroCard rec={hero} previews={previews} />
+          <HeroCard rec={hero} previews={previews} debug={showDebug} />
         </section>
       ) : null}
 
@@ -406,6 +555,7 @@ export function RecommendationCenterView() {
                 key={rec.outfitId ?? `top-${index}`}
                 rec={rec}
                 previews={previews}
+                debug={showDebug}
               />
             ))}
           </div>
@@ -423,10 +573,15 @@ export function RecommendationCenterView() {
                 key={rec.outfitId ?? `alt-${index}`}
                 rec={rec}
                 previews={previews}
+                debug={showDebug}
               />
             ))}
           </div>
         </section>
+      ) : null}
+
+      {showDebug && data ? (
+        <RejectedOutfitsSection rejected={data.rejected} context={data.context} />
       ) : null}
     </div>
   );

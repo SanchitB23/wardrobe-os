@@ -287,9 +287,11 @@ describe("recommendOutfits — hard eligibility", () => {
     // No recommendation (incl. generated combos) contains office/formal items.
     const names = recommendations.flatMap((r) => r.items.map((i) => i.name.toLowerCase()));
     expect(names.some((n) => /shirt|chino|tuxedo|oxford/.test(n))).toBe(false);
-    // Rejection is explained (Rule 8).
+    // Rejection is explained (Rule 8) with the offending items surfaced.
     const officeReject = rejected.find((r) => r.outfitId === "office");
     expect(officeReject?.reasons.some((r) => /not suitable for gym/i.test(r))).toBe(true);
+    expect(officeReject?.disallowedItems.length).toBeGreaterThan(0);
+    expect(officeReject?.disallowedItems).toContain("Oxford Shirt");
   });
 
   it("Office does not recommend gym shorts / running shoes", () => {

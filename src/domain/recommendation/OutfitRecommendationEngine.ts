@@ -65,6 +65,8 @@ export interface RejectedOutfit {
   name: string;
   source: "saved_outfit" | "generated_combo";
   reasons: string[];
+  /** Names of the items that made the outfit ineligible. */
+  disallowedItems: string[];
 }
 
 export interface OutfitRecommendationResult {
@@ -216,7 +218,7 @@ function itemSuitability(
   return item.styleDNA.occasion.suitability[STYLE_OCCASION_FOR[occasionKey]];
 }
 
-type Eligibility = { rejected: boolean; reasons: string[] };
+type Eligibility = { rejected: boolean; reasons: string[]; disallowedItems: string[] };
 
 /** A candidate must be a complete outfit (top + bottom + footwear) and, for a
  *  hard occasion, contain no item whose StyleDNA rates it unsuitable. */
@@ -225,6 +227,7 @@ function assessEligibility(
   occasionKey: OccasionKey | null,
 ): Eligibility {
   const reasons: string[] = [];
+  const disallowedItems: string[] = [];
 
   const slotsPresent = new Set(items.map(slotOf));
   for (const slot of REQUIRED_SLOTS) {
@@ -235,11 +238,12 @@ function assessEligibility(
     for (const item of items) {
       if (itemSuitability(item, occasionKey) < ELIGIBILITY_FLOOR) {
         reasons.push(`contains ${item.name} — not suitable for ${occasionKey}`);
+        disallowedItems.push(item.name);
       }
     }
   }
 
-  return { rejected: reasons.length > 0, reasons };
+  return { rejected: reasons.length > 0, reasons, disallowedItems };
 }
 
 function isEligibleItem(
@@ -597,6 +601,7 @@ export function generateOutfitRecommendations(
         name: candidate.name,
         source: candidate.source,
         reasons: eligibility.reasons.map((reason) => `Rejected: ${reason}`),
+        disallowedItems: eligibility.disallowedItems,
       });
       return null;
     }

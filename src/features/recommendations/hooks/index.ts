@@ -19,5 +19,6 @@ export function useOutfitRecommendations(filters: RecommendationFilters) {
 export type {
   RecommendationFilters,
   RecommendationCenterData,
+  RecommendationContextSummary,
   ItemPreview,
 } from "@/features/recommendations/services/recommendations.service";

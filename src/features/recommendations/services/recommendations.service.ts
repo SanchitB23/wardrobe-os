@@ -1,8 +1,9 @@
 import {
   buildRecommendationContext,
-  recommendOutfits,
+  generateOutfitRecommendations,
   type CommuteMode,
   type OutfitRecommendation,
+  type RejectedOutfit,
   type SeasonLabel,
   type WardrobeItemInput,
   type WeatherCondition,
@@ -35,9 +36,20 @@ export type ItemPreview = {
   category: string | null;
 };
 
+/** The resolved context the engine actually scored against (for debug display). */
+export type RecommendationContextSummary = {
+  occasion: string | null;
+  season: SeasonLabel;
+  weather: WeatherCondition;
+  commute: CommuteMode;
+  favoritesOnly: boolean;
+};
+
 export type RecommendationCenterData = {
   recommendations: OutfitRecommendation[];
+  rejected: RejectedOutfit[];
   previews: Record<string, ItemPreview>;
+  context: RecommendationContextSummary;
 };
 
 function relatedNames<K extends string>(
@@ -159,15 +171,24 @@ export async function fetchOutfitRecommendations(
     { generatedAt: new Date().toISOString() },
   );
 
-  let recommendations = recommendOutfits(context, {
+  const result = generateOutfitRecommendations(context, {
     occasion: filters.occasion ?? null,
     limit: 8,
   });
-  if (filters.favoritesOnly) {
-    recommendations = recommendations.filter(
-      (rec) => rec.metadata.source === "saved_outfit",
-    );
-  }
+  const recommendations = filters.favoritesOnly
+    ? result.recommendations.filter((rec) => rec.metadata.source === "saved_outfit")
+    : result.recommendations;
 
-  return { data: { recommendations, previews }, error: null };
+  const contextSummary: RecommendationContextSummary = {
+    occasion: filters.occasion ?? null,
+    season: context.weather.season,
+    weather: context.weather.condition,
+    commute: context.commute.mode,
+    favoritesOnly: Boolean(filters.favoritesOnly),
+  };
+
+  return {
+    data: { recommendations, rejected: result.rejected, previews, context: contextSummary },
+    error: null,
+  };
 }
