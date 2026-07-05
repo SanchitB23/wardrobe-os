@@ -30,7 +30,8 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { formatOutfitModifiedAt } from "@/features/outfits/services/outfits.service";
-import { formatRating, type OutfitListRow } from "@/features/outfits/types";
+import { RatingBadge } from "@/shared/ui";
+import { type OutfitListRow } from "@/features/outfits/types";
 
 type OutfitCardProps = {
   outfit: OutfitListRow;
@@ -186,7 +187,7 @@ export function OutfitCard({
             <dt className="text-muted-foreground">Rating</dt>
             <dd className="font-medium">
               {outfit.rating !== null ? (
-                <Badge variant="secondary">{formatRating(outfit.rating)}/10</Badge>
+                <RatingBadge value={outfit.rating} />
               ) : (
                 "—"
               )}

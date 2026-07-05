@@ -9,6 +9,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress, ProgressLabel } from "@/components/ui/progress";
+import { ColorSwatch } from "@/shared/ui";
 import { cn } from "@/lib/utils";
 
 type DistributionRow = {
@@ -26,18 +27,6 @@ type DistributionPanelProps = {
   showColorBadge?: boolean;
   className?: string;
 };
-
-function ColorSwatch({ hex, name }: { hex: string | null; name: string }) {
-  const background = hex ?? "var(--muted)";
-  return (
-    <span
-      className="inline-block size-3 shrink-0 rounded-full ring-1 ring-foreground/10"
-      style={{ backgroundColor: background }}
-      aria-hidden
-      title={name}
-    />
-  );
-}
 
 export function DistributionPanel({
   title,
@@ -73,7 +62,11 @@ export function DistributionPanel({
                   >
                     <div className="flex items-center gap-2">
                       {showColorBadge ? (
-                        <ColorSwatch hex={item.hex ?? null} name={item.name} />
+                        <ColorSwatch
+                          colorName={item.name}
+                          hex={item.hex ?? null}
+                          size="sm"
+                        />
                       ) : null}
                       <ProgressLabel className="truncate">{item.name}</ProgressLabel>
                       <Badge variant="secondary" className="ml-auto tabular-nums">

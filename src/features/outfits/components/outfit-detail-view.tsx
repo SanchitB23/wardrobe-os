@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -38,7 +37,8 @@ import {
   formatOutfitModifiedAt,
   outfitDetailToSlotSelection,
 } from "@/features/outfits/services/outfits.service";
-import { formatRating, type OutfitDetail } from "@/features/outfits/types";
+import { RatingBadge } from "@/shared/ui";
+import { type OutfitDetail } from "@/features/outfits/types";
 
 type OutfitDetailViewProps = {
   outfitId: string;
@@ -181,7 +181,7 @@ function OutfitMetadata({ outfit }: { outfit: OutfitDetail }) {
             <dt className="text-muted-foreground">Rating</dt>
             <dd className="font-medium">
               {outfit.rating !== null ? (
-                <Badge variant="secondary">{formatRating(outfit.rating)}/10</Badge>
+                <RatingBadge value={outfit.rating} />
               ) : (
                 "—"
               )}

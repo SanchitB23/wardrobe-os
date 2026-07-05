@@ -10,11 +10,9 @@ import {
   ImageIcon,
   MoreHorizontalIcon,
   PencilIcon,
-  StarIcon,
 } from "lucide-react";
 
 import { ItemImage } from "@/features/inventory/components/item-image";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -35,14 +33,9 @@ import {
 } from "@/features/inventory/lib/inventory-columns";
 import type { SortRule } from "@/features/inventory/lib/inventory-view";
 import { buildItemImageAltText } from "@/features/inventory/services/images.service";
+import { ColorSwatch, Rating, StatusBadge, UsageBadge } from "@/shared/ui";
 import { cn } from "@/lib/utils";
-import {
-  formatEnumLabel,
-  formatRating,
-  type ItemStatus,
-  type UsageFrequency,
-  type WardrobeItemRow,
-} from "@/types/wardrobe";
+import { type WardrobeItemRow } from "@/types/wardrobe";
 
 type InventoryTableProps = {
   items: WardrobeItemRow[];
@@ -62,72 +55,8 @@ function stopRowNavigation(event: React.SyntheticEvent) {
   event.stopPropagation();
 }
 
-function statusBadgeVariant(
-  status: ItemStatus,
-): "default" | "secondary" | "outline" | "destructive" {
-  switch (status) {
-    case "active":
-      return "default";
-    case "retired":
-      return "outline";
-    case "returned":
-      return "destructive";
-    default: {
-      const _exhaustive: never = status;
-      return _exhaustive;
-    }
-  }
-}
-
-function usageBadgeVariant(
-  usage: UsageFrequency,
-): "default" | "secondary" | "outline" {
-  switch (usage) {
-    case "hero":
-      return "default";
-    case "frequent":
-      return "secondary";
-    case "regular":
-    case "occasional":
-    case "rare":
-      return "outline";
-    default: {
-      const _exhaustive: never = usage;
-      return _exhaustive;
-    }
-  }
-}
-
 function displayValue(value: string | null | undefined) {
   return value ? value : "—";
-}
-
-function RatingCell({ rating }: { rating: number | null }) {
-  if (rating === null) {
-    return <span className="text-muted-foreground">—</span>;
-  }
-  return (
-    <div className="inline-flex items-center gap-1 tabular-nums">
-      <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
-      <span className="font-medium">{formatRating(rating)}</span>
-      <span className="text-xs text-muted-foreground">/10</span>
-    </div>
-  );
-}
-
-function ColorBadge({ name }: { name: string | null | undefined }) {
-  if (!name) {
-    return <span className="text-muted-foreground">—</span>;
-  }
-  return (
-    <Badge variant="outline" className="font-normal">
-      <span
-        aria-hidden
-        className="size-2 rounded-full border border-foreground/10 bg-muted"
-      />
-      {name}
-    </Badge>
-  );
 }
 
 function ItemThumbnail({
@@ -264,34 +193,30 @@ const InventoryRow = memo(
         ) : null}
         {isColumnVisible("color", hiddenColumns) ? (
           <TableCell>
-            <ColorBadge name={item.primary_color?.name} />
+            {item.primary_color?.name ? (
+              <ColorSwatch
+                colorName={item.primary_color.name}
+                showLabel
+                size="sm"
+              />
+            ) : (
+              <span className="text-muted-foreground">—</span>
+            )}
           </TableCell>
         ) : null}
         {isColumnVisible("status", hiddenColumns) ? (
           <TableCell>
-            {item.status ? (
-              <Badge variant={statusBadgeVariant(item.status)}>
-                {formatEnumLabel(item.status)}
-              </Badge>
-            ) : (
-              "—"
-            )}
+            {item.status ? <StatusBadge status={item.status} /> : "—"}
           </TableCell>
         ) : null}
         {isColumnVisible("usage", hiddenColumns) ? (
           <TableCell>
-            {item.usage ? (
-              <Badge variant={usageBadgeVariant(item.usage)}>
-                {formatEnumLabel(item.usage)}
-              </Badge>
-            ) : (
-              "—"
-            )}
+            {item.usage ? <UsageBadge usage={item.usage} /> : "—"}
           </TableCell>
         ) : null}
         {isColumnVisible("rating", hiddenColumns) ? (
           <TableCell>
-            <RatingCell rating={item.rating} />
+            <Rating value={item.rating} />
           </TableCell>
         ) : null}
         <TableCell

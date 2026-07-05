@@ -7,14 +7,9 @@ import {
   ShirtIcon,
 } from "lucide-react";
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
+import { StatCard } from "@/shared/ui";
 import { formatRating, type InventorySummary } from "@/types/wardrobe";
 
 type InventorySummaryCardsProps = {
@@ -64,24 +59,13 @@ export function InventorySummaryCards({ summary }: InventorySummaryCardsProps) {
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       {SUMMARY_ITEMS.map(({ key, label, description, icon: Icon }) => (
-        <Card key={key} size="sm">
-          <CardHeader className="pb-0">
-            <div className="flex items-start justify-between gap-3">
-              <div className="space-y-1">
-                <CardDescription>{label}</CardDescription>
-                <CardTitle className="text-3xl font-semibold tabular-nums">
-                  {formatSummaryValue(key, summary)}
-                </CardTitle>
-              </div>
-              <div className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-muted">
-                <Icon className="size-4 text-muted-foreground" />
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <p className="text-xs text-muted-foreground">{description}</p>
-          </CardContent>
-        </Card>
+        <StatCard
+          key={key}
+          label={label}
+          value={formatSummaryValue(key, summary)}
+          caption={description}
+          icon={Icon}
+        />
       ))}
     </div>
   );

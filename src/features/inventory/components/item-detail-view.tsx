@@ -12,7 +12,6 @@ import {
   LayersIcon,
   PencilIcon,
   SparklesIcon,
-  StarIcon,
   Wand2Icon,
 } from "lucide-react";
 
@@ -42,6 +41,16 @@ import { useItemWearSummary } from "@/features/wear-logs/hooks";
 import { buildItemImageAltText } from "@/features/inventory/services/images.service";
 import { formatPurchaseDisplayDate } from "@/features/purchases/services/purchases.service";
 import { formatWearLogDisplayDate } from "@/features/wear-logs/services/wear-logs.service";
+import {
+  ColorSwatch,
+  FormalityBadge,
+  HeroBadge,
+  MetadataBadge,
+  Rating,
+  RatingBadge,
+  StatusBadge,
+  UsageBadge,
+} from "@/shared/ui";
 import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
@@ -50,53 +59,15 @@ import {
   type ItemCareProfile,
   type ItemImageRow,
   type ItemOccasionRelation,
-  type ItemStatus,
   type ItemWearSummary,
   type ItemPurchaseDetail,
   type LookupOption,
-  type UsageFrequency,
   type WardrobeItemRow,
 } from "@/types/wardrobe";
 
 type ItemDetailViewProps = {
   itemId: string;
 };
-
-function statusBadgeVariant(
-  status: ItemStatus,
-): "default" | "secondary" | "outline" | "destructive" {
-  switch (status) {
-    case "active":
-      return "default";
-    case "retired":
-      return "outline";
-    case "returned":
-      return "destructive";
-    default: {
-      const _exhaustive: never = status;
-      return _exhaustive;
-    }
-  }
-}
-
-function usageBadgeVariant(
-  usage: UsageFrequency,
-): "default" | "secondary" | "outline" {
-  switch (usage) {
-    case "hero":
-      return "default";
-    case "frequent":
-      return "secondary";
-    case "regular":
-    case "occasional":
-    case "rare":
-      return "outline";
-    default: {
-      const _exhaustive: never = usage;
-      return _exhaustive;
-    }
-  }
-}
 
 function displayText(value: string | null | undefined) {
   return value?.trim() ? value : "—";
@@ -157,9 +128,7 @@ function BadgeGroup({ label, items }: { label: string; items: LookupOption[] }) 
       {items.length > 0 ? (
         <div className="flex flex-wrap gap-2">
           {items.map((item) => (
-            <Badge key={item.id} variant="secondary">
-              {item.name}
-            </Badge>
+            <MetadataBadge key={item.id} label={item.name} />
           ))}
         </div>
       ) : (
@@ -219,10 +188,7 @@ function ImageColumn({
         )}
 
         {isHero ? (
-          <Badge className="absolute left-3 top-3 gap-1 shadow-sm">
-            <SparklesIcon className="size-3" />
-            Hero piece
-          </Badge>
+          <HeroBadge className="absolute left-3 top-3 shadow-sm" />
         ) : null}
 
         <Button
@@ -299,22 +265,9 @@ function ItemHeader({ item }: { item: WardrobeItemRow }) {
       </div>
 
       <div className="flex flex-wrap items-center gap-2">
-        {item.status && (
-          <Badge variant={statusBadgeVariant(item.status)}>
-            {formatEnumLabel(item.status)}
-          </Badge>
-        )}
-        {item.usage && (
-          <Badge variant={usageBadgeVariant(item.usage)}>
-            {formatEnumLabel(item.usage)}
-          </Badge>
-        )}
-        {item.rating !== null && (
-          <Badge variant="outline" className="gap-1 tabular-nums">
-            <StarIcon className="size-3 fill-amber-400 text-amber-400" />
-            {formatRating(item.rating)} / 10
-          </Badge>
-        )}
+        {item.status && <StatusBadge status={item.status} />}
+        {item.usage && <UsageBadge usage={item.usage} />}
+        {item.rating !== null && <RatingBadge value={item.rating} />}
       </div>
     </div>
   );
@@ -335,13 +288,17 @@ function OverviewCard({ item }: { item: WardrobeItemRow }) {
         </DetailField>
         <DetailField label="Brand">{displayText(item.brand?.name)}</DetailField>
         <DetailField label="Color">
-          {displayText(item.primary_color?.name)}
+          {item.primary_color?.name ? (
+            <ColorSwatch colorName={item.primary_color.name} showLabel />
+          ) : (
+            "—"
+          )}
         </DetailField>
         <DetailField label="Fit">
           {item.fit ? formatEnumLabel(item.fit) : "—"}
         </DetailField>
         <DetailField label="Formality">
-          {item.formality ? formatEnumLabel(item.formality) : "—"}
+          {item.formality ? <FormalityBadge formality={item.formality} /> : "—"}
         </DetailField>
       </dl>
     </SectionCard>
@@ -536,17 +493,7 @@ function WearHistoryCard({
             : "—"}
         </DetailField>
         <DetailField label="Average comfort">
-          {wearSummary.averageComfortRating !== null ? (
-            <div className="inline-flex items-center gap-1 tabular-nums">
-              <StarIcon className="size-3.5 fill-amber-400 text-amber-400" />
-              <span className="font-medium">
-                {formatRating(wearSummary.averageComfortRating)}
-              </span>
-              <span className="text-xs text-muted-foreground">/10</span>
-            </div>
-          ) : (
-            "—"
-          )}
+          <Rating value={wearSummary.averageComfortRating} />
         </DetailField>
       </dl>
 
