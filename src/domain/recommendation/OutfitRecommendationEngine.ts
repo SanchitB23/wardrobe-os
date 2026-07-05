@@ -55,6 +55,20 @@ export interface OutfitRecommendation {
   };
 }
 
+/** An outfit excluded before scoring because it failed context eligibility. */
+export interface RejectedOutfit {
+  outfitId?: string;
+  name: string;
+  source: "saved_outfit" | "generated_combo";
+  reasons: string[];
+}
+
+export interface OutfitRecommendationResult {
+  recommendations: OutfitRecommendation[];
+  /** Candidates rejected by hard eligibility, with reasons (debug/explain). */
+  rejected: RejectedOutfit[];
+}
+
 export interface RecommendOutfitsOptions {
   /** Requested occasion to bias toward (e.g. "Office", "Dinner"). */
   occasion?: string | null;
@@ -76,10 +90,16 @@ const SOFT_RECENT_PENALTY = 0.6;
 const STALE_ITEM_PENALTY_EACH = 0.4;
 const STALE_PENALTY_CAP = 1.5;
 const RETIRED_ITEM_PENALTY = 3;
-const FAVORITE_BOOST = 1;
+/** Capped so a favorite can nudge, but never override a context mismatch (Rule 6). */
+const FAVORITE_BOOST = 0.75;
 const OCCASION_MATCH_BOOST = 1.2;
+/** Eligible-but-untagged for the requested occasion → medium mismatch penalty (Rule 7). */
+const OCCASION_MISMATCH_PENALTY = 1.5;
 const SEASON_MATCH_BOOST = 0.8;
 const WEATHER_FIT_BOOST = 0.5;
+/** Fragile footwear (e.g. white/suede sneakers) in rough weather while travelling. */
+const FRAGILE_TRAVEL_PENALTY = 1;
+const TRAVEL_COMFORT_BOOST = 0.6;
 const COMMUTE_BOOST = 0.6;
 /** Top-K items per slot considered when generating fallback combos. */
 const COMBO_TOP_K = 3;
@@ -157,6 +177,186 @@ function toWeatherContext(weather: WeatherSnapshot): WeatherContext {
 }
 
 // ---------------------------------------------------------------------------
+// Hard eligibility — context constraints applied BEFORE scoring.
+// ---------------------------------------------------------------------------
+
+export type OccasionKey = "gym" | "office" | "wedding" | "travel";
+type Verdict = "allowed" | "disallowed" | "optional";
+
+const OPTIONAL_SLOTS = new Set<OutfitSlot>(["fragrance", "accessory", "watch", "belt"]);
+const REQUIRED_SLOTS: OutfitSlot[] = ["top", "bottom", "footwear"];
+
+const SMART_STYLES = ["smart casual", "business casual", "minimal", "classic", "modern"];
+const GYM_SIGNALS = ["gym", "athleisure", "performance", "sport", "sports", "active", "running", "training"];
+
+const KW = {
+  tshirt: ["t-shirt", "tshirt", "tee"],
+  activeTop: ["tank", "jersey", "active", "performance", "compression"],
+  polo: ["polo"],
+  chino: ["chino"],
+  trouser: ["trouser", "slack", "dress pant"],
+  jeans: ["jean", "denim"],
+  shorts: ["short"],
+  jogger: ["jogger", "sweatpant", "track pant", "trackpant", "track suit"],
+  blazer: ["blazer"],
+  tux: ["tuxedo", "tux"],
+  suit: ["suit"],
+  pajama: ["pajama", "pyjama", "lounge", "sleep"],
+  dressShoe: ["oxford", "derby", "brogue", "loafer", "monk", "dress shoe", "formal shoe"],
+  athleticShoe: ["running", "trainer", "training", "court", "tennis", "basketball", "cleat"],
+  sneaker: ["sneaker", "plimsoll", "canvas", "574", "air force", "af1"],
+  sandal: ["sandal", "slide", "flip"],
+  fragile: ["white", "suede", "canvas", "air force", "af1", "574"],
+} as const;
+
+function haystack(item: WardrobeItemSnapshot): string {
+  return normalize(`${item.name} ${item.subcategory ?? ""} ${item.category ?? ""}`);
+}
+function hasKeyword(item: WardrobeItemSnapshot, keywords: readonly string[]): boolean {
+  const h = haystack(item);
+  return keywords.some((keyword) => h.includes(keyword));
+}
+function tagStyleSet(item: WardrobeItemSnapshot): string[] {
+  return [...item.tags, ...item.styles].map(normalize);
+}
+function hasGymSignal(item: WardrobeItemSnapshot): boolean {
+  const set = tagStyleSet(item);
+  return GYM_SIGNALS.some((signal) => set.includes(signal));
+}
+function isSmartCasualEnough(item: WardrobeItemSnapshot): boolean {
+  const set = tagStyleSet(item);
+  return (
+    item.formality === "smart_casual" ||
+    item.formality === "business_casual" ||
+    SMART_STYLES.some((style) => set.includes(style))
+  );
+}
+function isTshirt(item: WardrobeItemSnapshot): boolean {
+  return hasKeyword(item, KW.tshirt);
+}
+function formalRank(item: WardrobeItemSnapshot): number {
+  return (item.formality ? getFormalityRank(item.formality) : null) ?? -1;
+}
+const BUSINESS_FORMAL_RANK = getFormalityRank("business_formal") ?? 3;
+const SMART_CASUAL_RANK = getFormalityRank("smart_casual") ?? 1;
+
+function classifyGym(item: WardrobeItemSnapshot): Verdict {
+  const slot = resolveSlot(item);
+  if (OPTIONAL_SLOTS.has(slot)) return "optional";
+  const gym = hasGymSignal(item);
+  if (slot === "footwear") {
+    if (hasKeyword(item, KW.athleticShoe) || gym) return "allowed";
+    if (hasKeyword(item, KW.dressShoe) || hasKeyword(item, KW.sandal)) return "disallowed";
+    if (hasKeyword(item, KW.sneaker)) return "allowed";
+    return "disallowed";
+  }
+  if (slot === "top") {
+    if (hasKeyword(item, KW.activeTop) || gym) return "allowed";
+    return "disallowed"; // shirts, polos, plain tees, sweaters
+  }
+  if (slot === "bottom") {
+    if (hasKeyword(item, KW.shorts) || hasKeyword(item, KW.jogger) || gym) return "allowed";
+    return "disallowed"; // chinos, trousers, jeans
+  }
+  return gym ? "allowed" : "disallowed"; // outerwear
+}
+
+function classifyOffice(item: WardrobeItemSnapshot): Verdict {
+  const slot = resolveSlot(item);
+  if (OPTIONAL_SLOTS.has(slot)) return "optional";
+  if (hasKeyword(item, KW.pajama)) return "disallowed";
+  if (slot === "footwear") {
+    if (hasKeyword(item, KW.dressShoe) || hasKeyword(item, KW.sneaker)) return "allowed";
+    if (hasKeyword(item, KW.athleticShoe) && !isSmartCasualEnough(item)) return "disallowed";
+    if (hasKeyword(item, KW.sandal)) return "disallowed";
+    return "allowed";
+  }
+  if (slot === "top") {
+    if (hasKeyword(item, KW.activeTop) || (hasGymSignal(item) && !isSmartCasualEnough(item)))
+      return "disallowed";
+    if (isTshirt(item)) return isSmartCasualEnough(item) ? "allowed" : "disallowed";
+    return "allowed"; // shirts, polos, knit polos, sweaters
+  }
+  if (slot === "bottom") {
+    if (hasKeyword(item, KW.shorts) || hasKeyword(item, KW.jogger)) return "disallowed";
+    if (hasGymSignal(item)) return "disallowed";
+    if (hasKeyword(item, KW.jeans)) return isSmartCasualEnough(item) ? "allowed" : "disallowed";
+    return "allowed"; // chinos, trousers
+  }
+  if (slot === "outerwear") return hasKeyword(item, KW.tux) ? "disallowed" : "allowed";
+  return "optional";
+}
+
+function classifyWedding(item: WardrobeItemSnapshot): Verdict {
+  const slot = resolveSlot(item);
+  if (OPTIONAL_SLOTS.has(slot)) return "optional";
+  if (slot === "footwear") {
+    return hasKeyword(item, KW.dressShoe) ? "allowed" : "disallowed";
+  }
+  // Core apparel must be dressy enough for a wedding.
+  const dressy = formalRank(item) >= BUSINESS_FORMAL_RANK;
+  if (slot === "top") {
+    if (isTshirt(item) || hasKeyword(item, KW.polo) || hasKeyword(item, KW.activeTop))
+      return "disallowed";
+    return dressy || hasKeyword(item, ["shirt"]) ? "allowed" : "disallowed";
+  }
+  if (slot === "bottom") {
+    if (hasKeyword(item, KW.trouser) || dressy) return "allowed";
+    return "disallowed"; // chinos, jeans, shorts, joggers
+  }
+  if (slot === "outerwear") {
+    return hasKeyword(item, KW.blazer) || hasKeyword(item, KW.tux) || hasKeyword(item, KW.suit)
+      ? "allowed"
+      : "disallowed";
+  }
+  return "optional";
+}
+
+const CLASSIFIERS: Record<OccasionKey, ((item: WardrobeItemSnapshot) => Verdict) | null> = {
+  gym: classifyGym,
+  office: classifyOffice,
+  wedding: classifyWedding,
+  travel: null, // Travel is soft: prioritized in scoring, never hard-rejected.
+};
+
+function resolveOccasionKey(occasion: string | null | undefined): OccasionKey | null {
+  const value = normalize(occasion);
+  if (!value) return null;
+  if (value === "gym" || value === "workout" || value === "fitness") return "gym";
+  if (value === "office" || value === "work") return "office";
+  if (value === "wedding" || value === "formal") return "wedding";
+  if (value === "travel" || value === "vacation") return "travel";
+  return null;
+}
+
+type Eligibility = { rejected: boolean; reasons: string[] };
+
+/** Applies hard context constraints. A candidate must be a complete outfit
+ *  (top + bottom + footwear) and contain no items disallowed for the occasion. */
+function assessEligibility(
+  items: readonly WardrobeItemSnapshot[],
+  occasionKey: OccasionKey | null,
+): Eligibility {
+  const reasons: string[] = [];
+
+  const slotsPresent = new Set(items.map(resolveSlot));
+  for (const slot of REQUIRED_SLOTS) {
+    if (!slotsPresent.has(slot)) reasons.push(`missing ${slot}`);
+  }
+
+  const classifier = occasionKey ? CLASSIFIERS[occasionKey] : null;
+  if (classifier) {
+    for (const item of items) {
+      if (classifier(item) === "disallowed") {
+        reasons.push(`contains ${item.name} — not suitable for ${occasionKey}`);
+      }
+    }
+  }
+
+  return { rejected: reasons.length > 0, reasons };
+}
+
+// ---------------------------------------------------------------------------
 // Candidate assembly
 // ---------------------------------------------------------------------------
 
@@ -188,9 +388,17 @@ function savedCandidates(context: RecommendationContext): Candidate[] {
     .filter((candidate) => candidate.items.length > 0);
 }
 
-/** Bounded, deterministic combos from the highest-rated active items per slot. */
-function generatedCandidates(context: RecommendationContext): Candidate[] {
-  const active = context.wardrobe.activeItems;
+/** Bounded, deterministic combos from the highest-rated active items per slot.
+ *  Items disallowed for the requested occasion are excluded from the pools, so
+ *  generated combos are always context-appropriate. */
+function generatedCandidates(
+  context: RecommendationContext,
+  occasionKey: OccasionKey | null,
+): Candidate[] {
+  const classifier = occasionKey ? CLASSIFIERS[occasionKey] : null;
+  const eligible = (item: WardrobeItemSnapshot) =>
+    !classifier || classifier(item) !== "disallowed";
+  const active = context.wardrobe.activeItems.filter(eligible);
   const rank = (items: WardrobeItemSnapshot[]) =>
     [...items]
       .sort((a, b) => (b.rating ?? 0) - (a.rating ?? 0) || a.id.localeCompare(b.id))
@@ -242,6 +450,7 @@ function scoreCandidate(
   context: RecommendationContext,
   options: RecommendOutfitsOptions,
   asOf: Date,
+  occasionKey: OccasionKey | null,
 ): OutfitRecommendation {
   const generatedAt = context.generatedAt;
   const analysis = evaluateOutfit(
@@ -294,7 +503,7 @@ function scoreCandidate(
     boosts.push({ label: "Favorite outfit", delta: FAVORITE_BOOST });
   }
 
-  // Rule 6 — requested occasion match.
+  // Rule 6 / 7 — requested occasion match (boost) or soft mismatch (penalty).
   const occasion = normalize(options.occasion);
   if (occasion) {
     const matching = candidate.items.filter((i) =>
@@ -305,6 +514,37 @@ function scoreCandidate(
       boosts.push({
         label: `Matches ${options.occasion} occasion`,
         delta: round1(OCCASION_MATCH_BOOST * Math.min(1, share + 0.4)),
+      });
+    } else if (occasionKey && occasionKey !== "travel") {
+      // Eligible (passed hard filter) but nothing explicitly tagged for it.
+      penalties.push({
+        label: `Not tagged for ${options.occasion}`,
+        delta: -OCCASION_MISMATCH_PENALTY,
+      });
+    }
+  }
+
+  // Rule 4 (travel) — prioritize comfort & repeatability; avoid fragile shoes
+  // when the weather is rough.
+  if (occasionKey === "travel") {
+    const travelReady = candidate.items.filter((i) =>
+      i.tags.some((tag) => ["travel", "vacation"].includes(normalize(tag))),
+    ).length;
+    const comfortable = candidate.items.every(
+      (i) => formalRank(i) <= SMART_CASUAL_RANK,
+    );
+    if (travelReady > 0 || comfortable) {
+      boosts.push({ label: "Travel-friendly & comfortable", delta: TRAVEL_COMFORT_BOOST });
+    }
+    const roughWeather =
+      context.weather.condition === "rainy" || context.weather.condition === "cold";
+    const fragileShoe = candidate.items.some(
+      (i) => resolveSlot(i) === "footwear" && hasKeyword(i, KW.fragile),
+    );
+    if (roughWeather && fragileShoe) {
+      penalties.push({
+        label: "Fragile footwear for rough travel weather",
+        delta: -FRAGILE_TRAVEL_PENALTY,
       });
     }
   }
@@ -406,42 +646,76 @@ function compareRecommendations(
 }
 
 /**
- * Produces up to `limit` ranked {@link OutfitRecommendation}s from the context.
- * Saved outfits are considered first (Rule 1); generated combos only fill the
- * remaining slots. Deterministic given the same context and options.
+ * Produces ranked recommendations plus the candidates rejected by hard
+ * eligibility (with reasons, for debug/explanation). Candidates that fail
+ * eligibility — incomplete outfits, or items disallowed for the requested
+ * occasion — are excluded before scoring, so a favorite can never rescue a
+ * context mismatch. Saved outfits are considered first (Rule 1); generated
+ * combos only fill remaining slots. Deterministic given the same input.
+ */
+export function generateOutfitRecommendations(
+  context: RecommendationContext,
+  options: RecommendOutfitsOptions = {},
+): OutfitRecommendationResult {
+  const limit = options.limit ?? DEFAULT_LIMIT;
+  const asOf = parseDate(context.generatedAt) ?? new Date(0);
+  const occasionKey = resolveOccasionKey(options.occasion);
+
+  const rejected: RejectedOutfit[] = [];
+  const accept = (candidate: Candidate): OutfitRecommendation | null => {
+    const eligibility = assessEligibility(candidate.items, occasionKey);
+    if (eligibility.rejected) {
+      rejected.push({
+        outfitId: candidate.outfitId,
+        name: candidate.name,
+        source: candidate.source,
+        reasons: eligibility.reasons.map((reason) => `Rejected: ${reason}`),
+      });
+      return null;
+    }
+    return scoreCandidate(candidate, context, options, asOf, occasionKey);
+  };
+
+  const saved = savedCandidates(context)
+    .map(accept)
+    .filter((rec): rec is OutfitRecommendation => rec !== null)
+    .sort(compareRecommendations);
+
+  const fillers: OutfitRecommendation[] = [];
+  if (saved.length < limit) {
+    const generated = generatedCandidates(context, occasionKey)
+      .map(accept)
+      .filter((rec): rec is OutfitRecommendation => rec !== null)
+      .sort(compareRecommendations);
+
+    // De-duplicate generated combos that share the exact item set.
+    const seen = new Set<string>();
+    for (const rec of generated) {
+      const key = rec.items
+        .map((item) => item.itemId)
+        .sort((a, b) => a.localeCompare(b))
+        .join("|");
+      if (seen.has(key)) continue;
+      seen.add(key);
+      fillers.push(rec);
+      if (saved.length + fillers.length >= limit) break;
+    }
+  }
+
+  return {
+    recommendations: [...saved, ...fillers].slice(0, limit),
+    rejected,
+  };
+}
+
+/**
+ * Convenience wrapper returning only the ranked recommendations. Use
+ * {@link generateOutfitRecommendations} when you also need the rejection
+ * reasons (debug mode).
  */
 export function recommendOutfits(
   context: RecommendationContext,
   options: RecommendOutfitsOptions = {},
 ): OutfitRecommendation[] {
-  const limit = options.limit ?? DEFAULT_LIMIT;
-  const asOf = parseDate(context.generatedAt) ?? new Date(0);
-
-  const saved = savedCandidates(context)
-    .map((candidate) => scoreCandidate(candidate, context, options, asOf))
-    .sort(compareRecommendations);
-
-  if (saved.length >= limit) {
-    return saved.slice(0, limit);
-  }
-
-  const generated = generatedCandidates(context)
-    .map((candidate) => scoreCandidate(candidate, context, options, asOf))
-    .sort(compareRecommendations);
-
-  // De-duplicate generated combos that share the exact item set.
-  const seen = new Set<string>();
-  const fillers: OutfitRecommendation[] = [];
-  for (const rec of generated) {
-    const key = rec.items
-      .map((item) => item.itemId)
-      .sort((a, b) => a.localeCompare(b))
-      .join("|");
-    if (seen.has(key)) continue;
-    seen.add(key);
-    fillers.push(rec);
-    if (saved.length + fillers.length >= limit) break;
-  }
-
-  return [...saved, ...fillers].slice(0, limit);
+  return generateOutfitRecommendations(context, options).recommendations;
 }

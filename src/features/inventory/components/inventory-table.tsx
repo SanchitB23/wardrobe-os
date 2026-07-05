@@ -45,6 +45,12 @@ type InventoryTableProps = {
   sortRules: SortRule[];
   onToggleSort: (column: NonNullable<(typeof INVENTORY_COLUMNS)[number]["sort"]>, additive: boolean) => void;
   selectedIds: Set<string>;
+  // Per-row selection is an intent (id + checked), applied by the parent via a
+  // functional state update. Rows are memoized with a comparator that ignores
+  // this callback, so it must be referentially stable AND free of captured
+  // selection state — otherwise a row that skips re-rendering would fire a
+  // stale handler and clobber other rows' selections.
+  onToggleItem: (id: string, checked: boolean) => void;
   onSelectedIdsChange: (ids: Set<string>) => void;
   onEdit: (item: WardrobeItemRow) => void;
   onDelete: (item: WardrobeItemRow) => void;
@@ -336,6 +342,7 @@ export function InventoryTable({
   sortRules,
   onToggleSort,
   selectedIds,
+  onToggleItem,
   onSelectedIdsChange,
   onEdit,
   onDelete,
@@ -369,16 +376,6 @@ export function InventoryTable({
     visibleItems.length > 0 &&
     visibleItems.every((item) => selectedIds.has(item.id));
   const someSelected = visibleItems.some((item) => selectedIds.has(item.id));
-
-  function toggleItem(itemId: string, checked: boolean) {
-    onSelectedIdsChange(
-      new Set(
-        checked
-          ? [...selectedIds, itemId]
-          : [...selectedIds].filter((id) => id !== itemId),
-      ),
-    );
-  }
 
   function toggleAll(checked: boolean) {
     onSelectedIdsChange(
@@ -495,7 +492,7 @@ export function InventoryTable({
                 selected={selectedIds.has(item.id)}
                 columnsSignature={columnsSignature}
                 hiddenColumns={hiddenColumns}
-                onToggleSelect={toggleItem}
+                onToggleSelect={onToggleItem}
                 onNavigate={navigateToItem}
                 onEdit={onEdit}
                 onDelete={onDelete}
