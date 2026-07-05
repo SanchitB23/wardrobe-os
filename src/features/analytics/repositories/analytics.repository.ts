@@ -1,25 +1,37 @@
 import { createClient } from "@/lib/supabase/client";
 import { toError } from "@/shared/utils/data-result";
-import type { FormalityEnum, ItemStatus } from "@/types/wardrobe";
+import type { FormalityEnum, ItemStatus, UsageFrequency } from "@/types/wardrobe";
 
 const HEALTH_ITEM_SELECT = `
   id,
   name,
   formality,
+  usage,
   status,
   category:categories(name),
+  subcategory:subcategories(name),
   brand:brands(name),
-  primary_color:colors!wardrobe_items_primary_color_id_fkey(name)
+  primary_color:colors!wardrobe_items_primary_color_id_fkey(name),
+  item_seasons(seasons(name)),
+  item_styles(styles(name)),
+  item_tags(tags(name))
 `;
+
+type NamedRef = { name: string } | null;
 
 export type HealthItemRow = {
   id: string;
   name: string;
   formality: FormalityEnum | null;
+  usage: UsageFrequency | null;
   status: ItemStatus | null;
-  category: { name: string } | null;
-  brand: { name: string } | null;
-  primary_color: { name: string } | null;
+  category: NamedRef;
+  subcategory: NamedRef;
+  brand: NamedRef;
+  primary_color: NamedRef;
+  item_seasons: { seasons: NamedRef }[] | null;
+  item_styles: { styles: NamedRef }[] | null;
+  item_tags: { tags: NamedRef }[] | null;
 };
 
 /** Fetches active wardrobe items with the fields the health engine consumes. */

@@ -12,3 +12,5 @@ export function useWardrobeHealth() {
     queryFn: async () => unwrapData(await fetchWardrobeHealth()),
   });
 }
+
+export type { WardrobeHealthReport } from "@/features/analytics/services/analytics.service";

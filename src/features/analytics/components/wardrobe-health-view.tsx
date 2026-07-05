@@ -1,9 +1,11 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import {
   AlertTriangleIcon,
   ArrowLeftIcon,
+  BugIcon,
   CheckCircleIcon,
   CopyIcon,
   LayersIcon,
@@ -23,12 +25,23 @@ import {
 } from "@/components/ui/card";
 import { Progress, ProgressLabel, ProgressValue } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { useWardrobeHealth } from "@/features/analytics/hooks";
 import { cn } from "@/lib/utils";
 import type {
   CategoryBucket,
   CoverageContext,
+  DebugDistribution,
+  ScoreBreakdown,
   WardrobeHealth,
+  WardrobeHealthDebug,
 } from "@/domain/analytics/WardrobeHealthEngine";
 
 type ScoreTone = {
@@ -317,6 +330,214 @@ function HealthReport({ health }: { health: WardrobeHealth }) {
   );
 }
 
+function DistributionCard({ dist }: { dist: DebugDistribution }) {
+  return (
+    <Card className="h-full">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <CardTitle className="text-base">{dist.label}</CardTitle>
+          <Badge variant="secondary" className="ml-auto tabular-nums">
+            {dist.distinct} distinct
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {dist.buckets.length > 0 ? (
+          <ul className="space-y-1.5 text-sm">
+            {dist.buckets.map((bucket) => (
+              <li
+                key={bucket.label}
+                className="flex items-center justify-between gap-3"
+              >
+                <span
+                  className={cn(
+                    "truncate",
+                    bucket.label.startsWith("—") && "text-muted-foreground italic",
+                  )}
+                >
+                  {bucket.label}
+                </span>
+                <span className="tabular-nums text-muted-foreground">
+                  {bucket.count}
+                  <span className="ml-1 text-xs">({bucket.percentage}%)</span>
+                </span>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">No items.</p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function BreakdownTable({
+  caption,
+  rows,
+}: {
+  caption: string;
+  rows: ScoreBreakdown[];
+}) {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">{caption}</CardTitle>
+        <CardDescription>
+          Raw inputs, the formula applied, and the resulting components for every
+          score.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="overflow-x-auto">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>Score</TableHead>
+              <TableHead>Inputs</TableHead>
+              <TableHead>Formula</TableHead>
+              <TableHead>Components</TableHead>
+              <TableHead className="text-right">Result</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {rows.map((row) => {
+              const tone = scoreTone(row.score);
+              return (
+                <TableRow key={row.key}>
+                  <TableCell className="font-medium">{row.label}</TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <ul className="space-y-0.5">
+                      {row.inputs.map((input, index) => (
+                        <li key={index}>
+                          {input.label}:{" "}
+                          <span className="tabular-nums text-foreground">
+                            {input.value}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </TableCell>
+                  <TableCell className="font-mono text-xs text-muted-foreground">
+                    {row.formula}
+                  </TableCell>
+                  <TableCell className="text-muted-foreground">
+                    <ul className="space-y-0.5">
+                      {row.components.map((component, index) => (
+                        <li key={index}>
+                          {component.label}:{" "}
+                          <span className="tabular-nums text-foreground">
+                            {component.value}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </TableCell>
+                  <TableCell
+                    className={cn("text-right tabular-nums font-semibold", tone.text)}
+                  >
+                    {row.score}
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </CardContent>
+    </Card>
+  );
+}
+
+function HealthDebugPanel({ debug }: { debug: WardrobeHealthDebug }) {
+  return (
+    <div className="space-y-6 rounded-xl border border-dashed border-amber-500/40 bg-amber-500/5 p-4 sm:p-6">
+      <div className="flex flex-wrap items-center gap-2">
+        <BugIcon className="size-4 text-amber-600 dark:text-amber-400" />
+        <h2 className="text-lg font-semibold">Debug mode</h2>
+        <Badge variant="secondary" className="tabular-nums">
+          {debug.totalActiveItems} active
+        </Badge>
+        {debug.totalItems !== debug.totalActiveItems ? (
+          <Badge variant="outline" className="tabular-nums text-muted-foreground">
+            {debug.totalItems} fetched
+          </Badge>
+        ) : null}
+      </div>
+      <p className="-mt-2 text-sm text-muted-foreground">
+        Every number the health report is built from. All values are computed in
+        the domain engine; nothing here is derived in the component.
+      </p>
+
+      {debug.warnings.length > 0 ? (
+        <Card className="border-amber-500/40">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangleIcon className="size-4 text-amber-600 dark:text-amber-400" />
+              <CardTitle className="text-base">Data-quality warnings</CardTitle>
+              <Badge variant="secondary" className="ml-auto tabular-nums">
+                {debug.warnings.reduce((sum, w) => sum + w.count, 0)}
+              </Badge>
+            </div>
+            <CardDescription>
+              Items with missing or generic metadata that can skew the report.
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {debug.warnings.map((warning) => (
+              <div key={warning.key}>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium">{warning.label}</span>
+                  <Badge variant="outline" className="tabular-nums">
+                    {warning.count}
+                  </Badge>
+                </div>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {warning.items
+                    .slice(0, 12)
+                    .map((item) => item.name)
+                    .join(", ")}
+                  {warning.items.length > 12
+                    ? `, +${warning.items.length - 12} more`
+                    : ""}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border-emerald-500/40">
+          <CardContent className="flex items-center gap-2 pt-6 text-sm">
+            <CheckCircleIcon className="size-4 text-emerald-600 dark:text-emerald-400" />
+            No data-quality warnings — every active item has complete metadata.
+          </CardContent>
+        </Card>
+      )}
+
+      <div>
+        <h3 className="mb-3 text-sm font-semibold text-muted-foreground">
+          Distributions
+        </h3>
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {debug.distributions.map((dist) => (
+            <DistributionCard key={dist.key} dist={dist} />
+          ))}
+        </div>
+      </div>
+
+      <div className="space-y-6">
+        <BreakdownTable
+          caption="Category score derivations"
+          rows={debug.categoryScores}
+        />
+        <BreakdownTable
+          caption="Coverage score derivations"
+          rows={debug.coverageScores}
+        />
+        <BreakdownTable caption="Overall score derivation" rows={[debug.overall]} />
+      </div>
+    </div>
+  );
+}
+
 function HealthSkeleton() {
   return (
     <div className="space-y-6">
@@ -336,7 +557,10 @@ function HealthSkeleton() {
 
 export function WardrobeHealthView() {
   const healthQuery = useWardrobeHealth();
-  const health = healthQuery.data;
+  const [showDebug, setShowDebug] = useState(false);
+  const report = healthQuery.data;
+  const health = report?.health;
+  const debug = report?.debug;
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -361,6 +585,16 @@ export function WardrobeHealthView() {
             Dashboard
           </Button>
         }
+        actions={
+          <Button
+            variant={showDebug ? "default" : "outline"}
+            onClick={() => setShowDebug((value) => !value)}
+            aria-pressed={showDebug}
+          >
+            <BugIcon />
+            Debug
+          </Button>
+        }
       />
 
       {healthQuery.isPending ? <HealthSkeleton /> : null}
@@ -374,6 +608,8 @@ export function WardrobeHealthView() {
       ) : null}
 
       {health ? <HealthReport health={health} /> : null}
+
+      {showDebug && debug ? <HealthDebugPanel debug={debug} /> : null}
     </div>
   );
 }
