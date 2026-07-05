@@ -1,12 +1,14 @@
 import {
-  buildEngineEvaluation,
+  buildRuleResult,
   clampScore0To10,
+  coverageConfidence,
   inferTextureFamily,
+  MISSING_DATA_CONFIDENCE,
   uniqueRecommendations,
 } from "@/domain/outfit/engine-utils";
 import { NEUTRAL_ENGINE_SCORE } from "@/domain/outfit/assumptions";
 import type {
-  EngineEvaluation,
+  EngineRuleResult,
   OutfitEngineModule,
   OutfitEvaluationInput,
   TextureFamily,
@@ -31,30 +33,39 @@ function isComplementary(left: TextureFamily, right: TextureFamily): boolean {
   );
 }
 
-function evaluateTextureEngine(input: OutfitEvaluationInput): EngineEvaluation {
+function evaluateTextureEngine(input: OutfitEvaluationInput): EngineRuleResult {
   const families = input.items.map((item) =>
     inferTextureFamily(item.material, item.texture),
   );
   const known = families.filter((family) => family !== "unknown");
 
   if (known.length === 0) {
-    return buildEngineEvaluation(
+    return buildRuleResult(
       "texture",
       NEUTRAL_ENGINE_SCORE,
       "No material or texture data was available for outfit items.",
-      ["Add material tags (wool, linen, denim) to improve texture scoring."],
+      {
+        confidence: MISSING_DATA_CONFIDENCE,
+        suggestions: [
+          "Add material tags (wool, linen, denim) to improve texture scoring.",
+        ],
+      },
     );
   }
 
   let pairwiseScore = 10;
-  const recommendations: string[] = [];
+  const suggestions: string[] = [];
+  const weaknesses: string[] = [];
 
   for (let index = 0; index < known.length; index += 1) {
     for (let otherIndex = index + 1; otherIndex < known.length; otherIndex += 1) {
       if (!isComplementary(known[index], known[otherIndex])) {
         pairwiseScore -= 2;
-        recommendations.push(
+        suggestions.push(
           `Balance ${known[index]} and ${known[otherIndex]} textures with a smoother base piece.`,
+        );
+        weaknesses.push(
+          `${known[index]} and ${known[otherIndex]} textures compete.`,
         );
       }
     }
@@ -63,21 +74,26 @@ function evaluateTextureEngine(input: OutfitEvaluationInput): EngineEvaluation {
   const heavyCount = known.filter((family) => HEAVY_TEXTURES.has(family)).length;
   if (heavyCount >= 3) {
     pairwiseScore -= 2;
-    recommendations.push("Limit heavy textures to two focal pieces per outfit.");
+    suggestions.push("Limit heavy textures to two focal pieces per outfit.");
+    weaknesses.push("Outfit stacks too many heavy textures.");
   } else if (new Set(known).size === 1 && known.length >= 2) {
     pairwiseScore = Math.max(pairwiseScore, 7);
-    recommendations.push("Monotexture outfit — add contrast via accessories or outerwear.");
+    suggestions.push("Monotexture outfit — add contrast via accessories or outerwear.");
   }
 
   const score = clampScore0To10(pairwiseScore);
 
-  return buildEngineEvaluation(
+  return buildRuleResult(
     "texture",
     score,
     heavyCount >= 3
       ? "Outfit stacks too many heavy textures."
       : "Texture mix is within rule-based harmony bounds.",
-    uniqueRecommendations(recommendations),
+    {
+      confidence: coverageConfidence(known.length, input.items.length),
+      suggestions: uniqueRecommendations(suggestions),
+      weaknesses: uniqueRecommendations(weaknesses),
+    },
   );
 }
 

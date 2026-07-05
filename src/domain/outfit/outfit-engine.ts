@@ -1,4 +1,7 @@
-import { DEFAULT_ENGINE_WEIGHTS } from "@/domain/outfit/assumptions";
+import {
+  DEFAULT_ENGINE_WEIGHTS,
+  OUTFIT_ENGINE_VERSION,
+} from "@/domain/outfit/assumptions";
 import { ColorEngine } from "@/domain/outfit/color-engine";
 import { FormalityEngine } from "@/domain/outfit/formality-engine";
 import { OccasionEngine } from "@/domain/outfit/occasion-engine";
@@ -6,17 +9,20 @@ import { SeasonEngine } from "@/domain/outfit/season-engine";
 import { TextureEngine } from "@/domain/outfit/texture-engine";
 import { WeatherEngine } from "@/domain/outfit/weather-engine";
 import {
+  clampConfidence,
   clampScore0To10,
   uniqueRecommendations,
   weightedAverageScore,
 } from "@/domain/outfit/engine-utils";
 import type {
-  EngineEvaluation,
   EngineId,
+  EngineRuleResult,
+  OutfitAnalysis,
+  OutfitAnalysisBreakdown,
   OutfitEngineConfig,
   OutfitEngineModule,
   OutfitEvaluationInput,
-  OutfitEvaluationResult,
+  RuleResult,
 } from "@/domain/outfit/types";
 
 const DEFAULT_ENGINES: readonly OutfitEngineModule[] = [
@@ -43,76 +49,111 @@ function resolveEngines(config?: OutfitEngineConfig): OutfitEngineModule[] {
   return [...byId.values()];
 }
 
-function scoreBand(score: number): "strong" | "moderate" | "weak" {
-  if (score >= 8) {
-    return "strong";
-  }
-  if (score >= 6) {
-    return "moderate";
-  }
-  return "weak";
+function toRuleResult(result: EngineRuleResult): RuleResult {
+  return {
+    score: result.score,
+    confidence: result.confidence,
+    reason: result.reason,
+    strengths: result.strengths,
+    weaknesses: result.weaknesses,
+    suggestions: result.suggestions,
+  };
 }
 
 function buildSummary(
   overallScore: number,
-  engines: Readonly<Record<EngineId, EngineEvaluation>>,
+  results: readonly EngineRuleResult[],
 ): string {
-  const entries = Object.values(engines);
-  const strongest = [...entries].sort((left, right) => right.score - left.score)[0];
-  const weakest = [...entries].sort((left, right) => left.score - right.score)[0];
+  const strongest = [...results].sort((left, right) => right.score - left.score)[0];
+  const weakest = [...results].sort((left, right) => left.score - right.score)[0];
 
   return `Overall outfit score is ${overallScore}/10. Strongest dimension: ${strongest.engineId} (${strongest.score}). Weakest dimension: ${weakest.engineId} (${weakest.score}).`;
 }
 
-function collectStrengths(engines: Readonly<Record<EngineId, EngineEvaluation>>): string[] {
-  return Object.values(engines)
-    .filter((engine) => scoreBand(engine.score) === "strong")
-    .map((engine) => `${engine.engineId}: ${engine.reason}`);
-}
+function weightedConfidence(
+  results: readonly EngineRuleResult[],
+  weights: OutfitEngineConfig["weights"],
+): number {
+  const weightMap = weights ?? DEFAULT_ENGINE_WEIGHTS;
+  let weightedTotal = 0;
+  let weightSum = 0;
 
-function collectWeaknesses(engines: Readonly<Record<EngineId, EngineEvaluation>>): string[] {
-  return Object.values(engines)
-    .filter((engine) => scoreBand(engine.score) === "weak")
-    .map((engine) => `${engine.engineId}: ${engine.reason}`);
-}
+  for (const result of results) {
+    const weight = weightMap[result.engineId] ?? 0;
+    weightedTotal += result.confidence * weight;
+    weightSum += weight;
+  }
 
-function collectSuggestions(
-  engines: Readonly<Record<EngineId, EngineEvaluation>>,
-): string[] {
-  const sorted = Object.values(engines).sort((left, right) => left.score - right.score);
-  return uniqueRecommendations(
-    sorted.flatMap((engine) => engine.recommendations),
-  );
+  if (weightSum === 0) {
+    return 0;
+  }
+
+  return clampConfidence(weightedTotal / weightSum);
 }
 
 /**
- * Evaluates an outfit using all rule-based sub-engines and returns a composite result.
+ * Evaluates an outfit using all rule-based sub-engines and returns a
+ * structured, versioned {@link OutfitAnalysis}. Deterministic given the same
+ * input and config (inject `config.generatedAt` for reproducible metadata).
  * Engines are extensible via {@link OutfitEngineConfig.extraEngines}.
  */
 export function evaluateOutfit(
   input: OutfitEvaluationInput,
   config?: OutfitEngineConfig,
-): OutfitEvaluationResult {
+): OutfitAnalysis {
   const enginesList = resolveEngines(config);
   const weights = config?.weights ?? DEFAULT_ENGINE_WEIGHTS;
-  const engineResults = {} as Record<EngineId, EngineEvaluation>;
-  const scoreMap = {} as Record<EngineId, number>;
+  const results: EngineRuleResult[] = [];
+  const scoreMap: Partial<Record<EngineId, number>> = {};
 
   for (const engine of enginesList) {
-    const evaluation = engine.evaluate(input);
-    engineResults[engine.id] = evaluation;
-    scoreMap[engine.id] = evaluation.score;
+    const result = engine.evaluate(input);
+    results.push(result);
+    scoreMap[engine.id] = result.score;
   }
 
   const overallScore = clampScore0To10(weightedAverageScore(scoreMap, weights));
+  const byId = new Map(results.map((result) => [result.engineId, result]));
+
+  const breakdown: OutfitAnalysisBreakdown = {
+    color: toRuleResult(byId.get("color")!),
+    formality: toRuleResult(byId.get("formality")!),
+    season: toRuleResult(byId.get("season")!),
+    occasion: toRuleResult(byId.get("occasion")!),
+    texture: toRuleResult(byId.get("texture")!),
+  };
+
+  const weather = byId.get("weather");
+  if (weather) {
+    breakdown.weather = toRuleResult(weather);
+  }
+
+  const footwear = byId.get("footwear");
+  if (footwear) {
+    breakdown.footwear = toRuleResult(footwear);
+  }
+
+  const weakestFirst = [...results].sort((left, right) => left.score - right.score);
 
   return {
     overallScore,
-    summary: buildSummary(overallScore, engineResults),
-    strengths: collectStrengths(engineResults),
-    weaknesses: collectWeaknesses(engineResults),
-    suggestions: collectSuggestions(engineResults),
-    engines: engineResults,
+    confidence: weightedConfidence(results, weights),
+    summary: buildSummary(overallScore, results),
+    strengths: results.flatMap((result) =>
+      result.strengths.map((entry) => `${result.engineId}: ${entry}`),
+    ),
+    weaknesses: results.flatMap((result) =>
+      result.weaknesses.map((entry) => `${result.engineId}: ${entry}`),
+    ),
+    suggestions: uniqueRecommendations(
+      weakestFirst.flatMap((result) => result.suggestions),
+    ),
+    breakdown,
+    metadata: {
+      engineVersion: OUTFIT_ENGINE_VERSION,
+      generatedAt: config?.generatedAt ?? new Date().toISOString(),
+      rulesApplied: enginesList.map((engine) => engine.id),
+    },
   };
 }
 

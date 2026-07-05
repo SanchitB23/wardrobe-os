@@ -52,6 +52,12 @@ export const DEFAULT_ENGINE_WEIGHTS: EngineWeightMap = {
   weather: 0.15,
 };
 
+/**
+ * Semantic version of the outfit analysis contract. Bump when RuleResult or
+ * OutfitAnalysis shape or scoring semantics change.
+ */
+export const OUTFIT_ENGINE_VERSION = "2.0.0";
+
 /** Score returned when an engine lacks enough data to judge confidently. */
 export const NEUTRAL_ENGINE_SCORE = 6;
 

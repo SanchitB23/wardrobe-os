@@ -29,21 +29,24 @@ export {
   MIN_ITEMS_FOR_PAIRWISE,
   NEUTRAL_ENGINE_SCORE,
   OUTFIT_ENGINE_ASSUMPTIONS,
+  OUTFIT_ENGINE_VERSION,
 } from "@/domain/outfit/assumptions";
 
 export type {
-  EngineEvaluation,
   EngineId,
+  EngineRuleResult,
   EngineWeightMap,
   OccasionCategory,
+  OutfitAnalysis,
+  OutfitAnalysisBreakdown,
   OutfitEngineAssumption,
   OutfitEngineConfig,
   OutfitEngineItem,
   OutfitEngineModule,
   OutfitEvaluationContext,
   OutfitEvaluationInput,
-  OutfitEvaluationResult,
   PrecipitationLevel,
+  RuleResult,
   SeasonBucket,
   TextureFamily,
   WeatherContext,
@@ -51,9 +54,13 @@ export type {
 } from "@/domain/outfit/types";
 
 export {
+  buildRuleResult,
+  clampConfidence,
   clampScore0To10,
   categorizeOccasion,
+  coverageConfidence,
   inferTextureFamily,
+  MISSING_DATA_CONFIDENCE,
   normalizeSeasonLabel,
   scoreFromRatio,
   weightedAverageScore,

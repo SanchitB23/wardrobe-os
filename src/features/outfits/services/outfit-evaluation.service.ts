@@ -1,5 +1,5 @@
 import { evaluateOutfit } from "@/domain/outfit";
-import type { OutfitEvaluationInput, OutfitEvaluationResult } from "@/domain/outfit";
+import type { OutfitAnalysis, OutfitEvaluationInput } from "@/domain/outfit";
 import {
   fetchEvaluationRelationRows,
   type EvaluationRelationRows,
@@ -99,7 +99,7 @@ export function buildEvaluationAttributes(
 /** Fetches item enrichment for an outfit and runs the domain outfit engine. */
 export async function fetchOutfitEvaluation(
   outfit: EvaluationOutfit,
-): Promise<{ data: OutfitEvaluationResult | null; error: Error | null }> {
+): Promise<{ data: OutfitAnalysis | null; error: Error | null }> {
   const itemIds = [...new Set(outfit.items.map((entry) => entry.item_id))];
 
   const rowsResult = await fetchEvaluationRelationRows(itemIds);

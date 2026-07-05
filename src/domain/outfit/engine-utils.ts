@@ -1,6 +1,6 @@
 import type {
-  EngineEvaluation,
   EngineId,
+  EngineRuleResult,
   EngineWeightMap,
   OccasionCategory,
   SeasonBucket,
@@ -47,17 +47,56 @@ export function weightedAverageScore(
   return clampScore0To10(weightedTotal / weightSum);
 }
 
-export function buildEngineEvaluation(
+export function clampConfidence(value: number): number {
+  return Math.round(Math.max(0, Math.min(1, value)) * 100) / 100;
+}
+
+/** Confidence when a rule saw no usable data at all. */
+export const MISSING_DATA_CONFIDENCE = 0.2;
+
+/**
+ * Confidence from data coverage: floor when nothing usable, 1 when every
+ * item carried the data the rule needed.
+ */
+export function coverageConfidence(withData: number, total: number): number {
+  if (total === 0 || withData === 0) {
+    return MISSING_DATA_CONFIDENCE;
+  }
+
+  return clampConfidence(
+    MISSING_DATA_CONFIDENCE + (1 - MISSING_DATA_CONFIDENCE) * (withData / total),
+  );
+}
+
+const STRONG_SCORE_THRESHOLD = 8;
+const WEAK_SCORE_THRESHOLD = 6;
+
+export function buildRuleResult(
   engineId: EngineId,
   score: number,
   reason: string,
-  recommendations: string[] = [],
-): EngineEvaluation {
+  options: {
+    confidence?: number;
+    strengths?: string[];
+    weaknesses?: string[];
+    suggestions?: string[];
+  } = {},
+): EngineRuleResult {
+  const clampedScore = clampScore0To10(score);
+  const strengths =
+    options.strengths ??
+    (clampedScore >= STRONG_SCORE_THRESHOLD ? [reason] : []);
+  const weaknesses =
+    options.weaknesses ?? (clampedScore < WEAK_SCORE_THRESHOLD ? [reason] : []);
+
   return {
     engineId,
-    score: clampScore0To10(score),
+    score: clampedScore,
+    confidence: clampConfidence(options.confidence ?? 1),
     reason,
-    recommendations,
+    strengths,
+    weaknesses,
+    suggestions: options.suggestions ?? [],
   };
 }
 

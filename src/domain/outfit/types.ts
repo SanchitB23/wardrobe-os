@@ -7,7 +7,8 @@ export type EngineId =
   | "season"
   | "occasion"
   | "texture"
-  | "weather";
+  | "weather"
+  | "footwear";
 
 /** Normalized season buckets used by the season engine. */
 export type SeasonBucket =
@@ -44,18 +45,27 @@ export type OccasionCategory =
   | "evening"
   | "unknown";
 
-/** Shared result shape returned by every sub-engine. */
-export interface EngineEvaluation {
-  engineId: EngineId;
+/** Structured, deterministic result returned by every scoring rule. */
+export interface RuleResult {
+  /** 0–10 rule score. */
   score: number;
+  /** 0–1 confidence based on how much input data the rule could use. */
+  confidence: number;
   reason: string;
-  recommendations: string[];
+  strengths: string[];
+  weaknesses: string[];
+  suggestions: string[];
+}
+
+/** RuleResult tagged with the engine that produced it. */
+export interface EngineRuleResult extends RuleResult {
+  engineId: EngineId;
 }
 
 /** Contract for extensible, rule-based outfit engines. */
 export interface OutfitEngineModule {
   readonly id: EngineId;
-  evaluate(input: OutfitEvaluationInput): EngineEvaluation;
+  evaluate(input: OutfitEvaluationInput): EngineRuleResult;
 }
 
 /** Per-item attributes consumed by outfit engines. */
@@ -101,23 +111,44 @@ export interface OutfitEvaluationInput {
 }
 
 /** Per-engine weighting for the composite outfit score. */
-export type EngineWeightMap = Readonly<Record<EngineId, number>>;
+export type EngineWeightMap = Readonly<Partial<Record<EngineId, number>>>;
 
 /** Configuration for {@link evaluateOutfit}. */
 export interface OutfitEngineConfig {
   weights?: EngineWeightMap;
   /** Additional engines appended after the defaults. */
   extraEngines?: readonly OutfitEngineModule[];
+  /** ISO timestamp stamped into metadata; inject for deterministic output. */
+  generatedAt?: string;
 }
 
-/** Composite output from {@link evaluateOutfit}. */
-export interface OutfitEvaluationResult {
+/** Per-dimension rule results keyed by engine. */
+export interface OutfitAnalysisBreakdown {
+  color: RuleResult;
+  formality: RuleResult;
+  season: RuleResult;
+  occasion: RuleResult;
+  texture: RuleResult;
+  weather?: RuleResult;
+  footwear?: RuleResult;
+}
+
+/** Versioned, structured composite output from {@link evaluateOutfit}. */
+export interface OutfitAnalysis {
+  /** 0–10 weighted composite score. */
   overallScore: number;
+  /** 0–1 weighted composite confidence. */
+  confidence: number;
   summary: string;
+  breakdown: OutfitAnalysisBreakdown;
   strengths: string[];
   weaknesses: string[];
   suggestions: string[];
-  engines: Readonly<Record<EngineId, EngineEvaluation>>;
+  metadata: {
+    engineVersion: string;
+    generatedAt: string;
+    rulesApplied: string[];
+  };
 }
 
 /** Documented design assumptions for the rule-based outfit engine. */

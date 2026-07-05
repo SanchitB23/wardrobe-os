@@ -1,12 +1,14 @@
 import {
-  buildEngineEvaluation,
+  buildRuleResult,
   clampScore0To10,
+  coverageConfidence,
+  MISSING_DATA_CONFIDENCE,
   normalizeSeasonLabel,
   uniqueRecommendations,
 } from "@/domain/outfit/engine-utils";
 import { NEUTRAL_ENGINE_SCORE } from "@/domain/outfit/assumptions";
 import type {
-  EngineEvaluation,
+  EngineRuleResult,
   OutfitEngineItem,
   OutfitEngineModule,
   OutfitEvaluationInput,
@@ -43,18 +45,25 @@ function itemMatchesTargetSeason(
   return itemSeasons.some((season) => allowed.includes(season));
 }
 
-function evaluateSeasonEngine(input: OutfitEvaluationInput): EngineEvaluation {
+function evaluateSeasonEngine(input: OutfitEvaluationInput): EngineRuleResult {
   const target = normalizeSeasonLabel(input.context?.targetSeason);
   const items = input.items;
+  const taggedCount = items.filter(
+    (item) => collectItemSeasons(item).length > 0,
+  ).length;
 
   if (!target) {
-    const taggedCount = items.filter((item) => collectItemSeasons(item).length > 0).length;
     if (taggedCount === 0) {
-      return buildEngineEvaluation(
+      return buildRuleResult(
         "season",
         NEUTRAL_ENGINE_SCORE,
         "No target season or item season tags were provided.",
-        ["Set an outfit season or tag items with seasonal suitability."],
+        {
+          confidence: MISSING_DATA_CONFIDENCE,
+          suggestions: [
+            "Set an outfit season or tag items with seasonal suitability.",
+          ],
+        },
       );
     }
 
@@ -63,13 +72,17 @@ function evaluateSeasonEngine(input: OutfitEvaluationInput): EngineEvaluation {
     );
     const score = uniqueBuckets.size <= 2 ? 8 : 5;
 
-    return buildEngineEvaluation(
+    return buildRuleResult(
       "season",
       score,
       `Items span ${uniqueBuckets.size} season bucket(s) without a target season.`,
-      uniqueBuckets.size > 2
-        ? ["Narrow seasonal tags to one primary season for stronger cohesion."]
-        : ["Season tagging is consistent across items."],
+      {
+        confidence: coverageConfidence(taggedCount, items.length),
+        suggestions:
+          uniqueBuckets.size > 2
+            ? ["Narrow seasonal tags to one primary season for stronger cohesion."]
+            : ["Season tagging is consistent across items."],
+      },
     );
   }
 
@@ -78,20 +91,26 @@ function evaluateSeasonEngine(input: OutfitEvaluationInput): EngineEvaluation {
     items.length === 0 ? 0 : (items.length - mismatched.length) / items.length;
   const score = clampScore0To10(matchRatio * 10);
 
-  const recommendations = uniqueRecommendations([
+  const suggestions = uniqueRecommendations([
     mismatched.length > 0
       ? `Swap ${mismatched.map((item) => item.name).join(", ")} for ${target}-appropriate pieces.`
       : `All items align with the ${target} season target.`,
     "Use all-season layers to bridge transitional weather.",
   ]);
 
-  return buildEngineEvaluation(
+  return buildRuleResult(
     "season",
     score,
     mismatched.length === 0
       ? `Outfit aligns with the ${target} season target.`
       : `${mismatched.length} item(s) fall outside the ${target} season window.`,
-    recommendations,
+    {
+      confidence: coverageConfidence(taggedCount, items.length),
+      suggestions,
+      weaknesses: mismatched.map(
+        (item) => `${item.name} is not suited to ${target}.`,
+      ),
+    },
   );
 }
 

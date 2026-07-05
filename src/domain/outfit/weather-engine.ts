@@ -1,12 +1,13 @@
 import {
-  buildEngineEvaluation,
+  buildRuleResult,
   clampScore0To10,
   inferTextureFamily,
+  MISSING_DATA_CONFIDENCE,
   uniqueRecommendations,
 } from "@/domain/outfit/engine-utils";
 import { NEUTRAL_ENGINE_SCORE } from "@/domain/outfit/assumptions";
 import type {
-  EngineEvaluation,
+  EngineRuleResult,
   OutfitEngineModule,
   OutfitEvaluationInput,
 } from "@/domain/outfit/types";
@@ -32,20 +33,26 @@ function countHeavyFabrics(input: OutfitEvaluationInput): number {
   }).length;
 }
 
-function evaluateWeatherEngine(input: OutfitEvaluationInput): EngineEvaluation {
+function evaluateWeatherEngine(input: OutfitEvaluationInput): EngineRuleResult {
   const weather = input.context?.weather;
 
   if (!weather) {
-    return buildEngineEvaluation(
+    return buildRuleResult(
       "weather",
       NEUTRAL_ENGINE_SCORE,
       "No weather context was provided for this outfit.",
-      ["Add temperature and precipitation to validate weather suitability."],
+      {
+        confidence: MISSING_DATA_CONFIDENCE,
+        suggestions: [
+          "Add temperature and precipitation to validate weather suitability.",
+        ],
+      },
     );
   }
 
   let score = 10;
-  const recommendations: string[] = [];
+  const suggestions: string[] = [];
+  const weaknesses: string[] = [];
   const temperature = weather.temperatureC;
   const precipitation = weather.precipitation ?? "none";
   const wind = weather.wind ?? "calm";
@@ -60,27 +67,30 @@ function evaluateWeatherEngine(input: OutfitEvaluationInput): EngineEvaluation {
 
   if (temperature <= COLD_THRESHOLD_C && !outerwear) {
     score -= 3;
-    recommendations.push("Add outerwear for cold weather protection.");
+    suggestions.push("Add outerwear for cold weather protection.");
+    weaknesses.push(`No outerwear for cold weather (${temperature}°C).`);
   }
 
   if (temperature >= HOT_THRESHOLD_C && heavyFabrics >= 2) {
     score -= 3;
-    recommendations.push("Swap heavy knits or leather for linen or lightweight cotton.");
+    suggestions.push("Swap heavy knits or leather for linen or lightweight cotton.");
+    weaknesses.push(`${heavyFabrics} heavy fabric piece(s) in hot weather.`);
   }
 
   if (precipitation !== "none" && !outerwear) {
     score -= precipitation === "heavy" ? 4 : 2;
-    recommendations.push("Include a water-resistant outer layer for precipitation.");
+    suggestions.push("Include a water-resistant outer layer for precipitation.");
+    weaknesses.push(`No outer layer for ${precipitation} precipitation.`);
   }
 
   if (wind === "strong" && !outerwear) {
     score -= 1.5;
-    recommendations.push("Strong wind calls for a structured outer layer.");
+    suggestions.push("Strong wind calls for a structured outer layer.");
   }
 
   if (filledRequired.size < requiredSlots.length) {
     score -= 1;
-    recommendations.push("Complete core slots before evaluating weather readiness.");
+    suggestions.push("Complete core slots before evaluating weather readiness.");
   }
 
   const reason =
@@ -90,12 +100,11 @@ function evaluateWeatherEngine(input: OutfitEvaluationInput): EngineEvaluation {
         ? `Hot (${temperature}°C) — ${heavyFabrics} heavy fabric piece(s).`
         : `Mild (${temperature}°C) — precipitation ${precipitation}, wind ${wind}.`;
 
-  return buildEngineEvaluation(
-    "weather",
-    clampScore0To10(score),
-    reason,
-    uniqueRecommendations(recommendations),
-  );
+  return buildRuleResult("weather", clampScore0To10(score), reason, {
+    confidence: 1,
+    suggestions: uniqueRecommendations(suggestions),
+    weaknesses: uniqueRecommendations(weaknesses),
+  });
 }
 
 export const WeatherEngine: OutfitEngineModule = {
