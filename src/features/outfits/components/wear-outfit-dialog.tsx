@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { CalendarDaysIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -37,7 +36,7 @@ type WearOutfitDialogBodyProps = {
 };
 
 function WearOutfitDialogBody({ outfit, onOpenChange }: WearOutfitDialogBodyProps) {
-  const wornOn = formatWearLogDateInput();
+  const [wornOn, setWornOn] = useState(formatWearLogDateInput());
   const [occasionId, setOccasionId] = useState<string | null>(
     outfit.occasion_id ?? null,
   );
@@ -62,6 +61,11 @@ function WearOutfitDialogBody({ outfit, onOpenChange }: WearOutfitDialogBodyProp
 
     if (itemIds.length === 0) {
       setValidationError("This outfit has no items to log.");
+      return;
+    }
+
+    if (!wornOn) {
+      setValidationError("Worn-on date is required.");
       return;
     }
 
@@ -101,26 +105,21 @@ function WearOutfitDialogBody({ outfit, onOpenChange }: WearOutfitDialogBodyProp
           Log wear for all{" "}
           <span className="font-medium text-foreground">{itemIds.length}</span>{" "}
           item{itemIds.length === 1 ? "" : "s"} in{" "}
-          <span className="font-medium text-foreground">{outfit.name}</span>{" "}
-          on today&apos;s date.
+          <span className="font-medium text-foreground">{outfit.name}</span>.
         </DialogDescription>
       </DialogHeader>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-        <div className="rounded-lg border bg-muted/20 px-3 py-2 text-sm text-muted-foreground">
-          <div className="flex items-center gap-2">
-            <CalendarDaysIcon className="size-4 shrink-0" />
-            <span>
-              Worn on{" "}
-              <span className="font-medium text-foreground">
-                {new Date(`${wornOn}T12:00:00`).toLocaleDateString(undefined, {
-                  year: "numeric",
-                  month: "short",
-                  day: "numeric",
-                })}
-              </span>
-            </span>
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="wear-outfit-date">Worn on</Label>
+          <Input
+            id="wear-outfit-date"
+            type="date"
+            value={wornOn}
+            onChange={(event) => setWornOn(event.target.value)}
+            disabled={wearMutation.isPending}
+            required
+          />
         </div>
 
         <div className="space-y-1.5">
