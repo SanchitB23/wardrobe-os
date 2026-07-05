@@ -1,19 +1,34 @@
 import {
   buildStoragePath,
   clearPrimaryImages,
+  countItemImages,
   createSignedImageUrl,
   createSignedImageUrls,
+  deleteItemImageRow,
   extractWardrobeImageStoragePath,
   getWardrobeImagePublicUrl,
+  insertItemImage,
   insertPrimaryItemImage,
+  removeImageFromStorage,
+  selectItemImageById,
   selectItemImages,
   selectPrimaryImageUrlRow,
   selectPrimaryImageUrls,
+  setImagePrimaryById,
   uploadImageToStorage,
 } from "@/features/inventory/repositories/images.repository";
 import type { ItemImageRow } from "@/features/inventory/types";
-import { formatEnumLabel } from "@/types/wardrobe";
+import { formatEnumLabel, type ImageType } from "@/types/wardrobe";
 import { toError } from "@/shared/utils/data-result";
+
+export const IMAGE_TYPE_OPTIONS: { value: ImageType; label: string }[] = [
+  { value: "product", label: "Product" },
+  { value: "flatlay", label: "Flat lay" },
+  { value: "hanger", label: "Hanger" },
+  { value: "worn", label: "Worn" },
+  { value: "closeup", label: "Close-up" },
+  { value: "label", label: "Label" },
+];
 
 export const MAX_ITEM_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 export const MAX_ITEM_IMAGE_SIZE_LABEL = "5 MB";
@@ -178,4 +193,85 @@ export async function uploadPrimaryItemImage(
   const resolved = await resolveItemImageRow(insertResult.data);
 
   return { data: resolved, error: null };
+}
+
+/**
+ * Uploads one gallery image with a chosen type. Becomes primary when
+ * requested or when it is the item's first image.
+ */
+export async function uploadItemImage(input: {
+  itemId: string;
+  file: File;
+  imageType: ImageType;
+  makePrimary?: boolean;
+}): Promise<{ data: ItemImageRow | null; error: Error | null }> {
+  const validation = validateItemImageFile(input.file);
+  if (!validation.valid) {
+    return { data: null, error: toError(validation.message) };
+  }
+
+  const countResult = await countItemImages(input.itemId);
+  if (countResult.error) {
+    return { data: null, error: countResult.error };
+  }
+  const isFirstImage = countResult.data === 0;
+  const shouldBePrimary = Boolean(input.makePrimary) || isFirstImage;
+
+  const storagePath = buildStoragePath(input.itemId, input.file.name);
+  const uploadError = await uploadImageToStorage(storagePath, input.file);
+  if (uploadError) {
+    return { data: null, error: uploadError };
+  }
+
+  if (shouldBePrimary) {
+    const clearError = await clearPrimaryImages(input.itemId);
+    if (clearError) {
+      return { data: null, error: clearError };
+    }
+  }
+
+  const insertResult = await insertItemImage({
+    itemId: input.itemId,
+    storagePath,
+    imageType: input.imageType,
+    isPrimary: shouldBePrimary,
+  });
+  if (insertResult.error || !insertResult.data) {
+    return { data: null, error: insertResult.error };
+  }
+
+  const resolved = await resolveItemImageRow(insertResult.data);
+  return { data: resolved, error: null };
+}
+
+/** Makes one image primary and clears the flag on the rest. */
+export async function setPrimaryItemImage(
+  itemId: string,
+  imageId: string,
+): Promise<{ error: Error | null }> {
+  const error = await setImagePrimaryById(itemId, imageId);
+  return { error };
+}
+
+/** Deletes an image row and removes the underlying storage object. */
+export async function deleteItemImage(
+  imageId: string,
+): Promise<{ error: Error | null }> {
+  const imageResult = await selectItemImageById(imageId);
+  if (imageResult.error) {
+    return { error: imageResult.error };
+  }
+  if (!imageResult.data) {
+    return { error: toError("Image not found.") };
+  }
+
+  const deleteError = await deleteItemImageRow(imageId);
+  if (deleteError) {
+    return { error: deleteError };
+  }
+
+  // Best-effort storage cleanup — the row is already gone.
+  await removeImageFromStorage(imageResult.data.image_url);
+
+  return { error: null };
 }

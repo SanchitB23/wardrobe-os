@@ -8,7 +8,6 @@ import {
   ArrowLeftIcon,
   CalendarPlusIcon,
   HeartIcon,
-  ImageIcon,
   LayersIcon,
   PencilIcon,
   SparklesIcon,
@@ -17,7 +16,7 @@ import {
 
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
 import { ItemFormDialog } from "@/features/inventory/components/item-form-dialog";
-import { ItemImage } from "@/features/inventory/components/item-image";
+import { ItemImageGallery } from "@/features/inventory/components/item-image-gallery";
 import { LogWearDialog } from "@/features/wear-logs/components/log-wear-dialog";
 import { PurchaseFormDialog } from "@/features/purchases/components/purchase-form-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -38,7 +37,6 @@ import {
 } from "@/features/inventory/hooks";
 import { useItemPurchaseDetail } from "@/features/purchases/hooks";
 import { useItemWearSummary } from "@/features/wear-logs/hooks";
-import { buildItemImageAltText } from "@/features/inventory/services/images.service";
 import { formatPurchaseDisplayDate } from "@/features/purchases/services/purchases.service";
 import { formatWearLogDisplayDate } from "@/features/wear-logs/services/wear-logs.service";
 import {
@@ -51,13 +49,11 @@ import {
   StatusBadge,
   UsageBadge,
 } from "@/shared/ui";
-import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
   formatCurrency,
   formatRating,
   type ItemCareProfile,
-  type ItemImageRow,
   type ItemOccasionRelation,
   type ItemWearSummary,
   type ItemPurchaseDetail,
@@ -138,117 +134,48 @@ function BadgeGroup({ label, items }: { label: string; items: LookupOption[] }) 
   );
 }
 
-function ItemImagePlaceholder({ className }: { className?: string }) {
-  return (
-    <div
-      className={cn(
-        "flex flex-col items-center justify-center gap-2 rounded-xl border border-dashed bg-muted/30 text-muted-foreground",
-        className,
-      )}
-    >
-      <ImageIcon className="size-10 opacity-60" />
-      <span className="text-sm">No image</span>
-    </div>
-  );
-}
 
 function ImageColumn({
   item,
-  heroImageUrl,
-  images,
-  selectedImageUrl,
-  onSelectImage,
   onToggleFavorite,
   isFavoritePending,
 }: {
   item: WardrobeItemRow;
-  heroImageUrl: string | null;
-  images: ItemImageRow[];
-  selectedImageUrl: string | null;
-  onSelectImage: (url: string) => void;
   onToggleFavorite: () => void;
   isFavoritePending: boolean;
 }) {
   const isHero = item.usage === "hero";
 
   return (
-    <div className="space-y-4 lg:sticky lg:top-20">
-      <div className="relative">
-        {heroImageUrl ? (
-          <div className="overflow-hidden rounded-xl border bg-muted/20 shadow-sm ring-1 ring-foreground/10">
-            <ItemImage
-              src={heroImageUrl}
-              alt={buildItemImageAltText(item.name, "hero")}
-              containerClassName="aspect-[3/4] w-full"
-              className="aspect-[3/4] w-full object-cover"
-            />
-          </div>
-        ) : (
-          <ItemImagePlaceholder className="aspect-[3/4] w-full" />
-        )}
-
-        {isHero ? (
-          <HeroBadge className="absolute left-3 top-3 shadow-sm" />
-        ) : null}
-
-        <Button
-          variant="secondary"
-          size="icon"
-          className="absolute right-3 top-3 rounded-full shadow-sm"
-          aria-label={
-            item.favorite ? "Remove from favorites" : "Add to favorites"
-          }
-          aria-pressed={item.favorite}
-          disabled={isFavoritePending}
-          onClick={onToggleFavorite}
-        >
-          <HeartIcon
-            className={
-              item.favorite ? "fill-rose-500 text-rose-500" : undefined
-            }
-          />
-        </Button>
-      </div>
-
-      {images.length > 1 ? (
-        <div className="space-y-2">
-          <p className="text-xs font-medium tracking-wide text-muted-foreground uppercase">
-            Gallery
-          </p>
-          <div className="grid grid-cols-4 gap-2">
-            {images.map((image) => (
-              <button
-                key={image.id}
-                type="button"
-                onClick={() => onSelectImage(image.image_url)}
-                className={cn(
-                  "relative overflow-hidden rounded-lg border bg-muted/30 outline-none ring-1 ring-foreground/5 transition-colors focus-visible:ring-2 focus-visible:ring-ring",
-                  selectedImageUrl === image.image_url && "ring-2 ring-primary",
-                )}
-              >
-                <ItemImage
-                  src={image.image_url}
-                  alt={buildItemImageAltText(
-                    item.name,
-                    "gallery",
-                    image.image_type,
-                  )}
-                  containerClassName="aspect-square w-full"
-                  className="aspect-square w-full object-cover"
-                />
-                {image.is_primary && (
-                  <Badge
-                    variant="secondary"
-                    className="absolute left-1 top-1 px-1 py-0 text-[10px]"
-                  >
-                    Primary
-                  </Badge>
-                )}
-              </button>
-            ))}
-          </div>
-        </div>
-      ) : null}
+    <div className="lg:sticky lg:top-20">
+      <ItemImageGallery
+        itemId={item.id}
+        itemName={item.name}
+        overlay={
+          <>
+            {isHero ? (
+              <HeroBadge className="absolute left-3 top-3 shadow-sm" />
+            ) : null}
+            <Button
+              variant="secondary"
+              size="icon"
+              className="absolute right-3 top-3 rounded-full shadow-sm"
+              aria-label={
+                item.favorite ? "Remove from favorites" : "Add to favorites"
+              }
+              aria-pressed={item.favorite}
+              disabled={isFavoritePending}
+              onClick={onToggleFavorite}
+            >
+              <HeartIcon
+                className={
+                  item.favorite ? "fill-rose-500 text-rose-500" : undefined
+                }
+              />
+            </Button>
+          </>
+        }
+      />
     </div>
   );
 }
@@ -642,7 +569,6 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
   const [formOpen, setFormOpen] = useState(false);
   const [logWearOpen, setLogWearOpen] = useState(false);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
-  const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const detailQuery = useWardrobeItemDetail(itemId);
   const favoriteMutation = useToggleWardrobeItemFavoriteMutation();
@@ -664,7 +590,6 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
 
   const detail = detailQuery.data;
   const item = detail?.item;
-  const images = detail?.images ?? [];
   const relations = detail?.relations;
   const lookups = lookupsQuery.data ?? {
     categories: [],
@@ -672,13 +597,6 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
     brands: [],
     colors: [],
   };
-
-  const heroImageUrl =
-    selectedImageUrl ??
-    item?.primary_image_url ??
-    images.find((image) => image.is_primary)?.image_url ??
-    images[0]?.image_url ??
-    null;
 
   if (detailQuery.isPending) {
     return <ItemDetailSkeleton />;
@@ -722,10 +640,6 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
       <div className="grid gap-8 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] lg:items-start">
         <ImageColumn
           item={item}
-          heroImageUrl={heroImageUrl}
-          images={images}
-          selectedImageUrl={heroImageUrl}
-          onSelectImage={setSelectedImageUrl}
           onToggleFavorite={() =>
             favoriteMutation.mutate({ id: item.id, favorite: !item.favorite })
           }

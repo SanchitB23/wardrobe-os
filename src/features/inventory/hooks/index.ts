@@ -8,11 +8,15 @@ import {
   fetchBulkEditLookups,
 } from "@/features/inventory/services/bulk-actions.service";
 import {
+  deleteItemImage,
   fetchItemImagesForItem,
   fetchPrimaryImageUrl,
   fetchPrimaryImageUrlsForItems,
+  setPrimaryItemImage,
+  uploadItemImage,
   uploadPrimaryItemImage,
 } from "@/features/inventory/services/images.service";
+import type { ImageType } from "@/types/wardrobe";
 import { fetchImportLookups } from "@/features/inventory/services/import.service";
 import { fetchWardrobeItemDetail } from "@/features/inventory/services/item-detail.service";
 import {
@@ -104,6 +108,82 @@ export function useItemImages(itemId: string) {
     queryKey: wardrobeKeys.itemImages(itemId),
     queryFn: async () => unwrapData(await fetchItemImagesForItem(itemId)),
     enabled: Boolean(itemId),
+  });
+}
+
+export function useUploadItemImageMutation(itemId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      file: File;
+      imageType: ImageType;
+      makePrimary?: boolean;
+    }) =>
+      unwrapData(
+        await uploadItemImage({
+          itemId,
+          file: input.file,
+          imageType: input.imageType,
+          makePrimary: input.makePrimary,
+        }),
+      ),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemImages(itemId),
+      });
+      await invalidateWardrobeQueries(queryClient);
+      toast.success("Image uploaded");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to upload image");
+    },
+  });
+}
+
+export function useSetPrimaryImageMutation(itemId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (imageId: string) => {
+      const { error } = await setPrimaryItemImage(itemId, imageId);
+      if (error) {
+        throw error;
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemImages(itemId),
+      });
+      await invalidateWardrobeQueries(queryClient);
+      toast.success("Primary image updated");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to set primary image");
+    },
+  });
+}
+
+export function useDeleteItemImageMutation(itemId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (imageId: string) => {
+      const { error } = await deleteItemImage(imageId);
+      if (error) {
+        throw error;
+      }
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemImages(itemId),
+      });
+      await invalidateWardrobeQueries(queryClient);
+      toast.success("Image deleted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to delete image");
+    },
   });
 }
 

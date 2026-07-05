@@ -4,6 +4,7 @@ import type { ItemImageRow } from "@/features/inventory/types";
 import {
   DEFAULT_PRIMARY_IMAGE_TYPE,
   WARDROBE_IMAGES_BUCKET,
+  type ImageType,
 } from "@/types/wardrobe";
 
 export const ITEM_IMAGE_SELECT =
@@ -110,18 +111,34 @@ export async function selectPrimaryImageUrls(
   }
 
   const supabase = createClient();
+  // Fetch primary + fallback candidates ordered so the primary (or, when none
+  // exists, the latest) image wins per item.
   const { data, error } = await supabase
     .from("item_images")
-    .select("item_id, image_url")
+    .select("item_id, image_url, is_primary, created_at")
     .in("item_id", itemIds)
-    .eq("is_primary", true);
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: false });
 
   if (error) {
     return { data: null, error: toError(error.message) };
   }
 
+  const byItem = new Map<string, string>();
+  for (const row of (data ?? []) as {
+    item_id: string;
+    image_url: string;
+  }[]) {
+    if (row.item_id && row.image_url && !byItem.has(row.item_id)) {
+      byItem.set(row.item_id, row.image_url);
+    }
+  }
+
   return {
-    data: (data ?? []) as { item_id: string; image_url: string }[],
+    data: [...byItem.entries()].map(([item_id, image_url]) => ({
+      item_id,
+      image_url,
+    })),
     error: null,
   };
 }
@@ -130,18 +147,38 @@ export async function selectPrimaryImageUrlRow(
   itemId: string,
 ): Promise<{ data: { image_url: string } | null; error: Error | null }> {
   const supabase = createClient();
+  // Primary first, else fall back to the most recent image.
   const { data, error } = await supabase
     .from("item_images")
-    .select("image_url")
+    .select("image_url, is_primary, created_at")
     .eq("item_id", itemId)
-    .eq("is_primary", true)
+    .order("is_primary", { ascending: false })
+    .order("created_at", { ascending: false })
+    .limit(1)
     .maybeSingle();
 
   if (error) {
     return { data: null, error: toError(error.message) };
   }
 
-  return { data: data ?? null, error: null };
+  return { data: data ? { image_url: data.image_url } : null, error: null };
+}
+
+export async function selectItemImageById(
+  imageId: string,
+): Promise<{ data: ItemImageRow | null; error: Error | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("item_images")
+    .select(ITEM_IMAGE_SELECT)
+    .eq("id", imageId)
+    .maybeSingle();
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: (data as ItemImageRow | null) ?? null, error: null };
 }
 
 export async function clearPrimaryImages(itemId: string): Promise<Error | null> {
@@ -200,6 +237,101 @@ export async function insertPrimaryItemImage(
   }
 
   return { data: data as ItemImageRow, error: null };
+}
+
+export async function insertItemImage(input: {
+  itemId: string;
+  storagePath: string;
+  imageType: ImageType;
+  isPrimary: boolean;
+}): Promise<{ data: ItemImageRow | null; error: Error | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("item_images")
+    .insert({
+      item_id: input.itemId,
+      image_url: input.storagePath,
+      image_type: input.imageType,
+      is_primary: input.isPrimary,
+    })
+    .select(ITEM_IMAGE_SELECT)
+    .single();
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: data as ItemImageRow, error: null };
+}
+
+/** Sets one image primary and clears the flag on all other images for the item. */
+export async function setImagePrimaryById(
+  itemId: string,
+  imageId: string,
+): Promise<Error | null> {
+  const clearError = await clearPrimaryImages(itemId);
+  if (clearError) {
+    return clearError;
+  }
+
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("item_images")
+    .update({ is_primary: true })
+    .eq("id", imageId);
+
+  if (error) {
+    return toError(error.message);
+  }
+
+  return null;
+}
+
+export async function deleteItemImageRow(imageId: string): Promise<Error | null> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("item_images")
+    .delete()
+    .eq("id", imageId);
+
+  if (error) {
+    return toError(error.message);
+  }
+
+  return null;
+}
+
+export async function removeImageFromStorage(
+  imageUrlOrPath: string,
+): Promise<Error | null> {
+  const supabase = createClient();
+  const path = extractWardrobeImageStoragePath(imageUrlOrPath);
+  const { error } = await supabase.storage
+    .from(WARDROBE_IMAGES_BUCKET)
+    .remove([path]);
+
+  if (error) {
+    return toError(error.message);
+  }
+
+  return null;
+}
+
+/** True when the item has at least one image (used to seed the first primary). */
+export async function countItemImages(
+  itemId: string,
+): Promise<{ data: number; error: Error | null }> {
+  const supabase = createClient();
+  const { count, error } = await supabase
+    .from("item_images")
+    .select("id", { count: "exact", head: true })
+    .eq("item_id", itemId);
+
+  if (error) {
+    return { data: 0, error: toError(error.message) };
+  }
+
+  return { data: count ?? 0, error: null };
 }
 
 export function getWardrobeImagePublicUrl(path: string) {
