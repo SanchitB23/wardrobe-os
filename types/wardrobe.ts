@@ -162,6 +162,7 @@ export type OutfitRow = {
   season: string | null;
   rating: number | null;
   notes: string | null;
+  favorite: boolean;
   created_at: string | null;
 };
 

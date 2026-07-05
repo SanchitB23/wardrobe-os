@@ -11,9 +11,14 @@ import {
   fetchOutfitLookups,
   fetchOutfitPickerItems,
   fetchOutfits,
+  setOutfitFavorite,
   updateOutfit,
 } from "@/features/outfits/services/outfits.service";
-import { fetchOutfitEvaluation } from "@/features/outfits/services/outfit-evaluation.service";
+import {
+  fetchOutfitEvaluation,
+  fetchOutfitScores,
+} from "@/features/outfits/services/outfit-evaluation.service";
+import { fetchOutfitWearHistory } from "@/features/outfits/services/outfit-wear-history.service";
 import type {
   OutfitDetail,
   OutfitSlot,
@@ -44,6 +49,39 @@ export function useOutfitEvaluation(outfit: OutfitDetail | null) {
     queryKey: wardrobeKeys.outfitEvaluation(outfit?.id ?? ""),
     queryFn: async () => unwrapData(await fetchOutfitEvaluation(outfit!)),
     enabled: Boolean(outfit),
+  });
+}
+
+export function useOutfitScores() {
+  return useQuery({
+    queryKey: wardrobeKeys.outfitScores(),
+    queryFn: async () => unwrapData(await fetchOutfitScores()),
+  });
+}
+
+export function useOutfitWearHistory(outfitId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.outfitWearHistory(outfitId),
+    queryFn: async () => unwrapData(await fetchOutfitWearHistory(outfitId)),
+    enabled: Boolean(outfitId),
+  });
+}
+
+export function useToggleOutfitFavoriteMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: { id: string; favorite: boolean }) =>
+      unwrapData(await setOutfitFavorite(input.id, input.favorite)),
+    onSuccess: async (outfit) => {
+      await invalidateWardrobeQueries(queryClient);
+      toast.success(
+        outfit?.favorite ? "Added to favorites" : "Removed from favorites",
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to update favorite");
+    },
   });
 }
 

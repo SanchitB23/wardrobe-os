@@ -7,6 +7,8 @@ import {
   ArrowLeftIcon,
   CalendarDaysIcon,
   CopyIcon,
+  HeartIcon,
+  HistoryIcon,
   PencilIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -26,7 +28,12 @@ import { DeleteOutfitDialog } from "@/features/outfits/components/delete-outfit-
 import { OutfitPreview } from "@/features/outfits/components/outfit-preview";
 import { OutfitScorePanel } from "@/features/outfits/components/outfit-score-panel";
 import { WearOutfitDialog } from "@/features/outfits/components/wear-outfit-dialog";
-import { useDuplicateOutfitMutation, useOutfit } from "@/features/outfits/hooks";
+import {
+  useDuplicateOutfitMutation,
+  useOutfit,
+  useOutfitWearHistory,
+  useToggleOutfitFavoriteMutation,
+} from "@/features/outfits/hooks";
 import {
   formatOutfitModifiedAt,
   outfitDetailToSlotSelection,
@@ -47,6 +54,107 @@ function OutfitDetailSkeleton() {
       </div>
       <Skeleton className="h-72 w-full" />
     </div>
+  );
+}
+
+function formatWearDate(date: string | null): string {
+  if (!date) {
+    return "—";
+  }
+
+  return new Date(`${date}T12:00:00`).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function OutfitWearHistory({ outfitId }: { outfitId: string }) {
+  const historyQuery = useOutfitWearHistory(outfitId);
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <HistoryIcon className="size-4 text-muted-foreground" />
+          <CardTitle className="text-base">Wear history</CardTitle>
+        </div>
+        <CardDescription>Logged wears of this outfit.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        {historyQuery.isPending ? (
+          <div className="space-y-2">
+            <Skeleton className="h-14 w-full" />
+            <Skeleton className="h-8 w-full" />
+            <Skeleton className="h-8 w-2/3" />
+          </div>
+        ) : null}
+
+        {historyQuery.error ? (
+          <div className="space-y-2 text-sm">
+            <p className="text-destructive" role="alert">
+              {historyQuery.error.message}
+            </p>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => void historyQuery.refetch()}
+              disabled={historyQuery.isFetching}
+            >
+              Retry
+            </Button>
+          </div>
+        ) : null}
+
+        {historyQuery.data ? (
+          historyQuery.data.timesWorn === 0 ? (
+            <p className="rounded-lg border border-dashed px-3 py-6 text-center text-sm text-muted-foreground">
+              Never worn yet — log a wear with the “Wear outfit” button.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              <dl className="grid grid-cols-3 gap-3 text-sm">
+                <div>
+                  <dt className="text-muted-foreground">Times worn</dt>
+                  <dd className="font-medium tabular-nums">
+                    {historyQuery.data.timesWorn}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Last worn</dt>
+                  <dd className="font-medium">
+                    {formatWearDate(historyQuery.data.lastWornOn)}
+                  </dd>
+                </div>
+                <div>
+                  <dt className="text-muted-foreground">Avg comfort</dt>
+                  <dd className="font-medium tabular-nums">
+                    {historyQuery.data.averageComfort !== null
+                      ? `${historyQuery.data.averageComfort}/10`
+                      : "—"}
+                  </dd>
+                </div>
+              </dl>
+              <ul className="space-y-1.5 text-sm">
+                {historyQuery.data.events.slice(0, 5).map((event) => (
+                  <li
+                    key={event.worn_on}
+                    className="flex items-center justify-between rounded-md border px-3 py-1.5"
+                  >
+                    <span>{formatWearDate(event.worn_on)}</span>
+                    <span className="text-muted-foreground tabular-nums">
+                      {event.comfort_rating !== null
+                        ? `Comfort ${event.comfort_rating}/10`
+                        : "No comfort rating"}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )
+        ) : null}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -103,6 +211,7 @@ export function OutfitDetailView({ outfitId }: OutfitDetailViewProps) {
   const router = useRouter();
   const outfitQuery = useOutfit(outfitId);
   const duplicateMutation = useDuplicateOutfitMutation();
+  const favoriteMutation = useToggleOutfitFavoriteMutation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [wearDialogOpen, setWearDialogOpen] = useState(false);
 
@@ -144,6 +253,22 @@ export function OutfitDetailView({ outfitId }: OutfitDetailViewProps) {
           </p>
         </div>
         <div className="flex shrink-0 flex-wrap gap-2">
+          <Button
+            variant="outline"
+            aria-pressed={outfit?.favorite ?? false}
+            onClick={() =>
+              outfit &&
+              favoriteMutation.mutate({ id: outfit.id, favorite: !outfit.favorite })
+            }
+            disabled={!outfit || favoriteMutation.isPending}
+          >
+            <HeartIcon
+              className={
+                outfit?.favorite ? "fill-rose-500 text-rose-500" : undefined
+              }
+            />
+            {outfit?.favorite ? "Favorited" : "Favorite"}
+          </Button>
           <Button
             variant="outline"
             onClick={() => setWearDialogOpen(true)}
@@ -197,8 +322,9 @@ export function OutfitDetailView({ outfitId }: OutfitDetailViewProps) {
         <>
           <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
             <OutfitPreview selection={outfitDetailToSlotSelection(outfit)} />
-            <div className="xl:sticky xl:top-6">
+            <div className="space-y-4 xl:sticky xl:top-6">
               <OutfitMetadata outfit={outfit} />
+              <OutfitWearHistory outfitId={outfit.id} />
             </div>
           </div>
           <OutfitScorePanel outfit={outfit} />

@@ -166,6 +166,23 @@ export async function queryWearLogsByItemId(
   return queryWearLogs({ itemId });
 }
 
+export async function queryWearLogsByOutfitId(
+  outfitId: string,
+): Promise<{ data: WearLogRow[] | null; error: Error | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("wear_logs")
+    .select(WEAR_LOG_SELECT)
+    .eq("outfit_id", outfitId)
+    .order("worn_on", { ascending: false });
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: (data ?? []) as WearLogRow[], error: null };
+}
+
 export async function fetchAllWearLogSummaries(): Promise<{
   data: WearLogSummaryRow[] | null;
   error: Error | null;

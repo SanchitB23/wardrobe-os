@@ -320,6 +320,7 @@ export type Database = {
       outfits: {
         Row: {
           created_at: string | null;
+          favorite: boolean;
           id: string;
           name: string;
           notes: string | null;
@@ -330,6 +331,7 @@ export type Database = {
         };
         Insert: {
           created_at?: string | null;
+          favorite?: boolean;
           id?: string;
           name: string;
           notes?: string | null;
@@ -340,6 +342,7 @@ export type Database = {
         };
         Update: {
           created_at?: string | null;
+          favorite?: boolean;
           id?: string;
           name?: string;
           notes?: string | null;

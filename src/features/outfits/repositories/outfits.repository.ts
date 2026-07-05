@@ -2,7 +2,8 @@ import { createClient } from "@/lib/supabase/client";
 import { toError } from "@/shared/utils/data-result";
 import type { LookupOption, OutfitRow, SaveOutfitInput } from "@/features/outfits/types";
 
-export const OUTFIT_SELECT = "id, name, occasion_id, season, rating, notes, created_at";
+export const OUTFIT_SELECT =
+  "id, name, occasion_id, season, rating, notes, favorite, created_at";
 export const OUTFIT_ITEM_SELECT = "outfit_id, item_id, role";
 
 export const PICKER_ITEM_SELECT = `
@@ -160,17 +161,38 @@ export async function fetchOutfitRows(): Promise<{
 }
 
 export async function fetchOutfitItemLinks(): Promise<{
-  data: { outfit_id: string }[] | null;
+  data: { outfit_id: string; item_id: string; role: string }[] | null;
   error: Error | null;
 }> {
   const supabase = createClient();
-  const { data, error } = await supabase.from("outfit_items").select("outfit_id");
+  const { data, error } = await supabase
+    .from("outfit_items")
+    .select("outfit_id, item_id, role");
 
   if (error) {
     return { data: null, error: toError(error.message) };
   }
 
   return { data: data ?? [], error: null };
+}
+
+export async function updateOutfitFavorite(
+  id: string,
+  favorite: boolean,
+): Promise<{ data: OutfitRow | null; error: Error | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("outfits")
+    .update({ favorite })
+    .eq("id", id)
+    .select(OUTFIT_SELECT)
+    .single();
+
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+
+  return { data: data as OutfitRow, error: null };
 }
 
 export async function fetchOutfitItemRoles(

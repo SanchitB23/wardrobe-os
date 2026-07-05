@@ -5,6 +5,8 @@ import { useRouter } from "next/navigation";
 import {
   CalendarDaysIcon,
   CopyIcon,
+  GaugeIcon,
+  HeartIcon,
   LayersIcon,
   MoreHorizontalIcon,
   PencilIcon,
@@ -32,17 +34,31 @@ import { formatRating, type OutfitListRow } from "@/features/outfits/types";
 
 type OutfitCardProps = {
   outfit: OutfitListRow;
+  score?: number | null;
   onDelete: (outfit: OutfitListRow) => void;
   onDuplicate: (outfit: OutfitListRow) => void;
   onWear: (outfit: OutfitListRow) => void;
+  onToggleFavorite: (outfit: OutfitListRow) => void;
   isDuplicating?: boolean;
 };
 
+function scoreTone(score: number): string {
+  if (score >= 8) {
+    return "text-emerald-600 dark:text-emerald-400";
+  }
+  if (score >= 6) {
+    return "text-amber-600 dark:text-amber-400";
+  }
+  return "text-destructive";
+}
+
 export function OutfitCard({
   outfit,
+  score = null,
   onDelete,
   onDuplicate,
   onWear,
+  onToggleFavorite,
   isDuplicating = false,
 }: OutfitCardProps) {
   const router = useRouter();
@@ -70,6 +86,27 @@ export function OutfitCard({
               Modified {formatOutfitModifiedAt(outfit)}
             </CardDescription>
           </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              className="relative z-10"
+              aria-label={
+                outfit.favorite
+                  ? `Unfavorite ${outfit.name}`
+                  : `Favorite ${outfit.name}`
+              }
+              aria-pressed={outfit.favorite}
+              onClick={() => onToggleFavorite(outfit)}
+            >
+              <HeartIcon
+                className={
+                  outfit.favorite
+                    ? "fill-rose-500 text-rose-500"
+                    : "text-muted-foreground"
+                }
+              />
+            </Button>
           <DropdownMenu>
             <DropdownMenuTrigger
               render={
@@ -114,16 +151,26 @@ export function OutfitCard({
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
+          </div>
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex aspect-[4/3] items-center justify-center rounded-lg border border-dashed bg-muted/20">
+        <div className="relative flex aspect-[4/3] items-center justify-center rounded-lg border border-dashed bg-muted/20">
           <div className="text-center">
             <LayersIcon className="mx-auto mb-2 size-8 text-muted-foreground/70" />
             <p className="text-sm font-medium tabular-nums">
               {outfit.itemCount} item{outfit.itemCount === 1 ? "" : "s"}
             </p>
           </div>
+          {score !== null ? (
+            <Badge
+              variant="secondary"
+              className="absolute right-2 top-2 gap-1 tabular-nums"
+            >
+              <GaugeIcon className="size-3" />
+              <span className={scoreTone(score)}>{score}/10</span>
+            </Badge>
+          ) : null}
         </div>
 
         <dl className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">

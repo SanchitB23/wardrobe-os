@@ -2,9 +2,16 @@ import { evaluateOutfit } from "@/domain/outfit";
 import type { OutfitAnalysis, OutfitEvaluationInput } from "@/domain/outfit";
 import {
   fetchEvaluationRelationRows,
+  fetchOccasions,
+  fetchOutfitItemLinks,
+  fetchOutfitRows,
   type EvaluationRelationRows,
 } from "@/features/outfits/repositories/outfits.repository";
-import type { OutfitDetail } from "@/features/outfits/types";
+import {
+  OUTFIT_SLOT_DEFINITIONS,
+  type OutfitDetail,
+  type OutfitSlot,
+} from "@/features/outfits/types";
 import type { FormalityEnum } from "@/types/wardrobe";
 
 /** Per-item enrichment row used to build engine input. */
@@ -113,4 +120,72 @@ export async function fetchOutfitEvaluation(
     data: evaluateOutfit(toOutfitEvaluationInput(outfit, attributes)),
     error: null,
   };
+}
+
+function isOutfitSlot(value: string): value is OutfitSlot {
+  return OUTFIT_SLOT_DEFINITIONS.some((definition) => definition.slot === value);
+}
+
+/**
+ * Bulk-evaluates every outfit for list views: one pass over outfits,
+ * outfit_items, and item attributes, then the pure domain engine per outfit.
+ */
+export async function fetchOutfitScores(): Promise<{
+  data: Record<string, number> | null;
+  error: Error | null;
+}> {
+  const [outfitsResult, linksResult, occasionsResult] = await Promise.all([
+    fetchOutfitRows(),
+    fetchOutfitItemLinks(),
+    fetchOccasions(),
+  ]);
+
+  const firstError =
+    outfitsResult.error ?? linksResult.error ?? occasionsResult.error;
+  if (firstError) {
+    return { data: null, error: firstError };
+  }
+
+  const outfits = outfitsResult.data ?? [];
+  const links = (linksResult.data ?? []).filter((link) => isOutfitSlot(link.role));
+  const occasionById = new Map(
+    (occasionsResult.data ?? []).map((occasion) => [occasion.id, occasion]),
+  );
+
+  const itemIds = [...new Set(links.map((link) => link.item_id))];
+  const rowsResult = await fetchEvaluationRelationRows(itemIds);
+  if (rowsResult.error || !rowsResult.data) {
+    return { data: null, error: rowsResult.error };
+  }
+
+  const attributes = buildEvaluationAttributes(rowsResult.data);
+  const linksByOutfit = new Map<string, typeof links>();
+  for (const link of links) {
+    const existing = linksByOutfit.get(link.outfit_id) ?? [];
+    existing.push(link);
+    linksByOutfit.set(link.outfit_id, existing);
+  }
+
+  const scores: Record<string, number> = {};
+  for (const outfit of outfits) {
+    const outfitLinks = linksByOutfit.get(outfit.id) ?? [];
+    const evaluationOutfit: EvaluationOutfit = {
+      season: outfit.season ? { id: outfit.season, name: outfit.season } : null,
+      occasion: outfit.occasion_id
+        ? (occasionById.get(outfit.occasion_id) ?? null)
+        : null,
+      items: outfitLinks.map((link) => ({
+        outfit_id: link.outfit_id,
+        item_id: link.item_id,
+        slot: link.role as OutfitSlot,
+        item: null,
+      })),
+    };
+
+    scores[outfit.id] = evaluateOutfit(
+      toOutfitEvaluationInput(evaluationOutfit, attributes),
+    ).overallScore;
+  }
+
+  return { data: scores, error: null };
 }

@@ -15,6 +15,61 @@ export type WearAnalyticsItemInput = {
   status: string | null;
 };
 
+export type OutfitWearLogInput = {
+  worn_on: string;
+  comfort_rating: number | null;
+};
+
+export type OutfitWearEvent = {
+  worn_on: string;
+  comfort_rating: number | null;
+};
+
+export type OutfitWearStats = {
+  timesWorn: number;
+  lastWornOn: string | null;
+  averageComfort: number | null;
+  /** Distinct wear events, newest first. */
+  events: OutfitWearEvent[];
+};
+
+/**
+ * Aggregates raw outfit wear-log rows (one row per item per wear) into
+ * per-event stats. Rows sharing a worn_on date count as one wear event.
+ */
+export function buildOutfitWearStats(
+  logs: readonly OutfitWearLogInput[],
+): OutfitWearStats {
+  const byDate = new Map<string, number | null>();
+
+  for (const log of logs) {
+    const existing = byDate.get(log.worn_on);
+    if (existing === undefined || existing === null) {
+      byDate.set(log.worn_on, log.comfort_rating);
+    }
+  }
+
+  const events = [...byDate.entries()]
+    .map(([worn_on, comfort_rating]) => ({ worn_on, comfort_rating }))
+    .sort((left, right) => right.worn_on.localeCompare(left.worn_on));
+
+  const ratings = events
+    .map((event) => event.comfort_rating)
+    .filter((rating): rating is number => rating !== null);
+
+  return {
+    timesWorn: events.length,
+    lastWornOn: events[0]?.worn_on ?? null,
+    averageComfort:
+      ratings.length === 0
+        ? null
+        : Math.round(
+            (ratings.reduce((sum, rating) => sum + rating, 0) / ratings.length) * 10,
+          ) / 10,
+    events,
+  };
+}
+
 export function buildWearCountMaps(logs: readonly WearLogSummaryInput[]): {
   wearCountByItem: Map<string, number>;
   lastWornByItem: Map<string, string>;

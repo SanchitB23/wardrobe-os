@@ -12,6 +12,7 @@ import {
   insertOutfitRow,
   replaceOutfitItems,
   resolveSeasonName,
+  updateOutfitFavorite,
   updateOutfitRow,
   deleteOutfitItemsByOutfitId,
   deleteOutfitRow,
@@ -326,6 +327,13 @@ export async function updateOutfit(
       error: caught instanceof Error ? caught : toError("Failed to update outfit"),
     };
   }
+}
+
+export async function setOutfitFavorite(
+  id: string,
+  favorite: boolean,
+): Promise<{ data: OutfitRow | null; error: Error | null }> {
+  return updateOutfitFavorite(id, favorite);
 }
 
 export async function deleteOutfit(
