@@ -196,16 +196,44 @@ describe("inventory URL params", () => {
     expect([...parsed.quickFilters]).toEqual(["favorites"]);
   });
 
-  it("parses formality, season, and sort params", () => {
+  it("parses formality, multi-facets, and sort params", () => {
     const parsed = parseInventoryParams(
       new URLSearchParams(
-        "formality=business_casual&season=Summer&sort=rating_asc",
+        "formality=business_casual&seasons=s1,s2&styles=st1&fit=slim&ratingMin=8&hasImage=false&worn=never&purchase=active&sort=rating_asc",
       ),
       LOOKUPS_WITH_SEASON,
     );
     expect(parsed.filters.formality).toBe("business_casual");
-    expect(parsed.filters.seasonId).toBe("season-summer");
+    expect(parsed.filters.seasonIds).toEqual(["s1", "s2"]);
+    expect(parsed.filters.styleIds).toEqual(["st1"]);
+    expect(parsed.filters.fit).toBe("slim");
+    expect(parsed.filters.ratingMin).toBe(8);
+    expect(parsed.filters.hasImage).toBe(false);
+    expect(parsed.filters.wornStatus).toBe("never");
+    expect(parsed.filters.purchaseStatus).toBe("active");
     expect(parsed.filters.sort).toEqual({ field: "rating", ascending: true });
+  });
+
+  it("round-trips multi-facet ids and rating range", () => {
+    const params = serializeInventoryParams(
+      {
+        filters: {
+          seasonIds: ["s1", "s2"],
+          materialIds: ["m1"],
+          ratingMin: 7,
+          ratingMax: 9,
+          hasImage: true,
+        },
+        quickFilters: new Set(),
+      },
+      LOOKUPS,
+    );
+    const parsed = parseInventoryParams(new URLSearchParams(params), LOOKUPS);
+    expect(parsed.filters.seasonIds).toEqual(["s1", "s2"]);
+    expect(parsed.filters.materialIds).toEqual(["m1"]);
+    expect(parsed.filters.ratingMin).toBe(7);
+    expect(parsed.filters.ratingMax).toBe(9);
+    expect(parsed.filters.hasImage).toBe(true);
   });
 
   it("round-trips formality and sort", () => {

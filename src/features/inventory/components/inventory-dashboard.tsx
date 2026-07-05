@@ -17,6 +17,8 @@ import { LogWearDialog } from "@/features/wear-logs/components/log-wear-dialog";
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
 import { InventoryEmptyState } from "@/features/inventory/components/inventory-empty-state";
 import { InventoryFiltersPanel } from "@/features/inventory/components/inventory-filters";
+import { InventoryAdvancedFilters } from "@/features/inventory/components/inventory-advanced-filters";
+import { InventoryFilterChips } from "@/features/inventory/components/inventory-filter-chips";
 import {
   InventoryTable,
   InventoryTableSkeleton,
@@ -41,9 +43,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryCountFilters } from "@/shared/query/wardrobe-keys";
 import {
   useCategoryCounts,
+  useImportLookups,
   useInventorySummary,
   useWardrobeItems,
-  useWardrobeLookups,
 } from "@/features/inventory/hooks";
 import {
   INVENTORY_COLUMNS,
@@ -111,7 +113,7 @@ export function InventoryDashboard() {
   const hydratedRef = useRef(false);
 
   const summaryQuery = useInventorySummary();
-  const lookupsQuery = useWardrobeLookups();
+  const lookupsQuery = useImportLookups();
 
   // Load persisted column visibility + saved filters once on mount.
   useEffect(() => {
@@ -242,6 +244,12 @@ export function InventoryDashboard() {
     brands: [],
     colors: [],
     seasons: [],
+    materials: [],
+    styles: [],
+    features: [],
+    tags: [],
+    occasions: [],
+    storage_types: [],
   };
 
   function handleRetry() {
@@ -429,6 +437,21 @@ export function InventoryDashboard() {
         lookups={lookups}
         onChange={setFilters}
         onClear={clearFilters}
+      />
+
+      <InventoryAdvancedFilters
+        filters={filters}
+        lookups={lookups}
+        onChange={setFilters}
+      />
+
+      <InventoryFilterChips
+        filters={filters}
+        quickFilters={quickFilters}
+        lookups={lookups}
+        onChange={setFilters}
+        onToggleQuick={toggleQuickFilter}
+        onClearAll={clearFilters}
       />
 
       {/* Quick filters + saved filters + column management */}

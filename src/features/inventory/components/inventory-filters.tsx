@@ -305,13 +305,6 @@ export function InventoryFiltersPanel({
               })
             }
           />
-          <LookupFilterSelect
-            label="Season"
-            value={filters.seasonId}
-            options={lookups.seasons}
-            placeholder="All seasons"
-            onChange={(seasonId) => onChange({ ...filters, seasonId })}
-          />
         </div>
 
         <div className="flex flex-wrap items-end gap-3 border-t pt-4">

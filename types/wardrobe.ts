@@ -74,6 +74,8 @@ export type InventorySort = {
   ascending?: boolean;
 };
 
+export type WornStatusFilter = "worn" | "never";
+
 export type InventoryFilters = {
   search?: string;
   categoryId?: string;
@@ -83,7 +85,19 @@ export type InventoryFilters = {
   status?: ItemStatus;
   usage?: UsageFrequency;
   formality?: FormalityEnum;
-  seasonId?: string;
+  fit?: FitType;
+  ratingMin?: number;
+  ratingMax?: number;
+  hasImage?: boolean;
+  wornStatus?: WornStatusFilter;
+  purchaseStatus?: PurchaseStatus;
+  /** Many-to-many facets (OR within a facet, AND across facets). */
+  seasonIds?: string[];
+  styleIds?: string[];
+  materialIds?: string[];
+  featureIds?: string[];
+  tagIds?: string[];
+  occasionIds?: string[];
   sort?: InventorySort;
 };
 
@@ -740,7 +754,18 @@ export function countActiveFilters(filters: InventoryFilters): number {
   if (filters.status) count += 1;
   if (filters.usage) count += 1;
   if (filters.formality) count += 1;
-  if (filters.seasonId) count += 1;
+  if (filters.fit) count += 1;
+  if (filters.ratingMin !== undefined || filters.ratingMax !== undefined)
+    count += 1;
+  if (filters.hasImage !== undefined) count += 1;
+  if (filters.wornStatus) count += 1;
+  if (filters.purchaseStatus) count += 1;
+  count += filters.seasonIds?.length ? 1 : 0;
+  count += filters.styleIds?.length ? 1 : 0;
+  count += filters.materialIds?.length ? 1 : 0;
+  count += filters.featureIds?.length ? 1 : 0;
+  count += filters.tagIds?.length ? 1 : 0;
+  count += filters.occasionIds?.length ? 1 : 0;
   if (
     filters.sort &&
     (filters.sort.field !== DEFAULT_INVENTORY_SORT.field ||

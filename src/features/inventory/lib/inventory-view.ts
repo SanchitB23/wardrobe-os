@@ -1,12 +1,15 @@
 import type {
+  FitType,
   FormalityEnum,
   InventoryFilters,
   InventorySortField,
   ItemStatus,
   LookupOption,
+  PurchaseStatus,
   UsageFrequency,
   WardrobeItemRow,
   WardrobeLookups,
+  WornStatusFilter,
 } from "@/types/wardrobe";
 
 const SORT_FIELDS: InventorySortField[] = [
@@ -191,9 +194,27 @@ export function serializeInventoryParams(
   if (filters.status) params.set("status", filters.status);
   if (filters.usage) params.set("usage", filters.usage);
   if (filters.formality) params.set("formality", filters.formality);
+  if (filters.fit) params.set("fit", filters.fit);
 
-  const season = nameFor(filters.seasonId, lookups.seasons);
-  if (season) params.set("season", season);
+  if (filters.ratingMin !== undefined)
+    params.set("ratingMin", String(filters.ratingMin));
+  if (filters.ratingMax !== undefined)
+    params.set("ratingMax", String(filters.ratingMax));
+
+  if (filters.hasImage !== undefined)
+    params.set("hasImage", filters.hasImage ? "true" : "false");
+  if (filters.wornStatus) params.set("worn", filters.wornStatus);
+  if (filters.purchaseStatus) params.set("purchase", filters.purchaseStatus);
+
+  const setIds = (key: string, ids: string[] | undefined) => {
+    if (ids && ids.length > 0) params.set(key, ids.join(","));
+  };
+  setIds("seasons", filters.seasonIds);
+  setIds("styles", filters.styleIds);
+  setIds("materials", filters.materialIds);
+  setIds("features", filters.featureIds);
+  setIds("tags", filters.tagIds);
+  setIds("occasions", filters.occasionIds);
 
   if (filters.search?.trim()) params.set("q", filters.search.trim());
 
@@ -243,8 +264,39 @@ export function parseInventoryParams(
   const formality = params.get("formality");
   if (formality) filters.formality = formality as FormalityEnum;
 
-  const seasonId = idFor(params.get("season"), lookups.seasons);
-  if (seasonId) filters.seasonId = seasonId;
+  const fit = params.get("fit");
+  if (fit) filters.fit = fit as FitType;
+
+  const ratingMin = params.get("ratingMin");
+  if (ratingMin !== null && !Number.isNaN(Number(ratingMin)))
+    filters.ratingMin = Number(ratingMin);
+  const ratingMax = params.get("ratingMax");
+  if (ratingMax !== null && !Number.isNaN(Number(ratingMax)))
+    filters.ratingMax = Number(ratingMax);
+
+  const hasImage = params.get("hasImage");
+  if (hasImage === "true") filters.hasImage = true;
+  else if (hasImage === "false") filters.hasImage = false;
+
+  const worn = params.get("worn");
+  if (worn === "worn" || worn === "never")
+    filters.wornStatus = worn as WornStatusFilter;
+
+  const purchase = params.get("purchase");
+  if (purchase) filters.purchaseStatus = purchase as PurchaseStatus;
+
+  const getIds = (key: string): string[] | undefined => {
+    const raw = params.get(key);
+    if (!raw) return undefined;
+    const ids = raw.split(",").filter(Boolean);
+    return ids.length > 0 ? ids : undefined;
+  };
+  filters.seasonIds = getIds("seasons");
+  filters.styleIds = getIds("styles");
+  filters.materialIds = getIds("materials");
+  filters.featureIds = getIds("features");
+  filters.tagIds = getIds("tags");
+  filters.occasionIds = getIds("occasions");
 
   const search = params.get("q");
   if (search) filters.search = search;
