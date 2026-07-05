@@ -20,6 +20,7 @@ export const wardrobeKeys = {
   review: () => [...wardrobeKeys.all, "review"] as const,
   bulkEditLookups: () => [...wardrobeKeys.all, "bulk-edit-lookups"] as const,
   dashboard: () => [...wardrobeKeys.all, "dashboard"] as const,
+  wardrobeHealth: () => [...wardrobeKeys.all, "wardrobe-health"] as const,
   wearLogs: (filters: WearLogFilters) =>
     [...wardrobeKeys.all, "wear-logs", filters] as const,
   itemWearSummary: (itemId: string) =>

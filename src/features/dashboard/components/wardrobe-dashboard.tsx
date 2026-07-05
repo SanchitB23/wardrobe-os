@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { LayoutGridIcon, RefreshCwIcon } from "lucide-react";
+import { HeartPulseIcon, LayoutGridIcon, RefreshCwIcon } from "lucide-react";
 
 import {
   DashboardSummaryCards,
@@ -75,16 +75,22 @@ export function WardrobeDashboard() {
         }
         description="Analytics across your wardrobe catalog — categories, brands, usage, and health insights."
         actions={
-          <Button
-            variant="outline"
-            onClick={handleRetry}
-            disabled={dashboardQuery.isFetching}
-          >
-            <RefreshCwIcon
-              className={dashboardQuery.isFetching ? "animate-spin" : undefined}
-            />
-            Refresh
-          </Button>
+          <>
+            <Button variant="outline" render={<Link href="/dashboard/health" />}>
+              <HeartPulseIcon />
+              Wardrobe health
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleRetry}
+              disabled={dashboardQuery.isFetching}
+            >
+              <RefreshCwIcon
+                className={dashboardQuery.isFetching ? "animate-spin" : undefined}
+              />
+              Refresh
+            </Button>
+          </>
         }
       />
 

@@ -1,6 +1,7 @@
 import {
   CalendarDaysIcon,
   ClipboardCheckIcon,
+  HeartPulseIcon,
   LayersIcon,
   LayoutDashboardIcon,
   ReceiptIcon,
@@ -32,6 +33,7 @@ export const NAV_SECTIONS: NavSection[] = [
     heading: "Overview",
     items: [
       { label: "Dashboard", href: "/dashboard", icon: LayoutDashboardIcon },
+      { label: "Health", href: "/dashboard/health", icon: HeartPulseIcon },
     ],
   },
   {
