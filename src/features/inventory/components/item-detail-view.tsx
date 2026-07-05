@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+import { recordRecentItem } from "@/features/command-palette";
 import { ArrowLeftIcon, CalendarPlusIcon, ImageIcon, PencilIcon, StarIcon } from "lucide-react";
 
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
@@ -667,6 +669,17 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
   const [selectedImageUrl, setSelectedImageUrl] = useState<string | null>(null);
 
   const detailQuery = useWardrobeItemDetail(itemId);
+
+  const viewedItem = detailQuery.data?.item;
+  useEffect(() => {
+    if (viewedItem) {
+      recordRecentItem({
+        id: viewedItem.id,
+        name: viewedItem.name,
+        code: viewedItem.code,
+      });
+    }
+  }, [viewedItem]);
   const wearSummaryQuery = useItemWearSummary(itemId);
   const purchaseDetailQuery = useItemPurchaseDetail(itemId);
   const lookupsQuery = useWardrobeLookups();

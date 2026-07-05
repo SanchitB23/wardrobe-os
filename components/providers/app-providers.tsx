@@ -4,6 +4,8 @@ import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 
+import { CommandPalette } from "@/features/command-palette";
+
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
@@ -33,6 +35,7 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
   return (
     <QueryClientProvider client={queryClient}>
       {children}
+      <CommandPalette />
       <Toaster richColors closeButton position="top-right" />
     </QueryClientProvider>
   );

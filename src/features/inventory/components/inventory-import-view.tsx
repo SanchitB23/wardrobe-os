@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   ArrowLeftIcon,
   CheckCircle2Icon,
@@ -299,6 +299,14 @@ export function InventoryImportView() {
   const jsonInputRef = useRef<HTMLInputElement>(null);
 
   const [mode, setMode] = useState<ImportMode>("csv");
+
+  useEffect(() => {
+    // Deep link from the command palette: /inventory/import?mode=json|csv
+    const requested = new URLSearchParams(window.location.search).get("mode");
+    if (requested === "json" || requested === "csv") {
+      setMode(requested);
+    }
+  }, []);
   const [csvFileName, setCsvFileName] = useState<string | null>(null);
   const [jsonFileName, setJsonFileName] = useState<string | null>(null);
   const [csvFileError, setCsvFileError] = useState<string | null>(null);

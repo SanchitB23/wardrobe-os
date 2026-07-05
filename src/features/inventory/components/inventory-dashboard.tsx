@@ -65,6 +65,17 @@ export function InventoryDashboard() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
   useEffect(() => {
+    // Deep link from the command palette: /inventory?action=add-item
+    const params = new URLSearchParams(window.location.search);
+    if (params.get("action") === "add-item") {
+      setFormMode("create");
+      setSelectedItem(null);
+      setFormOpen(true);
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+  }, []);
+
+  useEffect(() => {
     const timeout = setTimeout(
       () => setDebouncedSearch(filters.search ?? ""),
       filters.search ? 300 : 0,
