@@ -1,7 +1,13 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import { PlusIcon } from "lucide-react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  BookmarkIcon,
+  ChevronDownIcon,
+  Columns3Icon,
+  PlusIcon,
+  XIcon,
+} from "lucide-react";
 
 import { PageHeader } from "@/features/layout";
 import { BulkActionsToolbar } from "@/features/inventory/components/bulk-actions-toolbar";
@@ -22,6 +28,15 @@ import {
 import { ItemFormDialog } from "@/features/inventory/components/item-form-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuCheckboxItem,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Skeleton } from "@/components/ui/skeleton";
 import type { CategoryCountFilters } from "@/shared/query/wardrobe-keys";
 import {
@@ -30,6 +45,27 @@ import {
   useWardrobeItems,
   useWardrobeLookups,
 } from "@/features/inventory/hooks";
+import {
+  INVENTORY_COLUMNS,
+  getHiddenColumns,
+  setHiddenColumns as persistHiddenColumns,
+  type ColumnKey,
+} from "@/features/inventory/lib/inventory-columns";
+import {
+  applyQuickFilters,
+  parseInventoryParams,
+  QUICK_FILTERS,
+  serializeInventoryParams,
+  sortItems,
+  type QuickFilterKey,
+  type SortRule,
+} from "@/features/inventory/lib/inventory-view";
+import {
+  deleteSavedFilter,
+  getSavedFilters,
+  saveFilter,
+  type SavedFilter,
+} from "@/features/inventory/lib/saved-filters";
 import {
   DEFAULT_INVENTORY_SORT,
   hasActiveFilters,
@@ -44,36 +80,76 @@ const EMPTY_SUMMARY = {
   averageRating: null,
 };
 
+const PAGE_SIZE = 50;
+
+const HIDEABLE_COLUMNS = INVENTORY_COLUMNS.filter((column) => !column.locked);
+
 export function InventoryDashboard() {
   const [filters, setFilters] = useState<InventoryFilters>({
     sort: DEFAULT_INVENTORY_SORT,
   });
+  const [quickFilters, setQuickFilters] = useState<Set<QuickFilterKey>>(
+    new Set(),
+  );
+  const [sortRules, setSortRules] = useState<SortRule[]>([]);
+  const [hiddenColumns, setHiddenColumns] = useState<Set<ColumnKey>>(new Set());
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const [savedFilters, setSavedFilters] = useState<SavedFilter[]>([]);
+
   const [debouncedSearch, setDebouncedSearch] = useState(filters.search ?? "");
   const [formOpen, setFormOpen] = useState(false);
   const [formMode, setFormMode] = useState<"create" | "edit">("create");
-  const [selectedItem, setSelectedItem] = useState<WardrobeItemRow | null>(
-    null,
-  );
+  const [selectedItem, setSelectedItem] = useState<WardrobeItemRow | null>(null);
   const [deleteOpen, setDeleteOpen] = useState(false);
-  const [itemToDelete, setItemToDelete] = useState<WardrobeItemRow | null>(
-    null,
-  );
+  const [itemToDelete, setItemToDelete] = useState<WardrobeItemRow | null>(null);
   const [logWearOpen, setLogWearOpen] = useState(false);
   const [itemToLogWear, setItemToLogWear] = useState<WardrobeItemRow | null>(
     null,
   );
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
+  const hydratedRef = useRef(false);
+
+  const summaryQuery = useInventorySummary();
+  const lookupsQuery = useWardrobeLookups();
+
+  // Load persisted column visibility + saved filters once on mount.
   useEffect(() => {
-    // Deep link from the command palette: /inventory?action=add-item
+    setHiddenColumns(getHiddenColumns());
+    setSavedFilters(getSavedFilters());
+  }, []);
+
+  // Hydrate filters/quick filters from the URL once lookups are available.
+  useEffect(() => {
+    if (hydratedRef.current || !lookupsQuery.data) {
+      return;
+    }
+    hydratedRef.current = true;
+
     const params = new URLSearchParams(window.location.search);
     if (params.get("action") === "add-item") {
       setFormMode("create");
       setSelectedItem(null);
       setFormOpen(true);
-      window.history.replaceState(null, "", window.location.pathname);
     }
-  }, []);
+
+    const parsed = parseInventoryParams(params, lookupsQuery.data);
+    setFilters((current) => ({ ...current, ...parsed.filters }));
+    setQuickFilters(parsed.quickFilters);
+  }, [lookupsQuery.data]);
+
+  // Reflect filters + quick filters into the URL (shareable, no history spam).
+  useEffect(() => {
+    if (!hydratedRef.current || !lookupsQuery.data) {
+      return;
+    }
+    const query = serializeInventoryParams(
+      { filters, quickFilters },
+      lookupsQuery.data,
+    );
+    const url = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+    window.history.replaceState(null, "", url);
+  }, [filters, quickFilters, lookupsQuery.data]);
 
   useEffect(() => {
     const timeout = setTimeout(
@@ -107,33 +183,53 @@ export function InventoryDashboard() {
     ],
   );
 
-  const summaryQuery = useInventorySummary();
   const itemsQuery = useWardrobeItems(queryFilters);
   const countsQuery = useCategoryCounts(countFilters);
-  const lookupsQuery = useWardrobeLookups();
 
   const queries = [summaryQuery, itemsQuery, countsQuery, lookupsQuery];
   const isInitialLoading = queries.some((query) => query.isPending);
-  const isRefetching = queries.some((query) => query.isFetching && !query.isPending);
+  const isRefetching = queries.some(
+    (query) => query.isFetching && !query.isPending,
+  );
   const error = queries.find((query) => query.error)?.error?.message ?? null;
 
   const summary = summaryQuery.data ?? EMPTY_SUMMARY;
   const items = useMemo(() => itemsQuery.data ?? [], [itemsQuery.data]);
+
+  // Client-side pipeline: quick filters → multi-column sort. Memoized so rows
+  // only recompute when their inputs actually change.
+  const quickFiltered = useMemo(
+    () => applyQuickFilters(items, quickFilters),
+    [items, quickFilters],
+  );
+  const displayItems = useMemo(
+    () => sortItems(quickFiltered, sortRules),
+    [quickFiltered, sortRules],
+  );
+
+  // Reset the infinite-scroll window whenever the result set changes.
+  useEffect(() => {
+    setVisibleCount(PAGE_SIZE);
+  }, [displayItems]);
+
   const visibleItemIds = useMemo(
-    () => new Set(items.map((item) => item.id)),
-    [items],
+    () => new Set(displayItems.map((item) => item.id)),
+    [displayItems],
   );
   const visibleSelectedIds = useMemo(
     () => new Set([...selectedIds].filter((id) => visibleItemIds.has(id))),
     [selectedIds, visibleItemIds],
   );
 
-  function handleSelectedIdsChange(nextVisible: Set<string>) {
-    setSelectedIds((current) => {
-      const hidden = [...current].filter((id) => !visibleItemIds.has(id));
-      return new Set([...hidden, ...nextVisible]);
-    });
-  }
+  const handleSelectedIdsChange = useCallback(
+    (nextVisible: Set<string>) => {
+      setSelectedIds((current) => {
+        const hidden = [...current].filter((id) => !visibleItemIds.has(id));
+        return new Set([...hidden, ...nextVisible]);
+      });
+    },
+    [visibleItemIds],
+  );
 
   const categoryCounts = countsQuery.data ?? {
     total: 0,
@@ -151,27 +247,27 @@ export function InventoryDashboard() {
     void Promise.all(queries.map((query) => query.refetch()));
   }
 
-  function openCreateDialog() {
+  const openCreateDialog = useCallback(() => {
     setFormMode("create");
     setSelectedItem(null);
     setFormOpen(true);
-  }
+  }, []);
 
-  function openEditDialog(item: WardrobeItemRow) {
+  const openEditDialog = useCallback((item: WardrobeItemRow) => {
     setFormMode("edit");
     setSelectedItem(item);
     setFormOpen(true);
-  }
+  }, []);
 
-  function openDeleteDialog(item: WardrobeItemRow) {
+  const openDeleteDialog = useCallback((item: WardrobeItemRow) => {
     setItemToDelete(item);
     setDeleteOpen(true);
-  }
+  }, []);
 
-  function openLogWearDialog(item: WardrobeItemRow) {
+  const openLogWearDialog = useCallback((item: WardrobeItemRow) => {
     setItemToLogWear(item);
     setLogWearOpen(true);
-  }
+  }, []);
 
   function handleCategorySelect(categoryId: string | undefined) {
     setFilters((current) => ({
@@ -184,11 +280,90 @@ export function InventoryDashboard() {
     }));
   }
 
-  function clearFilters() {
-    setFilters({ sort: DEFAULT_INVENTORY_SORT });
+  function toggleQuickFilter(key: QuickFilterKey) {
+    setQuickFilters((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      return next;
+    });
   }
 
-  const showEmptyState = !isInitialLoading && !error && items.length === 0;
+  const handleToggleSort = useCallback(
+    (column: SortRule["column"], additive: boolean) => {
+      setSortRules((rules) => {
+        const existing = rules.find((rule) => rule.column === column);
+        if (additive) {
+          if (!existing) {
+            return [...rules, { column, direction: "asc" }];
+          }
+          if (existing.direction === "asc") {
+            return rules.map((rule) =>
+              rule.column === column ? { ...rule, direction: "desc" } : rule,
+            );
+          }
+          return rules.filter((rule) => rule.column !== column);
+        }
+        if (!existing) {
+          return [{ column, direction: "asc" }];
+        }
+        if (existing.direction === "asc") {
+          return [{ column, direction: "desc" }];
+        }
+        return [];
+      });
+    },
+    [],
+  );
+
+  function toggleColumn(key: ColumnKey) {
+    setHiddenColumns((current) => {
+      const next = new Set(current);
+      if (next.has(key)) {
+        next.delete(key);
+      } else {
+        next.add(key);
+      }
+      persistHiddenColumns(next);
+      return next;
+    });
+  }
+
+  function clearFilters() {
+    setFilters({ sort: DEFAULT_INVENTORY_SORT });
+    setQuickFilters(new Set());
+    setSortRules([]);
+  }
+
+  function applySavedFilter(saved: SavedFilter) {
+    setFilters({ sort: DEFAULT_INVENTORY_SORT, ...saved.filters });
+    setQuickFilters(new Set(saved.quickFilters));
+  }
+
+  function handleSaveCurrentFilter() {
+    const name = window.prompt("Name this filter");
+    if (!name?.trim()) {
+      return;
+    }
+    saveFilter({
+      name,
+      filters,
+      quickFilters: [...quickFilters],
+    });
+    setSavedFilters(getSavedFilters());
+  }
+
+  function handleDeleteSavedFilter(id: string) {
+    deleteSavedFilter(id);
+    setSavedFilters(getSavedFilters());
+  }
+
+  const showEmptyState = !isInitialLoading && !error && displayItems.length === 0;
+  const anyFiltersActive =
+    hasActiveFilters(filters) || quickFilters.size > 0 || sortRules.length > 0;
 
   return (
     <div className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col gap-6 px-6 py-8 pb-28 lg:px-8 lg:py-10">
@@ -199,7 +374,7 @@ export function InventoryDashboard() {
           <>
             {!isInitialLoading && !error && (
               <Badge variant="secondary" className="tabular-nums">
-                {items.length} shown
+                {displayItems.length} shown
               </Badge>
             )}
             {isRefetching && (
@@ -255,6 +430,87 @@ export function InventoryDashboard() {
         onClear={clearFilters}
       />
 
+      {/* Quick filters + saved filters + column management */}
+      <div className="flex flex-wrap items-center gap-2">
+        {QUICK_FILTERS.map((quick) => {
+          const active = quickFilters.has(quick.key);
+          return (
+            <Button
+              key={quick.key}
+              type="button"
+              size="sm"
+              variant={active ? "default" : "outline"}
+              aria-pressed={active}
+              onClick={() => toggleQuickFilter(quick.key)}
+            >
+              {quick.label}
+            </Button>
+          );
+        })}
+
+        <div className="ml-auto flex flex-wrap items-center gap-2">
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="outline" size="sm" />}
+            >
+              <BookmarkIcon />
+              Saved filters
+              <ChevronDownIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-56">
+              <DropdownMenuLabel>Apply a saved filter</DropdownMenuLabel>
+              {savedFilters.map((saved) => (
+                <DropdownMenuItem
+                  key={saved.id}
+                  onClick={() => applySavedFilter(saved)}
+                >
+                  {saved.name}
+                  {!saved.builtIn ? (
+                    <XIcon
+                      className="ml-auto text-muted-foreground hover:text-destructive"
+                      onClick={(event) => {
+                        event.stopPropagation();
+                        handleDeleteSavedFilter(saved.id);
+                      }}
+                    />
+                  ) : null}
+                </DropdownMenuItem>
+              ))}
+              <DropdownMenuSeparator />
+              <DropdownMenuItem
+                disabled={!anyFiltersActive}
+                onClick={handleSaveCurrentFilter}
+              >
+                <BookmarkIcon />
+                Save current filter…
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          <DropdownMenu>
+            <DropdownMenuTrigger
+              render={<Button variant="outline" size="sm" />}
+            >
+              <Columns3Icon />
+              Columns
+              <ChevronDownIcon />
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-44">
+              <DropdownMenuLabel>Visible columns</DropdownMenuLabel>
+              {HIDEABLE_COLUMNS.map((column) => (
+                <DropdownMenuCheckboxItem
+                  key={column.key}
+                  checked={!hiddenColumns.has(column.key)}
+                  onCheckedChange={() => toggleColumn(column.key)}
+                >
+                  {column.label}
+                </DropdownMenuCheckboxItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+
       {error ? (
         <InventoryErrorState
           message={error}
@@ -265,13 +521,18 @@ export function InventoryDashboard() {
         <InventoryTableSkeleton />
       ) : showEmptyState ? (
         <InventoryEmptyState
-          hasFilters={hasActiveFilters(filters)}
+          hasFilters={anyFiltersActive}
           onAddItem={openCreateDialog}
           onClearFilters={clearFilters}
         />
       ) : (
         <InventoryTable
-          items={items}
+          items={displayItems}
+          visibleCount={visibleCount}
+          onLoadMore={() => setVisibleCount((count) => count + PAGE_SIZE)}
+          hiddenColumns={hiddenColumns}
+          sortRules={sortRules}
+          onToggleSort={handleToggleSort}
           selectedIds={visibleSelectedIds}
           onSelectedIdsChange={handleSelectedIdsChange}
           onEdit={openEditDialog}
