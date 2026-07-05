@@ -21,6 +21,7 @@ export const wardrobeKeys = {
   bulkEditLookups: () => [...wardrobeKeys.all, "bulk-edit-lookups"] as const,
   dashboard: () => [...wardrobeKeys.all, "dashboard"] as const,
   wardrobeHealth: () => [...wardrobeKeys.all, "wardrobe-health"] as const,
+  usageAnalytics: () => [...wardrobeKeys.all, "usage-analytics"] as const,
   wearLogs: (filters: WearLogFilters) =>
     [...wardrobeKeys.all, "wear-logs", filters] as const,
   itemWearSummary: (itemId: string) =>

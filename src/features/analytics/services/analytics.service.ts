@@ -6,7 +6,13 @@ import {
   type WardrobeHealthItem,
 } from "@/domain/analytics/WardrobeHealthEngine";
 import {
+  analyzeUsage,
+  type UsageAnalytics,
+  type UsageItem,
+} from "@/domain/analytics/UsageAnalyticsEngine";
+import {
   selectActiveHealthItems,
+  selectUsageAnalyticsData,
   type HealthItemRow,
 } from "@/features/analytics/repositories/analytics.repository";
 
@@ -64,6 +70,50 @@ export async function fetchWardrobeHealth(): Promise<{
       health: analyzeWardrobeHealth(items),
       debug: buildWardrobeHealthDebug(items),
     },
+    error: null,
+  };
+}
+
+/**
+ * Orchestrates the usage analytics report: fetches items, wear logs, and
+ * purchase prices, maps them to the domain input, and runs the pure
+ * {@link analyzeUsage} engine.
+ */
+export async function fetchUsageAnalytics(): Promise<{
+  data: UsageAnalytics | null;
+  error: Error | null;
+}> {
+  const result = await selectUsageAnalyticsData();
+  if (result.error || !result.data) {
+    return { data: null, error: result.error };
+  }
+
+  const { items, wearLogs, purchases } = result.data;
+
+  const usageItems: UsageItem[] = items.map((row) => ({
+    id: row.id,
+    name: row.name,
+    category: row.category?.name ?? null,
+    formality: row.formality,
+    usage: row.usage,
+    status: row.status,
+  }));
+
+  return {
+    data: analyzeUsage({
+      wardrobeItems: usageItems,
+      wearLogs: wearLogs
+        .filter((row): row is typeof row & { item_id: string } => Boolean(row.item_id))
+        .map((row) => ({
+          itemId: row.item_id,
+          wornOn: row.worn_on,
+          occasion: row.occasion?.name ?? null,
+        })),
+      purchases: purchases.map((row) => ({
+        itemId: row.item_id,
+        price: row.price,
+      })),
+    }),
     error: null,
   };
 }
