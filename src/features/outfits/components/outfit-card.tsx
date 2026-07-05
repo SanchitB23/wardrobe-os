@@ -48,14 +48,20 @@ export function OutfitCard({
   const router = useRouter();
 
   return (
-    <Card className="group relative overflow-hidden">
+    <Card className="group relative overflow-hidden transition-shadow hover:shadow-md">
+      <Link
+        href={`/outfits/${outfit.id}`}
+        aria-label={`View ${outfit.name}`}
+        className="absolute inset-0"
+      />
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1">
             <CardTitle className="line-clamp-2 text-base leading-snug">
               <Link
                 href={`/outfits/${outfit.id}`}
-                className="hover:underline focus-visible:underline"
+                tabIndex={-1}
+                className="relative z-10 hover:underline focus-visible:underline"
               >
                 {outfit.name}
               </Link>
@@ -70,7 +76,7 @@ export function OutfitCard({
                 <Button
                   variant="ghost"
                   size="icon-sm"
-                  className="shrink-0 opacity-70 group-hover:opacity-100"
+                  className="relative z-10 shrink-0 opacity-70 group-hover:opacity-100"
                   aria-label={`Actions for ${outfit.name}`}
                 />
               }
@@ -143,7 +149,7 @@ export function OutfitCard({
 
         <Button
           variant="outline"
-          className="w-full"
+          className="relative z-10 w-full"
           render={<Link href={`/outfits/${outfit.id}/edit`} />}
         >
           <PencilIcon />
