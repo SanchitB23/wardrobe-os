@@ -4,9 +4,10 @@ import {
   analyzeWardrobeHealth,
   buildWardrobeHealthDebug,
   categoryBucketFor,
+  colorFamilyFor,
   type WardrobeHealthItem,
 } from "@/domain/analytics/WardrobeHealthEngine";
-import type { FormalityEnum, ItemStatus } from "@/types/wardrobe";
+import type { ItemStatus } from "@/types/wardrobe";
 
 let counter = 0;
 function item(overrides: Partial<WardrobeHealthItem> = {}): WardrobeHealthItem {
@@ -17,8 +18,13 @@ function item(overrides: Partial<WardrobeHealthItem> = {}): WardrobeHealthItem {
     category: "Top",
     color: "Black",
     brand: "Uniqlo",
-    formality: "casual",
+    formality: "smart_casual",
+    usage: "regular",
+    rating: 9,
     status: "active",
+    seasons: ["Year Round"],
+    styles: ["Smart Casual"],
+    tags: ["Casual"],
     ...overrides,
   };
 }
@@ -32,15 +38,31 @@ function many(
   );
 }
 
-/** A balanced wardrobe that meets every category target. */
-function balancedWardrobe(): WardrobeHealthItem[] {
+/**
+ * A strong smart-casual wardrobe modelled on the real owner profile: ~46 tops,
+ * 19 bottoms, 14 footwear, 9 outerwear, 26 accessories, 12 fragrance, broad
+ * occasion coverage, year-round/summer seasons, all well-rated and regularly
+ * worn. Colours are varied so nothing clusters as a duplicate.
+ */
+function strongWardrobe(): WardrobeHealthItem[] {
+  const base: Partial<WardrobeHealthItem> = {
+    formality: "smart_casual",
+    usage: "regular",
+    rating: 9,
+    seasons: ["Year Round", "Summer"],
+    styles: ["Smart Casual", "Modern", "Everyday Casual"],
+    tags: ["Office", "Casual", "Everyday", "Travel"],
+  };
   return [
-    ...many(8, { category: "Top", formality: "business_casual" }),
-    ...many(5, { category: "Bottom", formality: "business_casual" }),
-    ...many(4, { category: "Footwear", formality: "business_casual" }),
-    ...many(3, { category: "Outerwear", formality: "smart_casual" }),
-    ...many(4, { category: "Accessory", formality: "casual" }),
-    ...many(2, { category: "Fragrance", formality: "casual" }),
+    ...many(30, { ...base, category: "Top" }),
+    ...many(8, { ...base, category: "Top", tags: ["Dinner", "Date", "Brewery", "Party"] }),
+    ...many(8, { ...base, category: "Top", tags: ["Gym"], styles: ["Athleisure"] }),
+    ...many(19, { ...base, category: "Bottom" }),
+    ...many(14, { ...base, category: "Footwear" }),
+    ...many(9, { ...base, category: "Outerwear", seasons: ["Winter", "Year Round"] }),
+    ...many(20, { ...base, category: "Accessory" }),
+    ...many(6, { ...base, category: "Accessory", tags: ["Wedding", "Formal"], formality: "formal" }),
+    ...many(12, { ...base, category: "Fragrance" }),
   ];
 }
 
@@ -57,110 +79,215 @@ describe("categoryBucketFor", () => {
   });
 });
 
-describe("analyzeWardrobeHealth", () => {
+describe("colorFamilyFor", () => {
+  it("maps specific colours onto coarse families", () => {
+    expect(colorFamilyFor("Charcoal")).toBe("grey");
+    expect(colorFamilyFor("Navy")).toBe("navy");
+    expect(colorFamilyFor("Sage")).toBe("green");
+    expect(colorFamilyFor("Off-White")).toBe("white");
+    expect(colorFamilyFor("Not Specified")).toBeNull();
+    expect(colorFamilyFor(null)).toBeNull();
+  });
+});
+
+describe("analyzeWardrobeHealth — calibrated for a Delhi smart-casual profile", () => {
   it("returns a zeroed report for an empty wardrobe", () => {
     const health = analyzeWardrobeHealth([]);
     expect(health.overallScore).toBe(0);
     expect(Object.values(health.categoryScores).every((s) => s === 0)).toBe(true);
-    expect(health.gaps).toHaveLength(6);
+    expect(health.gaps.some((g) => g.kind === "category")).toBe(true);
     expect(health.duplicates).toEqual([]);
   });
 
-  it("scores a balanced wardrobe highly with no gaps", () => {
-    const health = analyzeWardrobeHealth(balancedWardrobe());
-    expect(health.overallScore).toBeGreaterThan(70);
-    expect(health.gaps).toHaveLength(0);
-    expect(health.categoryScores.tops).toBe(100);
-    expect(health.categoryScores.bottoms).toBe(100);
+  it("scores the owner's real profile as strong overall", () => {
+    const health = analyzeWardrobeHealth(strongWardrobe());
+    expect(health.overallScore).toBeGreaterThanOrEqual(90);
+    expect(health.categoryScores.tops).toBeGreaterThanOrEqual(90);
+    expect(health.occasions.officeDaily).toBeGreaterThanOrEqual(90);
+    expect(health.occasions.smartCasual).toBeGreaterThanOrEqual(90);
     expect(health.strengths.length).toBeGreaterThan(0);
+    // A deep, useful tops category is not flagged as a duplicate problem.
+    expect(health.duplicates.some((d) => d.severity === "excess")).toBe(false);
   });
 
-  it("flags underrepresented categories as gaps and weaknesses", () => {
-    const health = analyzeWardrobeHealth([
-      ...many(8, { category: "Top" }),
-      ...many(1, { category: "Bottom" }),
-    ]);
-    const bottomsGap = health.gaps.find((gap) => gap.category === "bottoms");
-    expect(bottomsGap).toEqual({
-      category: "bottoms",
-      current: 1,
-      recommended: 5,
-    });
-    expect(
-      health.weaknesses.some((w) => w.toLowerCase().includes("bottoms")),
-    ).toBe(true);
-    expect(
-      health.recommendations.some((r) => r.includes("more bottoms")),
-    ).toBe(true);
+  it("does not saturate at a flat 100 — quality signals leave headroom", () => {
+    // Every piece rated 9/10 (not perfect) → composites cannot reach 100.
+    const health = analyzeWardrobeHealth(strongWardrobe());
+    expect(health.overallScore).toBeLessThan(100);
+    expect(health.occasions.officeDaily).toBeLessThan(100);
+    expect(health.categoryScores.tops).toBeLessThan(100);
   });
 
-  it("detects duplicate colors within a category", () => {
-    const health = analyzeWardrobeHealth(
-      many(5, { category: "Top", color: "Black" }),
+  it("penalizes rarely-worn dead weight (usage efficiency)", () => {
+    const common = {
+      category: "Top",
+      rating: 9,
+      tags: ["Office", "Casual"],
+      seasons: ["Year Round"],
+      styles: ["Smart Casual"],
+    } as const;
+    const worn = analyzeWardrobeHealth(many(40, { ...common, usage: "regular" }));
+    const unworn = analyzeWardrobeHealth(many(40, { ...common, usage: "rare" }));
+
+    expect(unworn.overallScore).toBeLessThan(worn.overallScore);
+    expect(unworn.weaknesses.some((w) => /rarely worn/i.test(w))).toBe(true);
+  });
+
+  it("does not heavily penalize a formal-light wardrobe", () => {
+    const rich = analyzeWardrobeHealth(strongWardrobe());
+    const formalLight = strongWardrobe().filter(
+      (i) => !(i.tags?.includes("Wedding") || i.formality === "formal"),
     );
-    const colorDup = health.duplicates.find((d) => d.type === "color");
-    expect(colorDup?.count).toBe(5);
-    expect(colorDup?.label).toContain("Black");
+    const light = analyzeWardrobeHealth(formalLight);
+
+    expect(light.occasions.formal).toBeLessThan(rich.occasions.formal);
+    expect(rich.overallScore - light.overallScore).toBeLessThanOrEqual(6);
+    expect(light.overallScore).toBeGreaterThanOrEqual(80);
   });
 
-  it("detects over-purchased categories", () => {
-    const health = analyzeWardrobeHealth(
-      many(20, { category: "Top", color: "Varied" }).map((it, i) => ({
-        ...it,
-        color: `C${i}`,
-      })),
-    );
-    expect(
-      health.duplicates.some((d) => d.type === "category"),
-    ).toBe(true);
-  });
-
-  it("flags brand over-concentration", () => {
-    const health = analyzeWardrobeHealth([
-      ...many(8, { category: "Top", brand: "Nike", color: "Blue" }).map(
-        (it, i) => ({ ...it, color: `B${i}` }),
-      ),
-      ...many(2, { category: "Bottom", brand: "Levis" }),
-    ]);
-    expect(
-      health.weaknesses.some((w) => w.includes("Over-concentrated")),
-    ).toBe(true);
-    expect(
-      health.recommendations.some((r) => r.includes("Diversify")),
-    ).toBe(true);
-  });
-
-  it("computes office coverage from business-appropriate core items", () => {
-    const business = [
-      ...many(4, { category: "Top", formality: "business_casual" as FormalityEnum }),
-      ...many(4, { category: "Bottom", formality: "business_formal" as FormalityEnum }),
-      ...many(4, { category: "Footwear", formality: "formal" as FormalityEnum }),
+  it("is not penalized for a summer-heavy, low-winter wardrobe", () => {
+    // Otherwise-strong wardrobe, but every piece is tagged summer-only —
+    // isolating season so winter/transitional coverage are the only deficits.
+    const broadTags = ["Office", "Casual", "Everyday", "Travel", "Dinner", "Gym"];
+    const broadStyles = ["Smart Casual", "Everyday Casual", "Athleisure"];
+    const summer: Partial<WardrobeHealthItem> = {
+      seasons: ["Summer"],
+      tags: broadTags,
+      styles: broadStyles,
+    };
+    const summerOnly = [
+      ...many(30, { ...summer, category: "Top" }),
+      ...many(15, { ...summer, category: "Bottom" }),
+      ...many(10, { ...summer, category: "Footwear" }),
+      ...many(8, { ...summer, category: "Accessory" }),
+      ...many(6, { ...summer, category: "Fragrance" }),
+      ...many(5, { ...summer, category: "Outerwear" }),
     ];
-    const casual = many(12, { category: "Top", formality: "casual" as FormalityEnum });
-    expect(analyzeWardrobeHealth(business).coverage.office).toBeGreaterThan(
-      analyzeWardrobeHealth(casual).coverage.office,
+    const health = analyzeWardrobeHealth(summerOnly);
+
+    expect(health.seasons.summer).toBeGreaterThanOrEqual(90);
+    expect(health.seasons.winter).toBe(0); // no winter/year-round pieces at all
+    // Even with zero winter/transitional coverage, the low season weight keeps
+    // the overall score strong — a summer wardrobe isn't punished.
+    expect(health.overallScore).toBeGreaterThanOrEqual(80);
+  });
+
+  it("penalizes missing office and smart-casual coverage", () => {
+    const strong = analyzeWardrobeHealth(strongWardrobe());
+    const gymOnly = analyzeWardrobeHealth(
+      many(40, {
+        category: "Top",
+        formality: "casual",
+        styles: ["Athleisure"],
+        tags: ["Gym", "Home"],
+        seasons: ["Summer", "Year Round"],
+      }),
     );
+
+    expect(gymOnly.occasions.officeDaily).toBeLessThan(50);
+    expect(gymOnly.occasions.smartCasual).toBeLessThan(50);
+    expect(gymOnly.overallScore).toBeLessThan(strong.overallScore);
+    expect(
+      gymOnly.weaknesses.some((w) => /office|smart casual/i.test(w)),
+    ).toBe(true);
+  });
+
+  it("flags excess low-use duplicate clusters and lowers the score", () => {
+    const base = strongWardrobe();
+    const wellUsed = many(4, {
+      category: "Top",
+      color: "Black",
+      formality: "casual",
+      usage: "regular",
+      rating: 9,
+    });
+    const lowUse = many(4, {
+      category: "Top",
+      color: "Black",
+      formality: "casual",
+      usage: "rare",
+      rating: 6,
+    });
+
+    const withWellUsed = analyzeWardrobeHealth([...base, ...wellUsed]);
+    const withLowUse = analyzeWardrobeHealth([...base, ...lowUse]);
+
+    expect(withWellUsed.duplicates.some((d) => d.severity === "excess")).toBe(false);
+    const excess = withLowUse.duplicates.find((d) => d.severity === "excess");
+    expect(excess?.colorFamily).toBe("black");
+    expect(excess?.lowValueCount).toBe(4);
+    expect(withLowUse.overallScore).toBeLessThan(withWellUsed.overallScore);
+  });
+
+  it("does not flag a deep category with well-used pieces", () => {
+    // 6 navy smart-casual tops, all loved and worn — not a duplicate problem.
+    const health = analyzeWardrobeHealth(
+      many(6, { category: "Top", color: "Navy", usage: "regular", rating: 9 }),
+    );
+    expect(health.duplicates).toHaveLength(0);
+  });
+
+  it("keeps white-shirt clusters on the watch list, never excess", () => {
+    const health = analyzeWardrobeHealth(
+      many(5, {
+        category: "Top",
+        subcategory: "Shirt",
+        color: "White",
+        formality: "smart_casual",
+        usage: "rare",
+        rating: 6,
+      }),
+    );
+    const dup = health.duplicates.find((d) => d.colorFamily === "white");
+    expect(dup?.severity).toBe("watch");
+  });
+
+  it("recommends practical smart-casual staples that are absent", () => {
+    const health = analyzeWardrobeHealth(strongWardrobe());
+    const staples = health.gaps
+      .filter((g) => g.kind === "staple")
+      .map((g) => g.label);
+
+    expect(staples).toContain("Navy knit polo");
+    expect(staples).toContain("Charcoal/grey smart trousers");
+    // Never recommends generic items the profile doesn't call for.
+    expect(
+      health.gaps.some((g) => /loafer|watch|formal shoe/i.test(g.label)),
+    ).toBe(false);
+  });
+
+  it("does not flag a staple that is already owned", () => {
+    const withPolo = [
+      ...strongWardrobe(),
+      item({
+        category: "Top",
+        subcategory: "Polo",
+        name: "Navy Knit Polo",
+        color: "Navy",
+      }),
+    ];
+    const health = analyzeWardrobeHealth(withPolo);
+    expect(health.gaps.some((g) => g.label === "Navy knit polo")).toBe(false);
   });
 
   it("excludes retired items from the analysis", () => {
-    const retired = many(8, {
-      category: "Top",
-      status: "retired" as ItemStatus,
-    });
-    const health = analyzeWardrobeHealth(retired);
+    const health = analyzeWardrobeHealth(
+      many(30, { category: "Top", status: "retired" as ItemStatus }),
+    );
     expect(health.categoryScores.tops).toBe(0);
   });
 
   it("keeps all scores within 0–100", () => {
-    const health = analyzeWardrobeHealth(balancedWardrobe());
+    const health = analyzeWardrobeHealth(strongWardrobe());
     const all = [
       health.overallScore,
       ...Object.values(health.categoryScores),
-      ...Object.values(health.coverage),
+      ...Object.values(health.occasions),
+      ...Object.values(health.seasons),
     ];
-    for (const score of all) {
-      expect(score).toBeGreaterThanOrEqual(0);
-      expect(score).toBeLessThanOrEqual(100);
+    for (const s of all) {
+      expect(s).toBeGreaterThanOrEqual(0);
+      expect(s).toBeLessThanOrEqual(100);
     }
   });
 });
@@ -175,8 +302,8 @@ describe("buildWardrobeHealthDebug", () => {
     expect(debug.totalItems).toBe(5);
   });
 
-  it("mirrors the reported scores exactly", () => {
-    const items = balancedWardrobe();
+  it("mirrors the reported scores exactly, with weights", () => {
+    const items = strongWardrobe();
     const health = analyzeWardrobeHealth(items);
     const debug = buildWardrobeHealthDebug(items);
 
@@ -186,9 +313,15 @@ describe("buildWardrobeHealthDebug", () => {
         health.categoryScores[row.key as keyof typeof health.categoryScores],
       );
     }
-    for (const row of debug.coverageScores) {
+    for (const row of debug.occasionScores) {
       expect(row.score).toBe(
-        health.coverage[row.key as keyof typeof health.coverage],
+        health.occasions[row.key as keyof typeof health.occasions],
+      );
+      expect(row.weight).toBeGreaterThan(0);
+    }
+    for (const row of debug.seasonScores) {
+      expect(row.score).toBe(
+        health.seasons[row.key as keyof typeof health.seasons],
       );
     }
   });

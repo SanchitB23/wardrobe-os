@@ -37,9 +37,11 @@ import { useWardrobeHealth } from "@/features/analytics/hooks";
 import { cn } from "@/lib/utils";
 import type {
   CategoryBucket,
-  CoverageContext,
   DebugDistribution,
+  GapPriority,
+  OccasionContext,
   ScoreBreakdown,
+  SeasonContext,
   WardrobeHealth,
   WardrobeHealthDebug,
 } from "@/domain/analytics/WardrobeHealthEngine";
@@ -88,14 +90,26 @@ const CATEGORY_LABELS: Record<CategoryBucket, string> = {
   fragrance: "Fragrance",
 };
 
-const COVERAGE_LABELS: Record<CoverageContext, string> = {
-  office: "Office",
+const OCCASION_LABELS: Record<OccasionContext, string> = {
+  officeDaily: "Office daily",
+  smartCasual: "Smart casual",
   travel: "Travel",
-  wedding: "Wedding",
+  social: "Dinner / date / brewery",
+  formal: "Wedding / formal",
   gym: "Gym",
-  vacation: "Vacation",
-  winter: "Winter",
+  home: "Home / everyday",
+};
+
+const SEASON_LABELS: Record<SeasonContext, string> = {
   summer: "Summer",
+  transitional: "Spring / autumn / monsoon",
+  winter: "Winter",
+};
+
+const GAP_PRIORITY_TONE: Record<GapPriority, string> = {
+  high: "text-destructive",
+  medium: "text-amber-600 dark:text-amber-400",
+  low: "text-muted-foreground",
 };
 
 function ScoreBar({ label, score }: { label: string; score: number }) {
@@ -215,22 +229,42 @@ function HealthReport({ health }: { health: WardrobeHealth }) {
 
         <Card>
           <CardHeader>
-            <CardTitle>Occasion & season coverage</CardTitle>
+            <CardTitle>Occasion coverage</CardTitle>
             <CardDescription>
-              How ready your wardrobe is for each context.
+              Readiness for each occasion, weighted by how much it matters to a
+              WFH + occasional-office lifestyle.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {(Object.keys(COVERAGE_LABELS) as CoverageContext[]).map((context) => (
+            {(Object.keys(OCCASION_LABELS) as OccasionContext[]).map((context) => (
               <ScoreBar
                 key={context}
-                label={COVERAGE_LABELS[context]}
-                score={health.coverage[context]}
+                label={OCCASION_LABELS[context]}
+                score={health.occasions[context]}
               />
             ))}
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Season coverage</CardTitle>
+          <CardDescription>
+            Weighted for Delhi NCR — summer and year-round dominate; a light
+            winter wardrobe is expected, not penalized.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 sm:grid-cols-3">
+          {(Object.keys(SEASON_LABELS) as SeasonContext[]).map((context) => (
+            <ScoreBar
+              key={context}
+              label={SEASON_LABELS[context]}
+              score={health.seasons[context]}
+            />
+          ))}
+        </CardContent>
+      </Card>
 
       <div className="grid gap-6 lg:grid-cols-3">
         <NarrativeCard
@@ -267,7 +301,8 @@ function HealthReport({ health }: { health: WardrobeHealth }) {
               <CardTitle className="text-base">Duplicate analysis</CardTitle>
             </div>
             <CardDescription>
-              Colors or categories you may be over-buying.
+              Clusters of same colour + formality where several pieces are rarely
+              worn. Deep, well-used categories are fine.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -276,18 +311,26 @@ function HealthReport({ health }: { health: WardrobeHealth }) {
                 {health.duplicates.map((duplicate, index) => (
                   <li
                     key={`${index}-${duplicate.label}`}
-                    className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2 text-sm"
+                    className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm"
                   >
-                    <span>{duplicate.label}</span>
-                    <Badge variant="outline" className="capitalize">
-                      {duplicate.type}
+                    <span className="capitalize">
+                      {duplicate.label}
+                      <span className="ml-1 text-xs text-muted-foreground">
+                        · {duplicate.lowValueCount} low-use
+                      </span>
+                    </span>
+                    <Badge
+                      variant={duplicate.severity === "excess" ? "destructive" : "secondary"}
+                      className="shrink-0 capitalize"
+                    >
+                      {duplicate.severity === "excess" ? "Excess" : "Watch list"}
                     </Badge>
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">
-                No significant duplicates detected.
+                No problematic duplicate clusters detected.
               </p>
             )}
           </CardContent>
@@ -300,7 +343,7 @@ function HealthReport({ health }: { health: WardrobeHealth }) {
               <CardTitle className="text-base">Gap analysis</CardTitle>
             </div>
             <CardDescription>
-              Categories below their recommended count.
+              Practical smart-casual staples worth adding next.
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -308,19 +351,27 @@ function HealthReport({ health }: { health: WardrobeHealth }) {
               <ul className="space-y-2">
                 {health.gaps.map((gap) => (
                   <li
-                    key={gap.category}
-                    className="flex items-center justify-between rounded-lg border bg-muted/20 px-3 py-2 text-sm"
+                    key={`${gap.kind}-${gap.label}`}
+                    className="flex items-center justify-between gap-3 rounded-lg border bg-muted/20 px-3 py-2 text-sm"
                   >
-                    <span>{CATEGORY_LABELS[gap.category]}</span>
-                    <span className="tabular-nums text-muted-foreground">
-                      {gap.current} / {gap.recommended}
+                    <span>
+                      {gap.label}
+                      <span className="ml-1 block text-xs text-muted-foreground">
+                        {gap.detail}
+                      </span>
                     </span>
+                    <Badge
+                      variant="outline"
+                      className={cn("shrink-0 capitalize", GAP_PRIORITY_TONE[gap.priority])}
+                    >
+                      {gap.priority}
+                    </Badge>
                   </li>
                 ))}
               </ul>
             ) : (
               <p className="text-sm text-muted-foreground">
-                Every category meets its recommended count.
+                No priority gaps — the smart-casual rotation is well stocked.
               </p>
             )}
           </CardContent>
@@ -529,8 +580,12 @@ function HealthDebugPanel({ debug }: { debug: WardrobeHealthDebug }) {
           rows={debug.categoryScores}
         />
         <BreakdownTable
-          caption="Coverage score derivations"
-          rows={debug.coverageScores}
+          caption="Occasion score derivations"
+          rows={debug.occasionScores}
+        />
+        <BreakdownTable
+          caption="Season score derivations"
+          rows={debug.seasonScores}
         />
         <BreakdownTable caption="Overall score derivation" rows={[debug.overall]} />
       </div>

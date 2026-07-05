@@ -35,6 +35,7 @@ function toHealthItem(row: HealthItemRow): WardrobeHealthItem {
     brand: row.brand?.name ?? null,
     formality: row.formality,
     usage: row.usage,
+    rating: row.rating,
     status: row.status,
     seasons: relatedNames(row.item_seasons, "seasons"),
     styles: relatedNames(row.item_styles, "styles"),

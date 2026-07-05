@@ -7,6 +7,7 @@ const HEALTH_ITEM_SELECT = `
   name,
   formality,
   usage,
+  rating,
   status,
   category:categories(name),
   subcategory:subcategories(name),
@@ -24,6 +25,7 @@ export type HealthItemRow = {
   name: string;
   formality: FormalityEnum | null;
   usage: UsageFrequency | null;
+  rating: number | null;
   status: ItemStatus | null;
   category: NamedRef;
   subcategory: NamedRef;
