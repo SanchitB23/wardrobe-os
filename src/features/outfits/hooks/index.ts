@@ -13,7 +13,9 @@ import {
   fetchOutfits,
   updateOutfit,
 } from "@/features/outfits/services/outfits.service";
+import { fetchOutfitEvaluation } from "@/features/outfits/services/outfit-evaluation.service";
 import type {
+  OutfitDetail,
   OutfitSlot,
   SaveOutfitInput,
   UpdateOutfitInput,
@@ -34,6 +36,14 @@ export function useOutfit(id: string) {
     queryKey: wardrobeKeys.outfit(id),
     queryFn: async () => unwrapData(await fetchOutfitById(id)),
     enabled: Boolean(id),
+  });
+}
+
+export function useOutfitEvaluation(outfit: OutfitDetail | null) {
+  return useQuery({
+    queryKey: wardrobeKeys.outfitEvaluation(outfit?.id ?? ""),
+    queryFn: async () => unwrapData(await fetchOutfitEvaluation(outfit!)),
+    enabled: Boolean(outfit),
   });
 }
 

@@ -24,6 +24,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { DeleteOutfitDialog } from "@/features/outfits/components/delete-outfit-dialog";
 import { OutfitPreview } from "@/features/outfits/components/outfit-preview";
+import { OutfitScorePanel } from "@/features/outfits/components/outfit-score-panel";
 import { WearOutfitDialog } from "@/features/outfits/components/wear-outfit-dialog";
 import { useDuplicateOutfitMutation, useOutfit } from "@/features/outfits/hooks";
 import {
@@ -193,12 +194,15 @@ export function OutfitDetailView({ outfitId }: OutfitDetailViewProps) {
       ) : null}
 
       {outfit ? (
-        <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
-          <OutfitPreview selection={outfitDetailToSlotSelection(outfit)} />
-          <div className="xl:sticky xl:top-6">
-            <OutfitMetadata outfit={outfit} />
+        <>
+          <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_380px] xl:items-start">
+            <OutfitPreview selection={outfitDetailToSlotSelection(outfit)} />
+            <div className="xl:sticky xl:top-6">
+              <OutfitMetadata outfit={outfit} />
+            </div>
           </div>
-        </div>
+          <OutfitScorePanel outfit={outfit} />
+        </>
       ) : null}
 
       <DeleteOutfitDialog

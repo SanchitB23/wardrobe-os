@@ -322,6 +322,76 @@ export async function deleteOutfitItemsByOutfitId(
   return { error: null };
 }
 
+export type EvaluationItemBaseRow = {
+  id: string;
+  name: string;
+  formality: string | null;
+  rating: number | null;
+  primary_color: { id: string; name: string; hex: string | null } | null;
+};
+
+export type EvaluationRelationRows = {
+  items: EvaluationItemBaseRow[];
+  seasons: { item_id: string; season: { name: string } | null }[];
+  materials: { item_id: string; material: { name: string } | null }[];
+  occasions: { item_id: string; occasion: { name: string } | null }[];
+};
+
+export async function fetchEvaluationRelationRows(
+  itemIds: string[],
+): Promise<{ data: EvaluationRelationRows | null; error: Error | null }> {
+  if (itemIds.length === 0) {
+    return {
+      data: { items: [], seasons: [], materials: [], occasions: [] },
+      error: null,
+    };
+  }
+
+  const supabase = createClient();
+
+  const [itemsResult, seasonsResult, materialsResult, occasionsResult] =
+    await Promise.all([
+      supabase
+        .from("wardrobe_items")
+        .select(
+          "id, name, formality, rating, primary_color:colors!wardrobe_items_primary_color_id_fkey(id, name, hex)",
+        )
+        .in("id", itemIds),
+      supabase
+        .from("item_seasons")
+        .select("item_id, season:seasons(name)")
+        .in("item_id", itemIds),
+      supabase
+        .from("item_materials")
+        .select("item_id, material:materials(name)")
+        .in("item_id", itemIds),
+      supabase
+        .from("item_occasions")
+        .select("item_id, occasion:occasions(name)")
+        .in("item_id", itemIds),
+    ]);
+
+  const firstError =
+    itemsResult.error ??
+    seasonsResult.error ??
+    materialsResult.error ??
+    occasionsResult.error;
+
+  if (firstError) {
+    return { data: null, error: toError(firstError.message) };
+  }
+
+  return {
+    data: {
+      items: (itemsResult.data ?? []) as unknown as EvaluationItemBaseRow[],
+      seasons: (seasonsResult.data ?? []) as unknown as EvaluationRelationRows["seasons"],
+      materials: (materialsResult.data ?? []) as unknown as EvaluationRelationRows["materials"],
+      occasions: (occasionsResult.data ?? []) as unknown as EvaluationRelationRows["occasions"],
+    },
+    error: null,
+  };
+}
+
 export async function deleteOutfitRow(id: string): Promise<{ error: Error | null }> {
   const supabase = createClient();
   const { error } = await supabase.from("outfits").delete().eq("id", id);
