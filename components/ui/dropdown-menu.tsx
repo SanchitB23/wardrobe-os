@@ -53,15 +53,20 @@ function DropdownMenuGroup({ ...props }: MenuPrimitive.Group.Props) {
   return <MenuPrimitive.Group data-slot="dropdown-menu-group" {...props} />
 }
 
+// Base UI's `Menu.GroupLabel` requires a `Menu.Group`/`Menu.RadioGroup`
+// ancestor and throws during render otherwise. shadcn's `DropdownMenuLabel`
+// is a standalone section heading, so render a plain styled element instead
+// of the group-scoped primitive. Use `DropdownMenuGroup` when you need the
+// label associated with a group for accessibility.
 function DropdownMenuLabel({
   className,
   inset,
   ...props
-}: MenuPrimitive.GroupLabel.Props & {
+}: React.ComponentProps<"div"> & {
   inset?: boolean
 }) {
   return (
-    <MenuPrimitive.GroupLabel
+    <div
       data-slot="dropdown-menu-label"
       data-inset={inset}
       className={cn(
