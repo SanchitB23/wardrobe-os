@@ -1,6 +1,9 @@
 import { describe, expect, it } from "vitest";
 
-import { recommendOutfits } from "@/domain/recommendation/OutfitRecommendationEngine";
+import {
+  generateOutfitRecommendations,
+  recommendOutfits,
+} from "@/domain/recommendation/OutfitRecommendationEngine";
 import { buildRecommendationContext } from "@/domain/recommendation/RecommendationContextBuilder";
 import type { WardrobeItemInput } from "@/domain/recommendation/RecommendationContextBuilder";
 import type { WardrobeHealth } from "@/domain/analytics/WardrobeHealthEngine";
@@ -224,5 +227,138 @@ describe("recommendOutfits", () => {
     const a = recommendOutfits(ctx(config), { occasion: "Office" });
     const b = recommendOutfits(ctx(config), { occasion: "Office" });
     expect(a).toEqual(b);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Hard eligibility — context constraints applied before scoring.
+// ---------------------------------------------------------------------------
+
+const GYM_ITEMS: WardrobeItemInput[] = [
+  item({ id: "gymTop", name: "Performance Tee", category: "Top", subcategory: "T-Shirt", formality: "casual", tags: ["Gym"], styles: ["Athleisure"] }),
+  item({ id: "gymShorts", name: "Training Shorts", category: "Bottom", subcategory: "Shorts", formality: "casual", tags: ["Gym"], styles: ["Athleisure"] }),
+  item({ id: "runShoe", name: "Running Shoes", category: "Footwear", subcategory: "Running", formality: "casual", tags: ["Gym"], styles: ["Athleisure"] }),
+];
+
+const OFFICE_ITEMS: WardrobeItemInput[] = [
+  item({ id: "shirt", name: "Oxford Shirt", category: "Top", subcategory: "Shirt", formality: "business_casual", tags: ["Office"], styles: ["Classic"] }),
+  item({ id: "chino", name: "Charcoal Chinos", category: "Bottom", subcategory: "Chinos", formality: "smart_casual", tags: ["Office"], styles: ["Smart Casual"] }),
+  item({ id: "sneaker", name: "White Sneakers", category: "Footwear", subcategory: "Sneakers", formality: "smart_casual", tags: ["Office", "Casual"], styles: ["Smart Casual"] }),
+  item({ id: "dressShoe", name: "Oxford Shoes", category: "Footwear", subcategory: "Oxford", formality: "formal", tags: ["Wedding"], styles: ["Formal"] }),
+  item({ id: "tux", name: "Black Tuxedo", category: "Outerwear", subcategory: "Tuxedo", formality: "formal", tags: ["Wedding"], styles: ["Formal"] }),
+];
+
+const WEDDING_ITEMS: WardrobeItemInput[] = [
+  item({ id: "fShirt", name: "Formal Shirt", category: "Top", subcategory: "Shirt", formality: "business_formal", tags: ["Wedding"], styles: ["Formal"] }),
+  item({ id: "fTrouser", name: "Formal Trousers", category: "Bottom", subcategory: "Trousers", formality: "formal", tags: ["Wedding"], styles: ["Formal"] }),
+];
+
+const CASUAL_ITEMS: WardrobeItemInput[] = [
+  item({ id: "tee", name: "Casual Tee", category: "Top", subcategory: "T-Shirt", formality: "casual", tags: ["Casual"], styles: ["Everyday Casual"] }),
+  item({ id: "jeans", name: "Blue Jeans", category: "Bottom", subcategory: "Jeans", formality: "casual", tags: ["Casual"], styles: ["Everyday Casual"] }),
+];
+
+const ALL_ITEMS = [...GYM_ITEMS, ...OFFICE_ITEMS, ...WEDDING_ITEMS, ...CASUAL_ITEMS];
+
+function contextWith(
+  savedOutfits: Parameters<typeof buildRecommendationContext>[0]["savedOutfits"],
+  items: WardrobeItemInput[] = ALL_ITEMS,
+) {
+  return buildRecommendationContext(
+    { health: health(), wardrobeItems: items, savedOutfits },
+    { generatedAt: GENERATED_AT },
+  );
+}
+
+describe("recommendOutfits — hard eligibility", () => {
+  const OFFICE_OUTFIT = { id: "office", name: "Office look", itemIds: ["shirt", "chino", "dressShoe"] };
+  const GYM_OUTFIT = { id: "gym", name: "Gym look", itemIds: ["gymTop", "gymShorts", "runShoe"] };
+  const FORMAL_OUTFIT = { id: "formal", name: "Wedding look", itemIds: ["fShirt", "fTrouser", "dressShoe"] };
+  const CASUAL_OUTFIT = { id: "casual", name: "Casual look", itemIds: ["tee", "jeans", "sneaker"] };
+
+  it("Gym never recommends a shirt + chinos + tuxedo office outfit", () => {
+    const { recommendations, rejected } = generateOutfitRecommendations(
+      contextWith([OFFICE_OUTFIT, GYM_OUTFIT]),
+      { occasion: "Gym" },
+    );
+
+    expect(recommendations.some((r) => r.outfitId === "gym")).toBe(true);
+    expect(recommendations.some((r) => r.outfitId === "office")).toBe(false);
+    // No recommendation (incl. generated combos) contains office/formal items.
+    const names = recommendations.flatMap((r) => r.items.map((i) => i.name.toLowerCase()));
+    expect(names.some((n) => /shirt|chino|tuxedo|oxford/.test(n))).toBe(false);
+    // Rejection is explained (Rule 8).
+    const officeReject = rejected.find((r) => r.outfitId === "office");
+    expect(officeReject?.reasons.some((r) => /not suitable for gym/i.test(r))).toBe(true);
+  });
+
+  it("Office does not recommend gym shorts / running shoes", () => {
+    const { recommendations, rejected } = generateOutfitRecommendations(
+      contextWith([OFFICE_OUTFIT, GYM_OUTFIT]),
+      { occasion: "Office" },
+    );
+
+    expect(recommendations.some((r) => r.outfitId === "office")).toBe(true);
+    expect(recommendations.some((r) => r.outfitId === "gym")).toBe(false);
+    expect(rejected.some((r) => r.outfitId === "gym")).toBe(true);
+  });
+
+  it("Wedding prefers formalwear and rejects casual outfits", () => {
+    const { recommendations, rejected } = generateOutfitRecommendations(
+      contextWith([FORMAL_OUTFIT, CASUAL_OUTFIT]),
+      { occasion: "Wedding" },
+    );
+
+    expect(recommendations[0]?.outfitId).toBe("formal");
+    expect(recommendations.some((r) => r.outfitId === "casual")).toBe(false);
+    expect(rejected.some((r) => r.outfitId === "casual")).toBe(true);
+  });
+
+  it("a favorite wrong-context outfit ranks below a correct-context outfit", () => {
+    const recs = recommendOutfits(
+      contextWith([
+        { ...OFFICE_OUTFIT, favorite: true }, // favorite but wrong for gym
+        { ...GYM_OUTFIT, favorite: false },
+      ]),
+      { occasion: "Gym" },
+    );
+
+    const gymIndex = recs.findIndex((r) => r.outfitId === "gym");
+    const officeIndex = recs.findIndex((r) => r.outfitId === "office");
+    expect(gymIndex).toBe(0);
+    // The favorite office outfit is excluded entirely (never outranks).
+    expect(officeIndex).toBe(-1);
+  });
+
+  it("excludes saved outfits that violate the selected occasion filter", () => {
+    const { recommendations } = generateOutfitRecommendations(
+      contextWith([OFFICE_OUTFIT, CASUAL_OUTFIT, GYM_OUTFIT]),
+      { occasion: "Gym" },
+    );
+    const ids = recommendations.map((r) => r.outfitId);
+    expect(ids).toContain("gym");
+    expect(ids).not.toContain("office");
+    expect(ids).not.toContain("casual");
+  });
+
+  it("rejects and explains an outfit missing footwear", () => {
+    const { rejected } = generateOutfitRecommendations(
+      contextWith([{ id: "noShoes", name: "No shoes", itemIds: ["gymTop", "gymShorts"] }]),
+      { occasion: "Gym" },
+    );
+    const entry = rejected.find((r) => r.outfitId === "noShoes");
+    expect(entry?.reasons.some((r) => /missing footwear/i.test(r))).toBe(true);
+  });
+
+  it("keeps favorite boost capped so it cannot override context (<= 1 point)", () => {
+    const favorite = recommendOutfits(
+      contextWith([{ ...GYM_OUTFIT, favorite: true }]),
+      { occasion: "Gym" },
+    )[0];
+    const plain = recommendOutfits(
+      contextWith([{ ...GYM_OUTFIT, favorite: false }]),
+      { occasion: "Gym" },
+    )[0];
+    expect(favorite.score - plain.score).toBeLessThanOrEqual(1);
   });
 });
