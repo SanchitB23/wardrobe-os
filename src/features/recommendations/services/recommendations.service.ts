@@ -15,6 +15,7 @@ import {
 } from "@/features/analytics/services/analytics.service";
 import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
 import { selectPrimaryImageUrls } from "@/features/inventory/repositories/images.repository";
+import { fetchOutfitItemLinks } from "@/features/outfits/repositories/outfits.repository";
 import { createOutfit } from "@/features/outfits/services/outfits.service";
 import { insertWearLogs } from "@/features/wear-logs/repositories/wear-logs.repository";
 import {
@@ -211,17 +212,44 @@ function todayIso(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
+function itemSetSignature(itemIds: readonly string[]): string {
+  return Array.from(new Set(itemIds))
+    .sort((a, b) => a.localeCompare(b))
+    .join("|");
+}
+
 /**
  * Saves a generated outfit: creates the `outfits` row and its `outfit_items`.
- * Default name is "Generated Outfit - YYYY-MM-DD".
+ * Default name is "Generated Outfit - YYYY-MM-DD". If an outfit with the exact
+ * same item set already exists, returns it with `duplicate: true` instead of
+ * creating a second copy.
  */
 export async function saveGeneratedOutfit(
   items: readonly RecommendedOutfitItem[],
   name?: string,
-): Promise<{ data: { id: string } | null; error: Error | null }> {
+): Promise<{ data: { id: string; duplicate: boolean } | null; error: Error | null }> {
   if (items.length === 0) {
     return { data: null, error: toError("Cannot save an empty outfit.") };
   }
+
+  const newSignature = itemSetSignature(items.map((item) => item.itemId));
+
+  // Duplicate prevention — bail out if the same item set is already saved.
+  const linksResult = await fetchOutfitItemLinks();
+  if (!linksResult.error && linksResult.data) {
+    const itemsByOutfit = new Map<string, string[]>();
+    for (const link of linksResult.data) {
+      const list = itemsByOutfit.get(link.outfit_id) ?? [];
+      list.push(link.item_id);
+      itemsByOutfit.set(link.outfit_id, list);
+    }
+    for (const [outfitId, itemIds] of itemsByOutfit) {
+      if (itemSetSignature(itemIds) === newSignature) {
+        return { data: { id: outfitId, duplicate: true }, error: null };
+      }
+    }
+  }
+
   const result = await createOutfit({
     name: name?.trim() || `Generated Outfit - ${todayIso()}`,
     items: items.map((item) => ({ item_id: item.itemId, slot: item.slot })),
@@ -229,7 +257,7 @@ export async function saveGeneratedOutfit(
   if (result.error || !result.data) {
     return { data: null, error: result.error ?? toError("Failed to save outfit.") };
   }
-  return { data: { id: result.data.id }, error: null };
+  return { data: { id: result.data.id, duplicate: false }, error: null };
 }
 
 /**

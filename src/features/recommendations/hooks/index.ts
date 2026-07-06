@@ -26,9 +26,13 @@ export function useSaveGeneratedOutfit() {
   return useMutation({
     mutationFn: async (input: { items: RecommendedOutfitItem[]; name?: string }) =>
       unwrapData(await saveGeneratedOutfit(input.items, input.name)),
-    onSuccess: async () => {
+    onSuccess: async (data) => {
       await invalidateWardrobeQueries(queryClient);
-      toast.success("Outfit saved");
+      if (data.duplicate) {
+        toast.info("This outfit is already saved");
+      } else {
+        toast.success("Outfit saved");
+      }
     },
     onError: (error: Error) => {
       toast.error(error.message || "Failed to save outfit");

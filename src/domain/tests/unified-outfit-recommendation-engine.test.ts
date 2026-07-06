@@ -242,4 +242,29 @@ describe("recommendUnifiedOutfits", () => {
     const b = recommendUnifiedOutfits(ctx(config), { occasion: "Office", limit: 5 });
     expect(a).toEqual(b);
   });
+
+  it("returns no recommendations when there are no eligible outfits", () => {
+    // Only tops — no bottom or footwear, so no complete outfit is possible.
+    const result = recommendUnifiedOutfits(
+      ctx({
+        items: [
+          item({ id: "t1", category: "Top", subcategory: "Polo" }),
+          item({ id: "t2", category: "Top", subcategory: "Shirt" }),
+        ],
+      }),
+    );
+    expect(result).toEqual([]);
+  });
+
+  it("returns zero recommendations when filters are too strict", () => {
+    // A smart-casual wardrobe with no activewear, filtered to Gym.
+    const result = recommendUnifiedOutfits(
+      ctx({
+        items: wardrobe(),
+        savedOutfits: [{ id: "o1", name: "Office", itemIds: ["polo", "chino", "loafer"] }],
+      }),
+      { occasion: "Gym", limit: 5 },
+    );
+    expect(result).toEqual([]);
+  });
 });

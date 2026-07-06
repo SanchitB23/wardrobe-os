@@ -13,6 +13,7 @@ import {
   SaveIcon,
   ShirtIcon,
   WandSparklesIcon,
+  XIcon,
 } from "lucide-react";
 
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
@@ -206,7 +207,7 @@ function DebugBlock({ rec }: { rec: UnifiedOutfitRecommendation }) {
         <BugIcon className="size-3.5" />
         Debug
       </p>
-      <ul className="space-y-0.5 font-mono">
+      <ul className="space-y-0.5 break-words font-mono">
         <li>source: {rec.source}</li>
         <li>sourceRank: {d.sourceRank}</li>
         {d.savedOutfitScore !== undefined ? <li>savedOutfitScore: {d.savedOutfitScore.toFixed(1)}</li> : null}
@@ -382,6 +383,17 @@ export function RecommendationCenterView() {
     setFilters((prev) => ({ ...prev, [key]: prev[key] === value ? undefined : value }));
   }
 
+  const hasActiveFilters = Boolean(
+    filters.occasion ||
+      filters.season ||
+      filters.weather ||
+      filters.commute ||
+      filters.favoritesOnly,
+  );
+  function resetFilters() {
+    setFilters({});
+  }
+
   function handleSave(rec: UnifiedOutfitRecommendation) {
     saveMutation.mutate({ items: rec.items });
   }
@@ -484,6 +496,17 @@ export function RecommendationCenterView() {
           >
             Favorites only
           </FilterChip>
+          {hasActiveFilters ? (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="ml-auto h-7"
+              onClick={resetFilters}
+            >
+              <XIcon />
+              Reset filters
+            </Button>
+          ) : null}
         </div>
       </div>
 
@@ -520,7 +543,24 @@ export function RecommendationCenterView() {
         />
       ) : null}
 
-      {isEmpty ? (
+      {isEmpty && hasActiveFilters ? (
+        <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
+          <WandSparklesIcon className="size-8 text-muted-foreground" />
+          <div className="space-y-1">
+            <p className="font-medium">No outfits match these filters</p>
+            <p className="text-sm text-muted-foreground">
+              Your filters may be too strict for the current wardrobe. Try loosening the
+              occasion, season, weather, or commute — or reset them.
+            </p>
+          </div>
+          <Button variant="outline" onClick={resetFilters}>
+            <XIcon />
+            Reset filters
+          </Button>
+        </div>
+      ) : null}
+
+      {isEmpty && !hasActiveFilters ? (
         <div className="flex flex-col items-center gap-3 rounded-xl border border-dashed p-10 text-center">
           <WandSparklesIcon className="size-8 text-muted-foreground" />
           <div className="space-y-1">
