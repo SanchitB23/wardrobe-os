@@ -1,10 +1,10 @@
 import {
   buildRecommendationContext,
-  generateOutfitRecommendations,
+  recommendUnifiedOutfits,
   type CommuteMode,
-  type OutfitRecommendation,
-  type RejectedOutfit,
+  type RecommendedOutfitItem,
   type SeasonLabel,
+  type UnifiedOutfitRecommendation,
   type WardrobeItemInput,
   type WeatherCondition,
   type WeatherSnapshot,
@@ -14,6 +14,9 @@ import {
   fetchWardrobeHealth,
 } from "@/features/analytics/services/analytics.service";
 import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
+import { selectPrimaryImageUrls } from "@/features/inventory/repositories/images.repository";
+import { createOutfit } from "@/features/outfits/services/outfits.service";
+import { insertWearLogs } from "@/features/wear-logs/repositories/wear-logs.repository";
 import {
   selectRecommendationData,
   type RecoItemRow,
@@ -34,6 +37,7 @@ export type ItemPreview = {
   name: string;
   color: string | null;
   category: string | null;
+  imageUrl: string | null;
 };
 
 /** The resolved context the engine actually scored against (for debug display). */
@@ -46,8 +50,7 @@ export type RecommendationContextSummary = {
 };
 
 export type RecommendationCenterData = {
-  recommendations: OutfitRecommendation[];
-  rejected: RejectedOutfit[];
+  recommendations: UnifiedOutfitRecommendation[];
   previews: Record<string, ItemPreview>;
   context: RecommendationContextSummary;
 };
@@ -113,6 +116,12 @@ export async function fetchOutfitRecommendations(
   const raw = dataResult.data;
   const wardrobeItems = raw.items.map(toItemInput);
 
+  // Best-effort primary images (blocked by RLS today → falls back to swatches).
+  const imageResult = await selectPrimaryImageUrls(wardrobeItems.map((item) => item.id));
+  const imageByItem = new Map(
+    (imageResult.data ?? []).map((row) => [row.item_id, row.image_url]),
+  );
+
   const previews: Record<string, ItemPreview> = {};
   for (const item of wardrobeItems) {
     previews[item.id] = {
@@ -120,6 +129,7 @@ export async function fetchOutfitRecommendations(
       name: item.name,
       color: item.color ?? null,
       category: item.category ?? null,
+      imageUrl: imageByItem.get(item.id) ?? null,
     };
   }
 
@@ -171,13 +181,13 @@ export async function fetchOutfitRecommendations(
     { generatedAt: new Date().toISOString() },
   );
 
-  const result = generateOutfitRecommendations(context, {
+  const unified = recommendUnifiedOutfits(context, {
     occasion: filters.occasion ?? null,
-    limit: 8,
+    limit: 12,
   });
   const recommendations = filters.favoritesOnly
-    ? result.recommendations.filter((rec) => rec.metadata.source === "saved_outfit")
-    : result.recommendations;
+    ? unified.filter((rec) => rec.source === "saved_outfit")
+    : unified;
 
   const contextSummary: RecommendationContextSummary = {
     occasion: filters.occasion ?? null,
@@ -188,7 +198,55 @@ export async function fetchOutfitRecommendations(
   };
 
   return {
-    data: { recommendations, rejected: result.rejected, previews, context: contextSummary },
+    data: { recommendations, previews, context: contextSummary },
     error: null,
   };
+}
+
+// ---------------------------------------------------------------------------
+// Actions
+// ---------------------------------------------------------------------------
+
+function todayIso(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+/**
+ * Saves a generated outfit: creates the `outfits` row and its `outfit_items`.
+ * Default name is "Generated Outfit - YYYY-MM-DD".
+ */
+export async function saveGeneratedOutfit(
+  items: readonly RecommendedOutfitItem[],
+  name?: string,
+): Promise<{ data: { id: string } | null; error: Error | null }> {
+  if (items.length === 0) {
+    return { data: null, error: toError("Cannot save an empty outfit.") };
+  }
+  const result = await createOutfit({
+    name: name?.trim() || `Generated Outfit - ${todayIso()}`,
+    items: items.map((item) => ({ item_id: item.itemId, slot: item.slot })),
+  });
+  if (result.error || !result.data) {
+    return { data: null, error: result.error ?? toError("Failed to save outfit.") };
+  }
+  return { data: { id: result.data.id }, error: null };
+}
+
+/**
+ * Logs a wear for each item today. `outfitId` is optional so generated combos
+ * can be worn without first being saved.
+ */
+export async function wearOutfitToday(
+  itemIds: readonly string[],
+  outfitId?: string | null,
+): Promise<{ error: Error | null }> {
+  const ids = itemIds.filter(Boolean);
+  if (ids.length === 0) {
+    return { error: toError("Cannot log a wear with no items.") };
+  }
+  const wornOn = todayIso();
+  const result = await insertWearLogs(
+    ids.map((itemId) => ({ item_id: itemId, worn_on: wornOn, outfit_id: outfitId ?? null })),
+  );
+  return { error: result.error };
 }

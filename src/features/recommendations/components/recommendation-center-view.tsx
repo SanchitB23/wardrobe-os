@@ -7,10 +7,11 @@ import {
   ArrowLeftIcon,
   BugIcon,
   CheckCircleIcon,
+  EyeIcon,
   LightbulbIcon,
   RefreshCwIcon,
+  SaveIcon,
   ShirtIcon,
-  SparklesIcon,
   WandSparklesIcon,
 } from "lucide-react";
 
@@ -18,6 +19,8 @@ import { InventoryErrorState } from "@/features/inventory/components/inventory-e
 import { PageHeader } from "@/features/layout";
 import {
   useOutfitRecommendations,
+  useSaveGeneratedOutfit,
+  useWearOutfit,
   type ItemPreview,
   type RecommendationContextSummary,
   type RecommendationFilters,
@@ -36,22 +39,31 @@ import { ColorSwatch } from "@/shared/ui";
 import { cn } from "@/lib/utils";
 import type {
   CommuteMode,
-  OutfitRecommendation,
-  RejectedOutfit,
+  RecommendedOutfitItem,
   SeasonLabel,
+  UnifiedOutfitRecommendation,
   WeatherCondition,
 } from "@/domain/recommendation";
 
-type FilterGroup<T extends string> = {
+type FilterGroup = {
   key: keyof RecommendationFilters;
   label: string;
-  options: readonly T[];
+  options: readonly string[];
 };
 
 const OCCASIONS = ["Office", "Casual", "Dinner", "Travel", "Gym", "Wedding"] as const;
 const SEASONS: readonly SeasonLabel[] = ["summer", "monsoon", "autumn", "winter", "spring"];
 const WEATHER: readonly WeatherCondition[] = ["hot", "warm", "mild", "cool", "cold", "rainy"];
 const COMMUTES: readonly CommuteMode[] = ["wfh", "metro", "car", "walk", "mixed"];
+
+type CardHandlers = {
+  previews: Record<string, ItemPreview>;
+  debug: boolean;
+  onSave: (rec: UnifiedOutfitRecommendation) => void;
+  onWear: (rec: UnifiedOutfitRecommendation) => void;
+  saving: boolean;
+  wearing: boolean;
+};
 
 function scoreTone(score: number): string {
   if (score >= 8) return "text-emerald-600 dark:text-emerald-400";
@@ -86,61 +98,72 @@ function FilterChip({
   );
 }
 
-function OutfitPreview({
-  recommendation,
-  previews,
-  size = "md",
+function ItemChip({
+  item,
+  preview,
+  large,
 }: {
-  recommendation: OutfitRecommendation;
-  previews: Record<string, ItemPreview>;
-  size?: "md" | "lg";
+  item: RecommendedOutfitItem;
+  preview?: ItemPreview;
+  large?: boolean;
 }) {
+  const size = large ? "size-7" : "size-6";
   return (
-    <div className="flex flex-wrap items-center gap-2">
-      {recommendation.items.map((item) => {
-        const preview = previews[item.itemId];
-        const color = preview?.color ?? item.name;
-        return (
-          <div
-            key={item.itemId}
-            className="flex items-center gap-1.5 rounded-full border bg-muted/30 py-1 pl-1 pr-2.5"
-            title={`${item.name}${preview?.color ? ` · ${preview.color}` : ""}`}
-          >
-            <ColorSwatch colorName={color} family={null} size={size === "lg" ? "lg" : "md"} />
-            <span className="max-w-32 truncate text-xs">{item.name}</span>
-          </div>
-        );
-      })}
+    <div
+      className="flex items-center gap-1.5 rounded-full border bg-muted/30 py-1 pl-1 pr-2.5"
+      title={`${item.name}${preview?.color ? ` · ${preview.color}` : ""}`}
+    >
+      {preview?.imageUrl ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={preview.imageUrl} alt="" className={cn(size, "rounded-full object-cover")} />
+      ) : (
+        <ColorSwatch colorName={preview?.color ?? item.name} family={null} size={large ? "lg" : "md"} />
+      )}
+      <span className="max-w-32 truncate text-xs">{item.name}</span>
     </div>
   );
 }
 
-function ActionButtons({ rec }: { rec: OutfitRecommendation }) {
-  const isSaved = rec.metadata.source === "saved_outfit" && rec.outfitId;
+function OutfitPreview({
+  rec,
+  previews,
+  large,
+}: {
+  rec: UnifiedOutfitRecommendation;
+  previews: Record<string, ItemPreview>;
+  large?: boolean;
+}) {
   return (
-    <div className="flex flex-wrap gap-2">
-      {isSaved ? (
-        <Button size="sm" render={<Link href={`/outfits/${rec.outfitId}`} />}>
-          <ShirtIcon />
-          Wear outfit
-        </Button>
-      ) : (
-        <Button size="sm" disabled>
-          <ShirtIcon />
-          Wear outfit
-        </Button>
-      )}
-      {isSaved ? (
-        <Button size="sm" variant="outline" disabled>
-          <CheckCircleIcon />
-          Saved
-        </Button>
-      ) : (
-        <Button size="sm" variant="outline" render={<Link href="/outfits/new" />}>
-          <SparklesIcon />
-          Save outfit
-        </Button>
-      )}
+    <div className="flex flex-wrap items-center gap-2">
+      {rec.items.map((item) => (
+        <ItemChip key={item.itemId} item={item} preview={previews[item.itemId]} large={large} />
+      ))}
+    </div>
+  );
+}
+
+function SourceBadge({ source }: { source: UnifiedOutfitRecommendation["source"] }) {
+  return source === "saved_outfit" ? (
+    <Badge variant="secondary">Saved outfit</Badge>
+  ) : (
+    <Badge variant="outline" className="border-blue-500/40 text-blue-600 dark:text-blue-400">
+      Generated
+    </Badge>
+  );
+}
+
+function ScoreConfidence({ rec }: { rec: UnifiedOutfitRecommendation }) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="text-right">
+        <span className={cn("text-2xl font-semibold tabular-nums", scoreTone(rec.score))}>
+          {rec.score.toFixed(1)}
+        </span>
+        <span className="text-sm text-muted-foreground">/10</span>
+      </div>
+      <Badge variant="secondary" className="tabular-nums">
+        {Math.round(rec.confidence * 100)}% confidence
+      </Badge>
     </div>
   );
 }
@@ -174,134 +197,132 @@ function MetaList({
   );
 }
 
-function ScoreConfidence({ rec }: { rec: OutfitRecommendation }) {
-  return (
-    <div className="flex items-center gap-4">
-      <div className="text-right">
-        <span className={cn("text-2xl font-semibold tabular-nums", scoreTone(rec.score))}>
-          {rec.score.toFixed(1)}
-        </span>
-        <span className="text-sm text-muted-foreground">/10</span>
-      </div>
-      <Badge variant="secondary" className="tabular-nums">
-        {Math.round(rec.confidence * 100)}% confidence
-      </Badge>
-    </div>
-  );
-}
-
-function DebugBreakdown({ rec }: { rec: OutfitRecommendation }) {
+function DebugBlock({ rec }: { rec: UnifiedOutfitRecommendation }) {
+  const d = rec.debug;
+  if (!d) return null;
   return (
     <div className="rounded-lg border border-dashed bg-muted/40 p-3 text-xs">
       <p className="mb-1.5 flex items-center gap-1.5 font-medium text-muted-foreground">
         <BugIcon className="size-3.5" />
-        Score breakdown · {rec.metadata.source} · {Math.round(rec.confidence * 100)}% confidence
+        Debug
       </p>
       <ul className="space-y-0.5 font-mono">
-        <li className="flex justify-between gap-3">
-          <span>Base outfit score</span>
-          <span className="tabular-nums">{rec.debug.baseScore.toFixed(1)}</span>
-        </li>
-        {rec.debug.adjustments.map((adj, index) => (
-          <li key={index} className="flex justify-between gap-3">
-            <span className="truncate">{adj.label}</span>
-            <span
-              className={cn(
-                "shrink-0 tabular-nums",
-                adj.delta >= 0
-                  ? "text-emerald-600 dark:text-emerald-400"
-                  : "text-destructive",
-              )}
-            >
-              {adj.delta >= 0 ? "+" : ""}
-              {adj.delta.toFixed(1)}
-            </span>
-          </li>
-        ))}
-        <li className="mt-1 flex justify-between gap-3 border-t pt-1 font-semibold">
-          <span>Final score</span>
-          <span className="tabular-nums">{rec.score.toFixed(1)}</span>
-        </li>
+        <li>source: {rec.source}</li>
+        <li>sourceRank: {d.sourceRank}</li>
+        {d.savedOutfitScore !== undefined ? <li>savedOutfitScore: {d.savedOutfitScore.toFixed(1)}</li> : null}
+        {d.generatedScore !== undefined ? <li>generatedScore: {d.generatedScore.toFixed(1)}</li> : null}
+        {d.boosts && d.boosts.length > 0 ? (
+          <li className="text-emerald-600 dark:text-emerald-400">boosts: {d.boosts.join(", ")}</li>
+        ) : null}
+        {d.penalties && d.penalties.length > 0 ? (
+          <li className="text-destructive">penalties: {d.penalties.join(", ")}</li>
+        ) : null}
       </ul>
     </div>
   );
 }
 
-function HeroCard({
+function ActionButtons({
   rec,
-  previews,
-  debug,
+  onSave,
+  onWear,
+  saving,
+  wearing,
 }: {
-  rec: OutfitRecommendation;
-  previews: Record<string, ItemPreview>;
-  debug: boolean;
+  rec: UnifiedOutfitRecommendation;
+  onSave: (rec: UnifiedOutfitRecommendation) => void;
+  onWear: (rec: UnifiedOutfitRecommendation) => void;
+  saving: boolean;
+  wearing: boolean;
 }) {
+  if (rec.source === "saved_outfit") {
+    return (
+      <div className="flex flex-wrap gap-2">
+        <Button size="sm" onClick={() => onWear(rec)} disabled={wearing}>
+          <ShirtIcon />
+          Wear outfit
+        </Button>
+        {rec.savedOutfitId ? (
+          <Button size="sm" variant="outline" render={<Link href={`/outfits/${rec.savedOutfitId}`} />}>
+            <EyeIcon />
+            View outfit
+          </Button>
+        ) : null}
+      </div>
+    );
+  }
   return (
-    <Card className="border-foreground/15 bg-gradient-to-br from-muted/40 to-background">
-      <CardHeader>
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <WandSparklesIcon className="size-5 text-blue-600 dark:text-blue-400" />
-            <Badge variant="secondary">Top pick</Badge>
-            <Badge variant="outline" className="capitalize">
-              {rec.metadata.source === "saved_outfit" ? "Saved outfit" : "Fresh combo"}
-            </Badge>
-          </div>
-          <ScoreConfidence rec={rec} />
-        </div>
-        <CardTitle className="text-xl">{rec.name}</CardTitle>
-        <CardDescription>{rec.reason}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <OutfitPreview recommendation={rec} previews={previews} size="lg" />
-        <div className="grid gap-5 sm:grid-cols-3">
-          <MetaList title="Strengths" icon={CheckCircleIcon} items={rec.strengths} tone="text-emerald-600 dark:text-emerald-400" />
-          <MetaList title="Tradeoffs" icon={AlertTriangleIcon} items={rec.tradeoffs} tone="text-amber-600 dark:text-amber-400" />
-          <MetaList title="Suggestions" icon={LightbulbIcon} items={rec.suggestions} tone="text-blue-600 dark:text-blue-400" />
-        </div>
-        {debug ? <DebugBreakdown rec={rec} /> : null}
-        <ActionButtons rec={rec} />
-      </CardContent>
-    </Card>
+    <div className="flex flex-wrap gap-2">
+      <Button size="sm" onClick={() => onSave(rec)} disabled={saving}>
+        <SaveIcon />
+        Save as outfit
+      </Button>
+      <Button size="sm" variant="outline" onClick={() => onWear(rec)} disabled={wearing}>
+        <ShirtIcon />
+        Wear today
+      </Button>
+    </div>
   );
 }
 
 function RecommendationCard({
   rec,
-  previews,
-  debug,
+  handlers,
+  hero,
 }: {
-  rec: OutfitRecommendation;
-  previews: Record<string, ItemPreview>;
-  debug: boolean;
+  rec: UnifiedOutfitRecommendation;
+  handlers: CardHandlers;
+  hero?: boolean;
 }) {
+  const { previews, debug, onSave, onWear, saving, wearing } = handlers;
   return (
-    <Card className="flex h-full flex-col">
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between gap-2">
-          <Badge variant="outline" className="capitalize">
-            {rec.metadata.source === "saved_outfit" ? "Saved" : "Combo"}
-          </Badge>
+    <Card
+      className={cn(
+        "flex h-full flex-col",
+        hero && "border-foreground/15 bg-gradient-to-br from-muted/40 to-background",
+      )}
+    >
+      <CardHeader className={hero ? undefined : "pb-3"}>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            {hero ? <WandSparklesIcon className="size-5 text-blue-600 dark:text-blue-400" /> : null}
+            {hero ? <Badge variant="secondary">Top pick</Badge> : null}
+            <SourceBadge source={rec.source} />
+          </div>
           <ScoreConfidence rec={rec} />
         </div>
-        <CardTitle className="text-base">{rec.name}</CardTitle>
+        <CardTitle className={hero ? "text-xl" : "text-base"}>{rec.name}</CardTitle>
         <CardDescription>{rec.reason}</CardDescription>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col gap-4">
-        <OutfitPreview recommendation={rec} previews={previews} />
-        <div className="space-y-3">
-          <MetaList title="Strengths" icon={CheckCircleIcon} items={rec.strengths.slice(0, debug ? 99 : 3)} tone="text-emerald-600 dark:text-emerald-400" />
-          <MetaList title="Tradeoffs" icon={AlertTriangleIcon} items={rec.tradeoffs.slice(0, debug ? 99 : 2)} tone="text-amber-600 dark:text-amber-400" />
-          {debug ? (
-            <MetaList title="Suggestions" icon={LightbulbIcon} items={rec.suggestions} tone="text-blue-600 dark:text-blue-400" />
-          ) : null}
+        <OutfitPreview rec={rec} previews={previews} large={hero} />
+        <div className={cn("gap-4", hero ? "grid sm:grid-cols-3" : "space-y-3")}>
+          <MetaList title="Strengths" icon={CheckCircleIcon} items={rec.strengths.slice(0, hero ? 99 : 3)} tone="text-emerald-600 dark:text-emerald-400" />
+          <MetaList title="Tradeoffs" icon={AlertTriangleIcon} items={rec.tradeoffs.slice(0, hero ? 99 : 2)} tone="text-amber-600 dark:text-amber-400" />
+          <MetaList title="Suggestions" icon={LightbulbIcon} items={rec.suggestions.slice(0, hero ? 99 : 2)} tone="text-blue-600 dark:text-blue-400" />
         </div>
-        {debug ? <DebugBreakdown rec={rec} /> : null}
+        {debug ? <DebugBlock rec={rec} /> : null}
         <div className="mt-auto pt-1">
-          <ActionButtons rec={rec} />
+          <ActionButtons rec={rec} onSave={onSave} onWear={onWear} saving={saving} wearing={wearing} />
         </div>
       </CardContent>
     </Card>
+  );
+}
+
+function CardGrid({
+  recs,
+  handlers,
+}: {
+  recs: UnifiedOutfitRecommendation[];
+  handlers: CardHandlers;
+}) {
+  return (
+    <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
+      {recs.map((rec) => (
+        <RecommendationCard key={rec.id} rec={rec} handlers={handlers} />
+      ))}
+    </div>
   );
 }
 
@@ -333,71 +354,12 @@ function ContextPanel({ context }: { context: RecommendationContextSummary }) {
   );
 }
 
-function RejectedOutfitsSection({
-  rejected,
-  context,
-}: {
-  rejected: RejectedOutfit[];
-  context: RecommendationContextSummary;
-}) {
-  return (
-    <section className="space-y-3">
-      <div className="flex items-center gap-2">
-        <AlertTriangleIcon className="size-4 text-destructive" />
-        <h2 className="text-lg font-semibold">Rejected outfits</h2>
-        <Badge variant="secondary" className="tabular-nums">
-          {rejected.length}
-        </Badge>
-      </div>
-      {rejected.length === 0 ? (
-        <p className="rounded-xl border border-dashed p-6 text-center text-sm text-muted-foreground">
-          No outfits were rejected for the {context.occasion ?? "current"} context.
-        </p>
-      ) : (
-        <div className="grid gap-4 lg:grid-cols-2">
-          {rejected.map((entry, index) => (
-            <Card key={entry.outfitId ?? `rejected-${index}`} className="border-destructive/30">
-              <CardHeader className="pb-3">
-                <div className="flex items-center gap-2">
-                  <CardTitle className="text-base">{entry.name}</CardTitle>
-                  <Badge variant="outline" className="ml-auto capitalize">
-                    {entry.source === "saved_outfit" ? "Saved" : "Combo"}
-                  </Badge>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-2 text-sm">
-                <ul className="space-y-0.5">
-                  {entry.reasons.map((reason, reasonIndex) => (
-                    <li key={reasonIndex} className="flex gap-2 text-destructive">
-                      <AlertTriangleIcon className="mt-0.5 size-3.5 shrink-0" />
-                      <span>{reason}</span>
-                    </li>
-                  ))}
-                </ul>
-                {entry.disallowedItems.length > 0 ? (
-                  <p className="text-xs text-muted-foreground">
-                    Disallowed items: {entry.disallowedItems.join(", ")}
-                  </p>
-                ) : null}
-                <p className="text-xs text-muted-foreground">
-                  Context: {context.occasion ?? "any"} · {context.season} · {context.weather} ·{" "}
-                  {context.commute} commute
-                </p>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-    </section>
-  );
-}
-
 function RecommendationsSkeleton() {
   return (
     <div className="space-y-6">
       <Skeleton className="h-64 w-full rounded-xl" />
       <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 4 }).map((_, index) => (
+        {Array.from({ length: 3 }).map((_, index) => (
           <Skeleton key={index} className="h-72 rounded-xl" />
         ))}
       </div>
@@ -409,19 +371,28 @@ export function RecommendationCenterView() {
   const [filters, setFilters] = useState<RecommendationFilters>({});
   const [showDebug, setShowDebug] = useState(false);
   const query = useOutfitRecommendations(filters);
+  const saveMutation = useSaveGeneratedOutfit();
+  const wearMutation = useWearOutfit();
   const data = query.data;
 
   function setSingle<K extends "occasion" | "season" | "weather" | "commute">(
     key: K,
     value: NonNullable<RecommendationFilters[K]>,
   ) {
-    setFilters((prev) => ({
-      ...prev,
-      [key]: prev[key] === value ? undefined : value,
-    }));
+    setFilters((prev) => ({ ...prev, [key]: prev[key] === value ? undefined : value }));
   }
 
-  const groups: FilterGroup<string>[] = [
+  function handleSave(rec: UnifiedOutfitRecommendation) {
+    saveMutation.mutate({ items: rec.items });
+  }
+  function handleWear(rec: UnifiedOutfitRecommendation) {
+    wearMutation.mutate({
+      itemIds: rec.items.map((item) => item.itemId),
+      outfitId: rec.savedOutfitId,
+    });
+  }
+
+  const groups: FilterGroup[] = [
     { key: "occasion", label: "Occasion", options: OCCASIONS },
     { key: "season", label: "Season", options: SEASONS },
     { key: "weather", label: "Weather", options: WEATHER },
@@ -430,10 +401,22 @@ export function RecommendationCenterView() {
 
   const recommendations = data?.recommendations ?? [];
   const previews = data?.previews ?? {};
-  const [hero, ...rest] = recommendations;
-  const topRecs = rest.slice(0, 4);
-  const alternatives = rest.slice(4);
+  const hero = recommendations[0];
+  const saved = recommendations.filter((r) => r.source === "saved_outfit");
+  const generated = recommendations.filter((r) => r.source === "generated_combo");
+  const rejectionReasons =
+    recommendations.find((r) => (r.debug?.rejectionReasons?.length ?? 0) > 0)?.debug
+      ?.rejectionReasons ?? [];
   const isEmpty = data && recommendations.length === 0;
+
+  const handlers: CardHandlers = {
+    previews,
+    debug: showDebug,
+    onSave: handleSave,
+    onWear: handleWear,
+    saving: saveMutation.isPending,
+    wearing: wearMutation.isPending,
+  };
 
   return (
     <div className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -446,7 +429,7 @@ export function RecommendationCenterView() {
             </Badge>
           ) : null
         }
-        description="Ranked outfit recommendations from your saved outfits and wardrobe — tuned to occasion, weather, and commute."
+        description="Unified outfit recommendations — your saved outfits and freshly generated combinations, ranked together."
         breadcrumb={
           <Button variant="ghost" size="sm" className="-ml-2" render={<Link href="/dashboard" />}>
             <ArrowLeftIcon />
@@ -463,11 +446,7 @@ export function RecommendationCenterView() {
               <BugIcon />
               Debug
             </Button>
-            <Button
-              variant="outline"
-              onClick={() => void query.refetch()}
-              disabled={query.isFetching}
-            >
+            <Button variant="outline" onClick={() => void query.refetch()} disabled={query.isFetching}>
               <RefreshCwIcon className={query.isFetching ? "animate-spin" : undefined} />
               Refresh
             </Button>
@@ -487,10 +466,7 @@ export function RecommendationCenterView() {
                 key={option}
                 active={filters[group.key] === option}
                 onClick={() =>
-                  setSingle(
-                    group.key as "occasion" | "season" | "weather" | "commute",
-                    option,
-                  )
+                  setSingle(group.key as "occasion" | "season" | "weather" | "commute", option)
                 }
               >
                 {option}
@@ -504,9 +480,7 @@ export function RecommendationCenterView() {
           </span>
           <FilterChip
             active={Boolean(filters.favoritesOnly)}
-            onClick={() =>
-              setFilters((prev) => ({ ...prev, favoritesOnly: !prev.favoritesOnly }))
-            }
+            onClick={() => setFilters((prev) => ({ ...prev, favoritesOnly: !prev.favoritesOnly }))}
           >
             Favorites only
           </FilterChip>
@@ -514,6 +488,27 @@ export function RecommendationCenterView() {
       </div>
 
       {showDebug && data ? <ContextPanel context={data.context} /> : null}
+
+      {showDebug && rejectionReasons.length > 0 ? (
+        <Card className="border-destructive/30">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangleIcon className="size-4 text-destructive" />
+              <CardTitle className="text-base">Rejected outfits</CardTitle>
+              <Badge variant="secondary" className="tabular-nums">
+                {rejectionReasons.length}
+              </Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-0.5 text-sm text-muted-foreground">
+              {rejectionReasons.map((reason, index) => (
+                <li key={index}>{reason}</li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      ) : null}
 
       {query.isPending ? <RecommendationsSkeleton /> : null}
 
@@ -531,8 +526,8 @@ export function RecommendationCenterView() {
           <div className="space-y-1">
             <p className="font-medium">No recommendations yet</p>
             <p className="text-sm text-muted-foreground">
-              Save outfits or add tops, bottoms, and footwear to your wardrobe to
-              get recommendations.
+              Save outfits or add tops, bottoms, and footwear to your wardrobe to get
+              recommendations.
             </p>
           </div>
           <Button render={<Link href="/outfits/new" />}>Create an outfit</Button>
@@ -542,46 +537,29 @@ export function RecommendationCenterView() {
       {hero ? (
         <section className="space-y-3">
           <h2 className="text-lg font-semibold">Hero recommendation</h2>
-          <HeroCard rec={hero} previews={previews} debug={showDebug} />
+          <RecommendationCard rec={hero} handlers={handlers} hero />
         </section>
       ) : null}
 
-      {topRecs.length > 0 ? (
+      {saved.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold">Top recommendations</h2>
-          <div className="grid gap-4 lg:grid-cols-2">
-            {topRecs.map((rec, index) => (
-              <RecommendationCard
-                key={rec.outfitId ?? `top-${index}`}
-                rec={rec}
-                previews={previews}
-                debug={showDebug}
-              />
-            ))}
-          </div>
+          <h2 className="text-lg font-semibold">Saved outfit recommendations</h2>
+          <CardGrid recs={saved} handlers={handlers} />
         </section>
       ) : null}
 
-      {alternatives.length > 0 ? (
+      {generated.length > 0 ? (
         <section className="space-y-3">
-          <h2 className="text-lg font-semibold text-muted-foreground">
-            Alternative recommendations
-          </h2>
-          <div className="grid gap-4 lg:grid-cols-2 xl:grid-cols-3">
-            {alternatives.map((rec, index) => (
-              <RecommendationCard
-                key={rec.outfitId ?? `alt-${index}`}
-                rec={rec}
-                previews={previews}
-                debug={showDebug}
-              />
-            ))}
-          </div>
+          <h2 className="text-lg font-semibold">Generated outfit recommendations</h2>
+          <CardGrid recs={generated} handlers={handlers} />
         </section>
       ) : null}
 
-      {showDebug && data ? (
-        <RejectedOutfitsSection rejected={data.rejected} context={data.context} />
+      {recommendations.length > 0 ? (
+        <section className="space-y-3">
+          <h2 className="text-lg font-semibold text-muted-foreground">All recommendations</h2>
+          <CardGrid recs={recommendations} handlers={handlers} />
+        </section>
       ) : null}
     </div>
   );
