@@ -4,7 +4,9 @@ export { ThemeToggle } from "@/features/layout/components/theme-toggle";
 export {
   NAV_SECTIONS,
   NAV_ITEMS,
+  DEVELOPER_SECTION,
   resolveActiveHref,
   type NavItem,
   type NavSection,
 } from "@/features/layout/nav-config";
+export { useDevMode } from "@/features/layout/use-dev-mode";
