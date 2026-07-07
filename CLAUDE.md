@@ -38,6 +38,29 @@ for the reasoning.
 12. **Before suggesting any new feature, identify the phase/version it belongs
     to** in [ROADMAP.md](ROADMAP.md).
 
+## RFC-driven development
+
+Major features are specified in an **RFC before implementation** (see
+[docs/rfc/README.md](docs/rfc/README.md)). **No major feature is implemented
+without an approved RFC.** "Major" = a new epic item, a new engine, a new AI
+capability, a schema change, or anything touching multiple layers.
+
+Whenever asked to generate an RFC:
+
+1. Use [`docs/rfc/TEMPLATE.md`](docs/rfc/TEMPLATE.md).
+2. **Do not implement code.**
+3. Save the RFC under `docs/rfc/` (naming: `RFC-XXX-kebab-title.md`).
+4. Use the **next sequential** RFC number (reserved in
+   [docs/product/BACKLOG.md](docs/product/BACKLOG.md)).
+5. Include goals, non-goals, architecture, data flow, acceptance criteria, QA
+   plan, risks, and future extensions (every template section).
+6. Mark **Status: Draft** unless explicitly told otherwise.
+7. **Do not modify application logic** during RFC generation.
+8. **Do not modify the database schema** — only *document* schema impact in the
+   RFC's §8 unless the task explicitly asks for a migration.
+
+An RFC is a product/architecture spec, not an implementation prompt.
+
 ## Releases
 
 13. **For every release:**
