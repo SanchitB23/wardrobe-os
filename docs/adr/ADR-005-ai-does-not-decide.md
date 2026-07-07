@@ -18,6 +18,26 @@ value (explanations, summaries) on top of our deterministic engines.
 **AI only explains or summarises data that a deterministic domain engine has
 already computed. It never makes a decision.**
 
+AI must **never** be the source of truth for:
+
+- scoring
+- eligibility
+- hard filtering
+- wardrobe health
+- recommendation ranking
+- cost-per-wear
+- purchase decisions
+
+AI **may** be used for:
+
+- explanation
+- natural-language conversation
+- summarization
+- interpretation
+- future vision / image understanding
+
+Given that:
+
 - All decisions — recommendations, outfit scores, wardrobe health, insights —
   are produced by pure domain engines (ADR-001/002/003). The AI is never on that
   path.

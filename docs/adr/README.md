@@ -12,6 +12,8 @@ itself, its **consequences**, and the **alternatives considered**.
 | [004](ADR-004-ai-provider-abstraction.md) | Vendor-neutral AI provider abstraction | Accepted |
 | [005](ADR-005-ai-does-not-decide.md) | AI explains, never decides | Accepted |
 | [006](ADR-006-ai-cache.md) | AI response cache | Accepted |
+| [007](ADR-007-ai-tool-calling.md) | AI tool-calling architecture | Accepted |
+| [008](ADR-008-release-versioning.md) | Release versioning & discipline | Accepted |
 
 ADRs are immutable once accepted. To change a decision, add a new ADR that
 supersedes the old one (note it in both).
