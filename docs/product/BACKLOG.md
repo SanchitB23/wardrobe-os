@@ -22,7 +22,7 @@ guidance. AI explains the advice; the engine decides it.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [RFC-001](../rfc/RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Buy vs Skip | RFC drafting (Draft) |
+| [RFC-001](../rfc/RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Buy vs Skip | Implemented (pending release) |
 | RFC-002 | Duplicate Detection | Not started |
 | RFC-003 | Gap Analysis | Not started |
 | RFC-004 | Wishlist | Not started |

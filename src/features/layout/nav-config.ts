@@ -82,7 +82,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     heading: "Acquisition",
     items: [
-      { label: "Advisor", href: "#", icon: CompassIcon, disabled: true, badge: "Soon" },
+      { label: "Advisor", href: "/acquisition/advisor", icon: CompassIcon, matchNested: true },
       { label: "Wishlist", href: "#", icon: BookmarkIcon, disabled: true, badge: "Soon" },
       { label: "Compare", href: "#", icon: GitCompareIcon, disabled: true, badge: "Soon" },
     ],

@@ -47,9 +47,12 @@ explanations**, a durable **AI response cache**, the **AI Playground**, the
 **tool-calling architecture**, and the streaming **AI Stylist Chat**. AI explains
 and converses on top of the deterministic engines.
 
-### v0.7 — Acquisition Engine 🔜
+### v0.7 — Acquisition Engine 🚧 (in progress)
 Deterministic buy/skip guidance from wardrobe gaps, duplicates, and
 cost-per-wear. AI explains the recommendation; the engine decides it.
+- **RFC-001 Buy vs Skip — implemented** (`BuyVsSkipEngine` + `/acquisition/advisor`).
+- RFC-002…006 (duplicate detection, gap analysis, wishlist, price tracking,
+  credit-card optimization) — not started.
 
 ### v0.8 — Vision AI 🔜
 Image understanding: derive colour/texture/category signals from item photos to

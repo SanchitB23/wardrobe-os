@@ -1,6 +1,6 @@
 # RFC-001: Acquisition Engine — Buy vs Skip
 
-Status: Draft
+Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: ChatGPT
 Target Release: v0.7.0

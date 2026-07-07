@@ -7,7 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-_Nothing yet._
+### v0.7.0 — Acquisition Engine (in progress)
+
+- **Buy vs Skip (RFC-001)** — a deterministic purchase decision-support system.
+  A new pure `BuyVsSkipEngine` (`src/domain/acquisition`) scores a prospective
+  item against the wardrobe across eight dimensions (gap fill, outfit
+  compatibility, usage projection, duplicate risk, cost efficiency, wardrobe
+  health impact, practicality, preference fit), returning a `buy | consider |
+  skip` decision with a 0–100 score, confidence, per-dimension breakdown,
+  reasons, similar items, potential outfits, cost-per-wear, wardrobe-impact
+  score, a decision trace, and explainability codes. Surfaced at
+  **`/acquisition/advisor`** (Acquisition → Advisor). Engines decide; AI is not
+  involved. No schema changes.
 
 ## [0.6.0] — 2026-07-07
 
