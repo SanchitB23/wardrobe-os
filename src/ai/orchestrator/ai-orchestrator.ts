@@ -8,7 +8,8 @@
  *   3. Fallback — on exhausting retries for one provider, move to the next
  *      capable provider in order.
  *   4. Logging — emit structured records through an injected {@link AILogger}.
- *   5. Cache — read/write {@link AICache} on generate() when a cacheKey is given.
+ *   5. Cache — read/write {@link AICache} on generate() when a cache descriptor
+ *      is given (deterministic key; TTL expiry; forceRefresh bypass).
  *
  * Pure orchestration: it holds provider *instances* but knows nothing about any
  * SDK. Today every provider is a stub that throws NotImplementedError; the
@@ -18,11 +19,13 @@
  * inject a durable cache/logger/retry policy without touching this class.
  */
 
-import { noopCache } from "@/ai/cache";
+import { buildAICacheKey, noopCache } from "@/ai/cache";
 import {
   AIError,
   ParseError,
   type AICache,
+  type AICacheEntry,
+  type AICacheRequest,
   type AICallOptions,
   type AILogger,
   type AIProvider,
@@ -54,6 +57,8 @@ export interface AIOrchestratorConfig {
   retryPolicy?: RetryPolicy;
   /** Injectable delay (defaults to setTimeout) — tests pass a no-op. */
   sleep?: (ms: number) => Promise<void>;
+  /** Injectable clock for cache expiry timestamps (defaults to Date.now). */
+  now?: () => number;
 }
 
 const realSleep = (ms: number): Promise<void> =>
@@ -66,6 +71,7 @@ export class AIOrchestrator implements AIService {
   private readonly cache: AICache;
   private readonly retryPolicy: RetryPolicy;
   private readonly sleep: (ms: number) => Promise<void>;
+  private readonly now: () => number;
 
   constructor(config: AIOrchestratorConfig) {
     this.registry = new Map(config.providers.map((p) => [p.id, p]));
@@ -75,21 +81,33 @@ export class AIOrchestrator implements AIService {
     this.cache = config.cache ?? noopCache;
     this.retryPolicy = config.retryPolicy ?? DEFAULT_RETRY_POLICY;
     this.sleep = config.sleep ?? realSleep;
+    this.now = config.now ?? (() => Date.now());
   }
 
   async generate<T = unknown>(
     request: AIRequest,
     options: AICallOptions<T> = {},
   ): Promise<AIResponse<T>> {
-    if (options.cacheKey) {
-      const cached = await this.cache.get(options.cacheKey);
-      if (cached) {
+    const cacheKey = options.cache
+      ? buildAICacheKey({
+          promptBuilder: options.cache.promptBuilder,
+          promptVersion: options.cache.promptVersion,
+          model: options.cache.model ?? request.model ?? "default",
+          input: options.cache.input,
+        })
+      : undefined;
+
+    // Req 7 + 8: check the cache before the provider, unless forceRefresh.
+    if (cacheKey && !options.forceRefresh) {
+      const entry = await this.cache.get(cacheKey.key);
+      if (entry) {
         this.logger.log({
           level: "debug",
           message: "cache hit",
-          data: { cacheKey: options.cacheKey },
+          data: { cacheKey: cacheKey.key },
         });
-        return this.applyParser(cached as AIResponse<T>, options);
+        const parsed = this.applyParser(entry.response as AIResponse<T>, options);
+        return { ...parsed, cached: true };
       }
     }
 
@@ -100,10 +118,38 @@ export class AIOrchestrator implements AIService {
     );
 
     const parsed = this.applyParser(response, options);
-    if (options.cacheKey) {
-      await this.cache.set(options.cacheKey, parsed);
+    const fresh: AIResponse<T> = { ...parsed, cached: false };
+
+    if (cacheKey && options.cache) {
+      await this.writeCache(cacheKey, options.cache, request, fresh);
     }
-    return parsed;
+    return fresh;
+  }
+
+  /** Persist a fresh response as a cache entry with TTL-derived expiry. */
+  private async writeCache(
+    cacheKey: { key: string; inputHash: string },
+    cache: AICacheRequest,
+    request: AIRequest,
+    response: AIResponse,
+  ): Promise<void> {
+    const nowMs = this.now();
+    const ttl = cache.ttlSeconds;
+    const entry: AICacheEntry = {
+      key: cacheKey.key,
+      provider: response.provider,
+      model: cache.model ?? request.model ?? response.model,
+      promptBuilder: cache.promptBuilder,
+      promptVersion: cache.promptVersion,
+      inputHash: cacheKey.inputHash,
+      // Store the response without the (potentially large) raw payload; the raw
+      // provider metadata is kept separately in `metadata` (req 5).
+      response: { ...response, raw: undefined },
+      metadata: response.raw,
+      createdAt: new Date(nowMs).toISOString(),
+      expiresAt: ttl && ttl > 0 ? new Date(nowMs + ttl * 1000).toISOString() : null,
+    };
+    await this.cache.set(entry);
   }
 
   async vision<T = unknown>(

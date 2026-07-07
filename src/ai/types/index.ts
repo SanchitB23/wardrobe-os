@@ -85,6 +85,8 @@ export interface AIResponse<T = unknown> {
   latencyMs?: number;
   /** Opaque provider payload for debugging; never depended on by callers. */
   raw?: unknown;
+  /** True when this response was served from the cache rather than the provider. */
+  cached?: boolean;
 }
 
 export interface AIStreamChunk {
@@ -169,10 +171,46 @@ export interface ResponseParser<T> {
 // Cross-cutting: cache, logging, retry.
 // ---------------------------------------------------------------------------
 
-/** Response cache. In-memory stub today; swap for a durable one later. */
+/**
+ * A cached AI response plus the metadata needed to persist and expire it.
+ * `response` is the stored {@link AIResponse}; `metadata` is opaque raw provider
+ * data. `expiresAt` is an ISO timestamp, or null for "never expires".
+ */
+export interface AICacheEntry {
+  key: string;
+  provider: AIProviderId;
+  model: string;
+  promptBuilder: string;
+  promptVersion: string;
+  inputHash: string;
+  response: AIResponse;
+  metadata?: unknown;
+  createdAt: string;
+  expiresAt: string | null;
+}
+
+/**
+ * Response cache. Implementations MUST NOT return expired entries from `get`.
+ * In-memory and Supabase-backed implementations both satisfy this interface.
+ */
 export interface AICache {
-  get(key: string): Promise<AIResponse | undefined>;
-  set(key: string, value: AIResponse): Promise<void>;
+  get(key: string): Promise<AICacheEntry | undefined>;
+  set(entry: AICacheEntry): Promise<void>;
+}
+
+/**
+ * What a caller supplies to make a call cacheable. The orchestrator derives the
+ * deterministic cache key from prompt builder + version + model + input, and
+ * expires the entry after `ttlSeconds` (omit/0 ⇒ never expires).
+ */
+export interface AICacheRequest {
+  promptBuilder: string;
+  promptVersion: string;
+  /** Model the key is bound to. Falls back to the request/response model. */
+  model?: string;
+  /** Structured input payload; hashed into the key. */
+  input: unknown;
+  ttlSeconds?: number;
 }
 
 export type AILogLevel = "debug" | "info" | "warn" | "error";
@@ -205,8 +243,10 @@ export interface AICallOptions<T = unknown> {
   parser?: ResponseParser<T>;
   /** Override the retry attempts for this call. */
   retries?: number;
-  /** Cache key; when set, generate() reads/writes the cache. */
-  cacheKey?: string;
+  /** When set, generate() reads/writes the cache (keyed off this descriptor). */
+  cache?: AICacheRequest;
+  /** Bypass a cache hit and overwrite it with a fresh provider response. */
+  forceRefresh?: boolean;
   signal?: AbortSignal;
 }
 

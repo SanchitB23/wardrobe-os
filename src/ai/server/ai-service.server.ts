@@ -14,10 +14,14 @@
  * TypeScript consumed by route handlers (and later, server actions/services).
  */
 
+import type { SupabaseClient } from "@supabase/supabase-js";
+
 import { InMemoryAICache } from "@/ai/cache";
+import { SupabaseAICache } from "@/ai/cache/supabase-ai-cache";
 import { createAIOrchestrator } from "@/ai/orchestrator";
 import { GeminiProvider } from "@/ai/providers/gemini-provider";
-import type { AIService } from "@/ai/types";
+import type { AICache, AIService } from "@/ai/types";
+import { createClient } from "@/lib/supabase/server";
 
 function assertServerSide(): void {
   if (typeof window !== "undefined") {
@@ -53,11 +57,29 @@ export function getServerAIService(): AIService {
   cached = createAIOrchestrator({
     providers: [new GeminiProvider()],
     retryPolicy: { maxAttempts: 1, initialDelayMs: 0, backoffFactor: 1 },
-    // Process-local cache: generate() reads/writes it only when a call passes a
-    // cacheKey. Lets us avoid re-calling Gemini for an unchanged recommendation.
-    cache: new InMemoryAICache(),
+    cache: createServerAICache(),
   });
   return cached;
+}
+
+/**
+ * Durable AI response cache (req 3): Supabase-backed `ai_cache` table with a
+ * transparent in-memory fallback if the table/RLS is unavailable. A fresh
+ * request-scoped Supabase client is created per operation.
+ */
+function createServerAICache(): AICache {
+  return new SupabaseAICache({
+    // The typed request client is compatible with the cache's schema-agnostic
+    // client contract; cast to decouple the cache from the app's DB types.
+    getClient: async () => (await createClient()) as unknown as SupabaseClient,
+    fallback: new InMemoryAICache(),
+    onDegrade: (error) => {
+      console.warn(
+        "[ai] Supabase cache unavailable; using in-memory fallback.",
+        error instanceof Error ? error.message : error,
+      );
+    },
+  });
 }
 
 /** Test/maintenance helper — drops the memoized service. */

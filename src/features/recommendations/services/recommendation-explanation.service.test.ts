@@ -8,7 +8,6 @@ import type {
   AIService,
   AIStreamChunk,
 } from "@/ai/types";
-import { explanationCacheKey } from "@/features/recommendations/ai/explanation-input";
 import type { ExplanationInput } from "@/features/recommendations/ai/explanation.types";
 import { explainRecommendation } from "@/features/recommendations/services/recommendation-explanation.service";
 
@@ -83,12 +82,13 @@ function fakeAI(text: string): AIService {
 describe("explainRecommendation", () => {
   it("returns the validated explanation", async () => {
     const result = await explainRecommendation(input, { ai: fakeAI(validJson) });
-    expect(result.summary).toBe("A crisp look.");
-    expect(result.stylingTips).toEqual(["Cuff the chinos."]);
-    expect(result.thingsToAvoid).toEqual(["Bulky sneakers."]);
+    expect(result.explanation.summary).toBe("A crisp look.");
+    expect(result.explanation.stylingTips).toEqual(["Cuff the chinos."]);
+    expect(result.explanation.thingsToAvoid).toEqual(["Bulky sneakers."]);
+    expect(result.cached).toBe(false);
   });
 
-  it("passes a parser and the deterministic cache key to the AI service", async () => {
+  it("passes a parser and a 7-day cache descriptor to the AI service", async () => {
     const ai = fakeAI(validJson);
     const spy = vi.spyOn(ai, "generate");
     await explainRecommendation(input, { ai });
@@ -96,7 +96,17 @@ describe("explainRecommendation", () => {
     const [request, options] = spy.mock.calls[0];
     expect(request.responseFormat).toBe("json");
     expect(options?.parser).toBeDefined();
-    expect(options?.cacheKey).toBe(explanationCacheKey(input));
+    expect(options?.cache?.promptBuilder).toBe("recommendation-explanation");
+    expect(options?.cache?.promptVersion).toBe("v1");
+    expect(options?.cache?.input).toBe(input);
+    expect(options?.cache?.ttlSeconds).toBe(7 * 24 * 60 * 60);
+  });
+
+  it("forwards forceRefresh to bypass the cache", async () => {
+    const ai = fakeAI(validJson);
+    const spy = vi.spyOn(ai, "generate");
+    await explainRecommendation(input, { ai, forceRefresh: true });
+    expect(spy.mock.calls[0][1]?.forceRefresh).toBe(true);
   });
 
   it("throws (for graceful fallback) when the model returns invalid JSON", async () => {

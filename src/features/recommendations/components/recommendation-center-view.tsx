@@ -7,6 +7,7 @@ import {
   ArrowLeftIcon,
   BugIcon,
   CheckCircleIcon,
+  DatabaseIcon,
   EyeIcon,
   LightbulbIcon,
   Loader2Icon,
@@ -340,9 +341,34 @@ function ExplainSection({
     );
   }
 
-  const data = query.data;
+  const { explanation: data, cached } = query.data;
   return (
     <div className={cn(panel, "space-y-3")}>
+      <div className="flex items-center justify-between gap-2">
+        <Badge variant="secondary" className="gap-1">
+          {cached ? (
+            <>
+              <DatabaseIcon className="size-3" />
+              Cached
+            </>
+          ) : (
+            <>
+              <SparklesIcon className="size-3" />
+              Fresh
+            </>
+          )}
+        </Badge>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7"
+          onClick={() => void query.regenerate()}
+          disabled={query.isFetching}
+        >
+          <RefreshCwIcon className={query.isFetching ? "animate-spin" : undefined} />
+          Regenerate
+        </Button>
+      </div>
       <p className="font-medium">{data.summary}</p>
       {data.whyThisWorks ? (
         <div className="space-y-1">

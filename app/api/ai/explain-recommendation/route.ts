@@ -54,9 +54,15 @@ export async function POST(request: Request) {
     );
   }
 
+  // ?refresh=1 bypasses the cache and regenerates (req 8).
+  const forceRefresh =
+    new URL(request.url).searchParams.get("refresh") === "1";
+
   try {
-    const explanation = await explainRecommendation(body);
-    return NextResponse.json({ ok: true, data: explanation });
+    const { explanation, cached } = await explainRecommendation(body, {
+      forceRefresh,
+    });
+    return NextResponse.json({ ok: true, data: explanation, cached });
   } catch (error) {
     const code = error instanceof AIError ? error.code : "unknown";
     const status = code === "parse_error" ? 502 : 500;

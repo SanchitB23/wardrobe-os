@@ -1,5 +1,6 @@
 "use client";
 
+import { useRef } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 
@@ -81,16 +82,31 @@ export function useRecommendationExplanation(
   const input = shared
     ? buildExplanationInput(recommendation, shared)
     : null;
-  return useQuery({
+  // One-shot flag: set by regenerate(), consumed by the next queryFn run so the
+  // request bypasses the server cache without changing the queryKey.
+  const forceRef = useRef(false);
+
+  const query = useQuery({
     queryKey: wardrobeKeys.recommendationExplanation(
       input ? explanationCacheKey(input) : recommendation.id,
     ),
-    queryFn: ({ signal }) => fetchRecommendationExplanation(input!, signal),
+    queryFn: async ({ signal }) => {
+      const forceRefresh = forceRef.current;
+      forceRef.current = false;
+      return fetchRecommendationExplanation(input!, { forceRefresh, signal });
+    },
     enabled: enabled && input !== null,
     retry: false,
     staleTime: Infinity,
     gcTime: 1000 * 60 * 60, // keep for the session
   });
+
+  const regenerate = () => {
+    forceRef.current = true;
+    return query.refetch();
+  };
+
+  return { ...query, regenerate };
 }
 
 export type {

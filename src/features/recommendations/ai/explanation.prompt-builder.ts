@@ -18,6 +18,13 @@ export interface ExplanationPromptContext extends PromptContext {
   data: { input: ExplanationInput };
 }
 
+/**
+ * Version of the explanation prompt. Bump this whenever the prompt/system text
+ * changes so previously cached explanations are treated as stale (the cache key
+ * folds this in). Kept in sync with `recommendationExplanationPromptBuilder.id`.
+ */
+export const EXPLANATION_PROMPT_VERSION = "v1";
+
 const SYSTEM = [
   "You are a concise personal stylist for a single user's wardrobe.",
   "You are given an outfit recommendation that was ALREADY chosen by a deterministic engine, together with its analysis and short context summaries.",

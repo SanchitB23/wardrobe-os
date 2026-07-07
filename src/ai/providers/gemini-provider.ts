@@ -95,7 +95,7 @@ export class GeminiProvider extends StubAIProvider {
   async generate(request: AIRequest): Promise<AIResponse> {
     this.assertServerSide();
     const client = await this.getClient();
-    const model = this.resolveModel();
+    const model = this.resolveModel(request);
 
     const started = performance.now();
     const result = await this.callWithRetry(client, model, request);
@@ -181,8 +181,13 @@ export class GeminiProvider extends StubAIProvider {
     return this.cachedClient;
   }
 
-  private resolveModel(): string {
-    return this.config.model ?? process.env.GEMINI_MODEL ?? DEFAULT_MODEL;
+  private resolveModel(request: AIRequest): string {
+    return (
+      request.model ??
+      this.config.model ??
+      process.env.GEMINI_MODEL ??
+      DEFAULT_MODEL
+    );
   }
 
   private assertServerSide(): void {

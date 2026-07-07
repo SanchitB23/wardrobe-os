@@ -9,19 +9,28 @@ import type {
   RecommendationExplanation,
 } from "@/features/recommendations/ai/explanation.types";
 
+export interface ExplanationClientResult {
+  explanation: RecommendationExplanation;
+  /** True when the server served this from cache rather than a fresh call. */
+  cached: boolean;
+}
+
 export async function fetchRecommendationExplanation(
   input: ExplanationInput,
-  signal?: AbortSignal,
-): Promise<RecommendationExplanation> {
-  const response = await fetch("/api/ai/explain-recommendation", {
+  options: { forceRefresh?: boolean; signal?: AbortSignal } = {},
+): Promise<ExplanationClientResult> {
+  const url = options.forceRefresh
+    ? "/api/ai/explain-recommendation?refresh=1"
+    : "/api/ai/explain-recommendation";
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input),
-    signal,
+    signal: options.signal,
   });
 
   const payload = (await response.json().catch(() => null)) as
-    | { ok: true; data: RecommendationExplanation }
+    | { ok: true; data: RecommendationExplanation; cached?: boolean }
     | { ok: false; error?: string }
     | null;
 
@@ -31,5 +40,5 @@ export async function fetchRecommendationExplanation(
       "Couldn't generate an explanation.";
     throw new Error(message);
   }
-  return payload.data;
+  return { explanation: payload.data, cached: Boolean(payload.cached) };
 }

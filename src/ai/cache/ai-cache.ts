@@ -1,23 +1,42 @@
 /**
- * Response caches. Pure — no database, no network.
+ * In-memory AI response cache. Pure — no database, no network.
  *
- * EXTENSION POINT: swap {@link InMemoryAICache} for a durable/shared cache
- * (Redis, Supabase table, edge KV) by implementing {@link AICache}. The
- * orchestrator only depends on the interface, so nothing else changes.
+ * Stores {@link AICacheEntry} values and never returns expired ones. A clock is
+ * injectable so expiry is deterministically testable.
+ *
+ * EXTENSION POINT: for a durable/shared cache use {@link SupabaseAICache}
+ * (src/ai/cache/supabase-ai-cache.ts) or implement {@link AICache} yourself.
  */
 
-import type { AICache, AIResponse } from "@/ai/types";
+import type { AICache, AICacheEntry } from "@/ai/types";
+
+function isExpired(entry: AICacheEntry, nowMs: number): boolean {
+  if (!entry.expiresAt) return false;
+  const expiry = Date.parse(entry.expiresAt);
+  return Number.isFinite(expiry) && expiry <= nowMs;
+}
 
 /** Process-local cache backed by a Map. Not shared across instances/requests. */
 export class InMemoryAICache implements AICache {
-  private readonly store = new Map<string, AIResponse>();
+  private readonly store = new Map<string, AICacheEntry>();
+  private readonly now: () => number;
 
-  async get(key: string): Promise<AIResponse | undefined> {
-    return this.store.get(key);
+  constructor(options: { now?: () => number } = {}) {
+    this.now = options.now ?? (() => Date.now());
   }
 
-  async set(key: string, value: AIResponse): Promise<void> {
-    this.store.set(key, value);
+  async get(key: string): Promise<AICacheEntry | undefined> {
+    const entry = this.store.get(key);
+    if (!entry) return undefined;
+    if (isExpired(entry, this.now())) {
+      this.store.delete(key);
+      return undefined;
+    }
+    return entry;
+  }
+
+  async set(entry: AICacheEntry): Promise<void> {
+    this.store.set(entry.key, entry);
   }
 
   /** Test/maintenance helper — not part of the AICache contract. */

@@ -158,18 +158,78 @@ describe("AIOrchestrator", () => {
     await expect(orch.generate(req)).rejects.toMatchObject({ code: "no_provider" });
   });
 
-  it("reads from cache on a hit and writes on a miss", async () => {
+  const cacheDescriptor = (input: unknown) => ({
+    promptBuilder: "test-builder",
+    promptVersion: "v1",
+    model: "gemini-2.5-flash",
+    input,
+  });
+
+  it("same input hits the cache (provider called once, cached flag set)", async () => {
     const provider = new FakeProvider("gemini", { text: "computed" });
     const cache = new InMemoryAICache();
     const orch = new AIOrchestrator({ providers: [provider], cache, sleep: noSleep });
 
-    const first = await orch.generate(req, { cacheKey: "k1" });
+    const first = await orch.generate(req, { cache: cacheDescriptor({ a: 1 }) });
     expect(first.text).toBe("computed");
+    expect(first.cached).toBe(false);
     expect(provider.calls).toBe(1);
 
-    const second = await orch.generate(req, { cacheKey: "k1" });
+    const second = await orch.generate(req, { cache: cacheDescriptor({ a: 1 }) });
     expect(second.text).toBe("computed");
-    expect(provider.calls).toBe(1); // served from cache, provider not called again
+    expect(second.cached).toBe(true);
+    expect(provider.calls).toBe(1); // served from cache
+  });
+
+  it("changed input misses the cache", async () => {
+    const provider = new FakeProvider("gemini", { text: "computed" });
+    const cache = new InMemoryAICache();
+    const orch = new AIOrchestrator({ providers: [provider], cache, sleep: noSleep });
+
+    await orch.generate(req, { cache: cacheDescriptor({ rec: "A" }) });
+    await orch.generate(req, { cache: cacheDescriptor({ rec: "B" }) });
+    expect(provider.calls).toBe(2); // different input → different key → miss
+  });
+
+  it("forceRefresh bypasses a cache hit and overwrites it", async () => {
+    const provider = new FakeProvider("gemini", { text: "computed" });
+    const cache = new InMemoryAICache();
+    const orch = new AIOrchestrator({ providers: [provider], cache, sleep: noSleep });
+
+    await orch.generate(req, { cache: cacheDescriptor({ a: 1 }) });
+    expect(provider.calls).toBe(1);
+
+    const refreshed = await orch.generate(req, {
+      cache: cacheDescriptor({ a: 1 }),
+      forceRefresh: true,
+    });
+    expect(refreshed.cached).toBe(false);
+    expect(provider.calls).toBe(2); // provider called again despite a cached entry
+  });
+
+  it("expired entries miss the cache", async () => {
+    const provider = new FakeProvider("gemini", { text: "computed" });
+    let nowMs = 1_000_000;
+    const clock = () => nowMs;
+    const cache = new InMemoryAICache({ now: clock });
+    const orch = new AIOrchestrator({
+      providers: [provider],
+      cache,
+      sleep: noSleep,
+      now: clock,
+    });
+
+    await orch.generate(req, {
+      cache: { ...cacheDescriptor({ a: 1 }), ttlSeconds: 60 },
+    });
+    expect(provider.calls).toBe(1);
+
+    nowMs += 61_000; // advance past the 60s TTL
+    const afterExpiry = await orch.generate(req, {
+      cache: { ...cacheDescriptor({ a: 1 }), ttlSeconds: 60 },
+    });
+    expect(afterExpiry.cached).toBe(false);
+    expect(provider.calls).toBe(2); // regenerated after expiry
   });
 
   it("attaches parsed output and validates via a parser", async () => {
