@@ -101,18 +101,46 @@ interface WardrobeEntry {
 // Dimension scorers. Each returns a DecisionDimension plus codes/extra.
 // ---------------------------------------------------------------------------
 
-/** 0–1 similarity between two same-slot items (0 if different slots). */
-function overlapScore(a: StyleDNA, b: StyleDNA): number {
+/** Garment-type tokens from name + subcategory, excluding colour words. */
+function garmentTokens(item: StyleDNAItem): Set<string> {
+  const colorTokens = new Set(tokens(item.color));
+  return new Set(
+    [...tokens(item.name), ...tokens(item.subcategory)].filter((t) => !colorTokens.has(t)),
+  );
+}
+
+/** 0–1 garment-type similarity (polo vs shirt vs sweater are different). */
+function typeSimilarity(a: StyleDNAItem, b: StyleDNAItem): number {
+  const at = garmentTokens(a);
+  const bt = garmentTokens(b);
+  if (at.size === 0 || bt.size === 0) return 0.5; // unknown type → neutral
+  const shared = [...at].filter((t) => bt.has(t)).length;
+  return shared === 0 ? 0 : Math.min(1, shared / 2);
+}
+
+/**
+ * 0–1 similarity between two same-slot items. Colour/formality/style/occasion
+ * give a base overlap, then garment type gates it: a navy polo and a navy shirt
+ * are NOT duplicates even though both are navy smart-casual tops.
+ */
+function overlapScore(
+  aItem: StyleDNAItem,
+  a: StyleDNA,
+  bItem: StyleDNAItem,
+  b: StyleDNA,
+): number {
   if (a.slot !== b.slot) return 0;
-  let s = 0;
-  if (a.color.family && a.color.family === b.color.family) s += 0.35;
-  if (a.formality && a.formality === b.formality) s += 0.25;
-  if (a.primaryStyle && a.primaryStyle === b.primaryStyle) s += 0.2;
-  if (a.occasion.best === b.occasion.best) s += 0.2;
-  return round1(s);
+  let partial = 0;
+  if (a.color.family && a.color.family === b.color.family) partial += 0.35;
+  if (a.formality && a.formality === b.formality) partial += 0.25;
+  if (a.primaryStyle && a.primaryStyle === b.primaryStyle) partial += 0.2;
+  if (a.occasion.best === b.occasion.best) partial += 0.2;
+  const typeSim = typeSimilarity(aItem, bItem);
+  return round1(partial * (0.5 + 0.5 * typeSim));
 }
 
 function scoreDuplicateRisk(
+  prospItem: StyleDNAItem,
   itemDna: StyleDNA,
   wardrobe: WardrobeEntry[],
   lowUseIds: Set<string>,
@@ -126,7 +154,7 @@ function scoreDuplicateRisk(
     .map((entry) => ({
       itemId: entry.item.id,
       name: entry.item.name,
-      overlap: overlapScore(itemDna, entry.dna),
+      overlap: overlapScore(prospItem, itemDna, entry.item, entry.dna),
       lowUse: lowUseIds.has(entry.item.id),
     }))
     .filter((s) => s.overlap >= GUARDS.similarOverlap)
@@ -496,7 +524,7 @@ export function evaluateBuyVsSkip(
   for (const u of input.usage?.leastWornActiveItems ?? []) lowUseIds.add(u.id);
 
   // --- dimensions ---
-  const dup = scoreDuplicateRisk(itemDna, wardrobe, lowUseIds);
+  const dup = scoreDuplicateRisk(prospectiveItem, itemDna, wardrobe, lowUseIds);
   const gap = scoreGapFillValue(input.item, input.health);
   const outfit = scoreOutfitCompatibility({ item: prospectiveItem, dna: itemDna }, wardrobe);
   const usage = scoreUsageProjection(input.item, input.usage);
@@ -566,9 +594,14 @@ export function evaluateBuyVsSkip(
   ].filter(Boolean).length;
   const fieldCompleteness = filledFields / 8;
   const dataCompleteness = ((input.health ? 1 : 0) + (input.usage ? 1 : 0)) / 2;
-  const completeness = 0.5 * fieldCompleteness + 0.5 * dataCompleteness;
-  const confidence = round1(rawConfidence * (0.4 + 0.6 * completeness));
-  if (completeness < 0.4) confNotes.push("Add more item detail and analytics for a stronger verdict.");
+  // Item detail matters more than analytics for a purchase verdict, and a very
+  // sparse item (barely any fields) is genuinely low-confidence regardless of
+  // how much wardrobe analytics we have.
+  const completeness = 0.6 * fieldCompleteness + 0.4 * dataCompleteness;
+  let confidence = round1(rawConfidence * (0.4 + 0.6 * completeness));
+  if (fieldCompleteness < 0.25) confidence = Math.min(confidence, 0.3);
+  if (fieldCompleteness < 0.4)
+    confNotes.push("Add more item detail (color, price, material, tags) for a stronger verdict.");
 
   // --- wardrobe impact score (gap + health − duplication) ---
   const wardrobeImpactScore = Math.round(
