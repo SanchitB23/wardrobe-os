@@ -162,3 +162,33 @@ export interface BuyVsSkipOptions {
   /** Injected timestamp for deterministic metadata. */
   generatedAt?: string;
 }
+
+// ---------------------------------------------------------------------------
+// RFC-003 — Shopping Screenshot Understanding.
+// A prospective item extracted from a VisionAnalysis, ready for user review.
+// ---------------------------------------------------------------------------
+
+/** Per-field extraction confidence (0–1) so the UI can flag weak fields. */
+export type ProspectiveFieldConfidence = Partial<
+  Record<keyof ProspectiveItem, number>
+>;
+
+export interface ProspectiveItemCandidate {
+  /** Pre-filled, user-editable. `estimatedPrice` is null — vision omits price. */
+  item: ProspectiveItem;
+  /** Overall extraction confidence (0–1), from the VisionAnalysis. */
+  confidence: number;
+  /** Band derived from confidence: poor | fair | good | excellent. */
+  quality: "poor" | "fair" | "good" | "excellent";
+  /** Fields the UI should flag as low-confidence for the user to double-check. */
+  lowConfidenceFields: (keyof ProspectiveItem)[];
+  fieldConfidence: ProspectiveFieldConfidence;
+  /** Other detected products (multi-product images); user may switch. */
+  alternatives: ProspectiveItem[];
+  provenance: {
+    imageHash: string;
+    visionProvider: string;
+    visionModel: string;
+    sourceType: string;
+  };
+}

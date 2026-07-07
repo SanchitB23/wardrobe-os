@@ -1,6 +1,6 @@
 # RFC-003: Shopping Screenshot Understanding
 
-Status: Draft
+Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: ChatGPT
 Target Release: v0.8.0

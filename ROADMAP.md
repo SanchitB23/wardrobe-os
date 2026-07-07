@@ -60,6 +60,10 @@ enrich Style DNA (still feeding deterministic engines).
 - **RFC-002 Vision Engine — implemented** (`src/domain/vision` +
   `GeminiVisionProvider`; standardized `VisionAnalysis`; dev Vision tab in the
   AI Playground). Consumers (Closet Recognition, Auto Add, etc.) are next.
+- **RFC-003 Shopping Screenshot Understanding — implemented** (`interpretShoppingImage`
+  maps `VisionAnalysis` → editable `ProspectiveItemCandidate`; `/acquisition/screenshot`
+  wires screenshot → Vision Engine → user correction → Buy vs Skip verdict, with an
+  optional AI explanation). First consumer of the Vision Engine.
 
 ### v0.9 — Packing / Travel Engine 🔜
 Trip-scoped capsule generation (destination, duration, weather, occasions) built

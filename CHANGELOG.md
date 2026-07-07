@@ -19,6 +19,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   is deterministic. Exposed through a dev-only Vision tab in the AI Playground
   (`POST /api/ai/vision`). Vision observes, domain interprets, AI explains — no
   inventory, shopping, recommendations, or AI explanation here. No schema changes.
+- **Shopping Screenshot Understanding (RFC-003)** — connects the Vision Engine to
+  the Buy vs Skip Engine. A new pure interpreter (`interpretShoppingImage` in
+  `src/domain/acquisition`) maps a `VisionAnalysis` + a chosen detected item into
+  an editable `ProspectiveItemCandidate` (name, category, brand/colour/material
+  guesses, style tags, formality, per-field confidence, low-confidence flags,
+  alternatives, source-image provenance; price is left blank since vision doesn't
+  read it). Surfaced at **`/acquisition/screenshot`** (Acquisition → Screenshot):
+  upload a screenshot → the Vision Engine extracts candidate(s) → pick one if
+  several are detected → correct the flagged fields → the deterministic
+  `BuyVsSkipEngine` scores it. An optional ✨ Explain action narrates the verdict
+  in plain language (AI explains, never decides). Vision observes, you edit,
+  engines decide. No wishlist persistence, no browser extension, no schema changes.
 
 ### v0.7.0 — Acquisition Engine (in progress)
 

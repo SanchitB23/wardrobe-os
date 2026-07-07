@@ -14,6 +14,7 @@ import {
   LightbulbIcon,
   MessagesSquareIcon,
   ReceiptIcon,
+  ScanSearchIcon,
   SettingsIcon,
   ShirtIcon,
   TerminalIcon,
@@ -83,6 +84,7 @@ export const NAV_SECTIONS: NavSection[] = [
     heading: "Acquisition",
     items: [
       { label: "Advisor", href: "/acquisition/advisor", icon: CompassIcon, matchNested: true },
+      { label: "Screenshot", href: "/acquisition/screenshot", icon: ScanSearchIcon, matchNested: true },
       { label: "Wishlist", href: "#", icon: BookmarkIcon, disabled: true, badge: "Soon" },
       { label: "Compare", href: "#", icon: GitCompareIcon, disabled: true, badge: "Soon" },
     ],
