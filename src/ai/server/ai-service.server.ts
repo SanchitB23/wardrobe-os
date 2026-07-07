@@ -67,7 +67,7 @@ export function getServerAIService(): AIService {
  * transparent in-memory fallback if the table/RLS is unavailable. A fresh
  * request-scoped Supabase client is created per operation.
  */
-function createServerAICache(): AICache {
+export function createServerAICache(): AICache {
   return new SupabaseAICache({
     // The typed request client is compatible with the cache's schema-agnostic
     // client contract; cast to decouple the cache from the app's DB types.
