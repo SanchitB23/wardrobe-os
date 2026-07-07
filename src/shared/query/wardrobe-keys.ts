@@ -48,4 +48,5 @@ export const wardrobeKeys = {
   outfitLookups: () => [...wardrobeKeys.all, "outfit-lookups"] as const,
   outfitPickerItems: (slot: string, search: string) =>
     [...wardrobeKeys.all, "outfit-picker-items", slot, search] as const,
+  personalization: () => [...wardrobeKeys.all, "personalization"] as const,
 };

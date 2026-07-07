@@ -112,6 +112,8 @@ export type Database = {
           code: string;
           created_at: string | null;
           favorite: boolean;
+          avoided: boolean;
+          protected: boolean;
           fit: Database["public"]["Enums"]["fit_type"] | null;
           formality: Database["public"]["Enums"]["formality_enum"] | null;
           formality_level: number | null;
@@ -132,6 +134,8 @@ export type Database = {
           code: string;
           created_at?: string | null;
           favorite?: boolean;
+          avoided?: boolean;
+          protected?: boolean;
           fit?: Database["public"]["Enums"]["fit_type"] | null;
           formality?: Database["public"]["Enums"]["formality_enum"] | null;
           formality_level?: number | null;
@@ -152,6 +156,8 @@ export type Database = {
           code?: string;
           created_at?: string | null;
           favorite?: boolean;
+          avoided?: boolean;
+          protected?: boolean;
           fit?: Database["public"]["Enums"]["fit_type"] | null;
           formality?: Database["public"]["Enums"]["formality_enum"] | null;
           formality_level?: number | null;
@@ -201,6 +207,36 @@ export type Database = {
         Row: { id: string; name: string };
         Insert: { id?: string; name: string };
         Update: { id?: string; name?: string };
+        Relationships: [];
+      };
+      preference_overrides: {
+        Row: {
+          id: string;
+          dimension: string;
+          value: string;
+          mode: string;
+          weight: number | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          dimension: string;
+          value: string;
+          mode: string;
+          weight?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          dimension?: string;
+          value?: string;
+          mode?: string;
+          weight?: number | null;
+          created_at?: string;
+          updated_at?: string;
+        };
         Relationships: [];
       };
       seasons: {

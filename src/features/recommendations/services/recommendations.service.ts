@@ -10,6 +10,8 @@ import {
   type WeatherSnapshot,
 } from "@/domain/recommendation";
 import { generateInsights } from "@/domain/analytics/InsightEngine";
+import { toPreferenceSnapshot } from "@/domain/personalization";
+import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import {
   fetchUsageAnalytics,
   fetchWardrobeHealth,
@@ -108,12 +110,14 @@ function weatherOverride(
 export async function fetchOutfitRecommendations(
   filters: RecommendationFilters = {},
 ): Promise<{ data: RecommendationCenterData | null; error: Error | null }> {
-  const [dataResult, healthResult, usageResult, purchaseResult] =
+  const [dataResult, healthResult, usageResult, purchaseResult, preferenceResult] =
     await Promise.all([
       selectRecommendationData(),
       fetchWardrobeHealth(),
       fetchUsageAnalytics(),
       fetchPurchaseAnalytics(),
+      // Best-effort (RFC-004): learned preferences supersede DEFAULT_PREFERENCES.
+      getPreferenceProfile().catch(() => ({ data: null, error: null })),
     ]);
 
   if (dataResult.error) return { data: null, error: dataResult.error };
@@ -174,6 +178,11 @@ export async function fetchOutfitRecommendations(
     savedOutfits = savedOutfits.filter((outfit) => outfit.favorite);
   }
 
+  // Learned preferences (RFC-004) supersede the static defaults when available.
+  const learnedPreferences = preferenceResult.data
+    ? toPreferenceSnapshot(preferenceResult.data.profile)
+    : undefined;
+
   const context = buildRecommendationContext(
     {
       health: healthResult.data.health,
@@ -184,6 +193,7 @@ export async function fetchOutfitRecommendations(
       wearLogs,
       purchases: raw.purchases.map((p) => ({ itemId: p.item_id, price: p.price })),
       savedOutfits,
+      preferences: learnedPreferences,
       weather: weatherOverride(filters),
       commute: filters.commute ? { mode: filters.commute } : undefined,
     },
@@ -193,6 +203,7 @@ export async function fetchOutfitRecommendations(
   const unified = recommendUnifiedOutfits(context, {
     occasion: filters.occasion ?? null,
     limit: 12,
+    usePreferences: Boolean(learnedPreferences),
   });
   const recommendations = filters.favoritesOnly
     ? unified.filter((rec) => rec.source === "saved_outfit")

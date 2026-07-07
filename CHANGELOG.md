@@ -7,6 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.9.0 — Personalization Engine (in progress)
+
+- **Personalization Engine (RFC-004)** — deterministic user-preference learning.
+  A new pure domain module (`src/domain/personalization`) derives a
+  `UserPreferenceProfile` from behaviour (wears, saved outfits, favourites,
+  purchases; feedback/edits/acquisition are future capture) via signal-type
+  weighting + exponential recency decay. Each preference carries a **confidence**
+  ("how sure are we now?") and a distinct **stability** ("how consistently has it
+  held?"), plus an explainable derivation reason. Supports user **overrides**
+  (pin / adjust / suppress) and **protected** / **avoided** items; falls back to
+  a labelled cold-start prior when evidence is thin. Preferences are recalculated
+  from the full history each run, never incrementally mutated — behaviour is the
+  source of truth; AI only consumes the profile (ADR-005). Surfaced at
+  **`/settings/preferences`** (Settings → Preferences) with confidence/stability,
+  reasons, override controls, protected/avoided lists, a debug view, a cold-start
+  banner, and an Explain placeholder. `toPreferenceSnapshot` maps the profile onto
+  `RecommendationContext.preferences`, superseding the static `DEFAULT_PREFERENCES`.
+  Lifecycle, `since`, timeline, and `PreferenceEvolution` are documented future
+  concepts (declared, not built).
+- **Schema (additive):** `wardrobe_items.protected` / `.avoided` boolean columns
+  (default false; inherit existing anon RLS) and a new `preference_overrides`
+  table (pin/adjust/suppress per dimension+value; single `mvp_anon_all_*` policy).
+  SQL in `docs/migrations/RFC-004-personalization.sql`. Reversible; no destructive
+  changes.
+
 ### v0.8.0 — Vision Engine (in progress)
 
 - **Vision Engine (RFC-002)** — the universal computer-vision capability. A new

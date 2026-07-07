@@ -17,6 +17,7 @@ import {
   ScanSearchIcon,
   SettingsIcon,
   ShirtIcon,
+  SlidersHorizontalIcon,
   TerminalIcon,
   UploadIcon,
   WandSparklesIcon,
@@ -93,6 +94,7 @@ export const NAV_SECTIONS: NavSection[] = [
     heading: "Settings",
     items: [
       { label: "Settings", href: "/settings", icon: SettingsIcon },
+      { label: "Preferences", href: "/settings/preferences", icon: SlidersHorizontalIcon },
       { label: "Import", href: "/inventory/import", icon: UploadIcon },
       { label: "Review", href: "/inventory/review", icon: ClipboardCheckIcon },
     ],

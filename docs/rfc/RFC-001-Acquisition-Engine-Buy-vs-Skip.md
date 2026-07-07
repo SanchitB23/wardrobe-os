@@ -54,8 +54,8 @@ Explicitly out of scope for RFC-001:
 - **Vision AI** — parsing a shopping screenshot / product image into a
   prospective item. (Future: RFC-008 or later; §13.)
 - **Price tracking** — monitoring price over time / deal alerts. (Future: RFC-005.)
-- **Wishlist persistence** — saving analyses to a durable wishlist. (Future:
-  RFC-004; noted as a hook in §13, not built here.)
+- **Wishlist persistence** — saving analyses to a durable wishlist. (Future: a
+  Wishlist RFC — number TBD; noted as a hook in §13, not built here.)
 - **Credit card / payment optimization.** (Future: RFC-006.)
 - **URL scraping** — auto-filling item details from a product URL. The input
   model *accepts* an optional URL, but RFC-001 does not fetch or parse it.
@@ -97,7 +97,7 @@ placeholder): route **`/acquisition/advisor`**.
    - **estimated cost-per-wear**.
 4. **Explain (later)** — an "Explain this verdict" button calls the AI layer to
    narrate the deterministic result (post-engine; §6 AI Layer).
-5. **Save (future)** — an optional "Save to wishlist" action (RFC-004).
+5. **Save (future)** — an optional "Save to wishlist" action (future Wishlist RFC).
 
 States: empty (no input yet), loading (analysing), result, and a low-confidence
 banner when inputs are sparse. Desktop-first; dark-theme consistent.
@@ -150,7 +150,7 @@ _Not built in RFC-001 (design only)._ At implementation time:
 ### Repository Layer
 _Not built in RFC-001._ No new persistence. Reuses existing read repositories
 (inventory, analytics) to gather the wardrobe snapshot. Wishlist persistence is
-out of scope (RFC-004).
+out of scope (future Wishlist RFC).
 
 ### UI Layer
 _Not built in RFC-001._ At implementation time: `src/features/acquisition/` with
@@ -196,8 +196,8 @@ demand and not persisted.
 
 Future (separate RFCs, called out here for planning only — **not** part of this
 RFC):
-- **RFC-004 (Wishlist):** a `wishlist_items` table to persist prospective items
-  and their latest `BuyVsSkipAnalysis`. Additive, RLS anon policy consistent
+- **Wishlist RFC (number TBD):** a `wishlist_items` table to persist prospective
+  items and their latest `BuyVsSkipAnalysis`. Additive, RLS anon policy consistent
   with the rest of the app. Documented then, not now.
 
 ## 9. API / Domain Contracts
@@ -387,8 +387,8 @@ PR — not this RFC):
 
 ## 13. Future Extensions
 
-- **RFC-004 Wishlist:** persist prospective items + latest analysis; re-run when
-  the wardrobe changes; "still worth buying?" checks.
+- **Wishlist (future RFC, number TBD):** persist prospective items + latest
+  analysis; re-run when the wardrobe changes; "still worth buying?" checks.
 - **RFC-005 Price Tracking:** feed live price into `costEfficiency`; alert when a
   `consider` item crosses a cost-per-wear threshold.
 - **RFC-008 Shopping Screenshot Understanding / Vision:** populate

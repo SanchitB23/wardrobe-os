@@ -47,7 +47,8 @@ buy/skip verdict.
 - **OCR-heavy price extraction** — we do not read the price off the screenshot.
 - **Web scraping** — no fetching product pages/URLs.
 - **Browser extension** — upload only.
-- **Wishlist persistence** — the candidate/verdict are not saved (RFC-004).
+- **Wishlist persistence** — the candidate/verdict are not saved (future Wishlist
+  RFC, number TBD).
 - **Price tracking** (RFC-005).
 - **Multi-product cart analysis** — one primary item per image (others surfaced
   as alternatives, not batch-scored).
@@ -154,8 +155,8 @@ neither decides. The interpreter and the engine are pure and deterministic.
 ## 8. Data Model / Schema Impact
 
 **No database schema changes.** Everything is compute-only and ephemeral: the
-candidate and verdict are held in UI state and not persisted (persistence is
-RFC-004 Wishlist).
+candidate and verdict are held in UI state and not persisted (persistence is a
+future Wishlist RFC).
 
 ## 9. API / Domain Contracts
 
@@ -246,8 +247,8 @@ candidate); integration guard that the produced `ProspectiveItem` is accepted by
 
 ## 13. Future Extensions
 
-- **Wishlist (RFC-004)** — save the candidate + verdict; re-run when the
-  wardrobe changes.
+- **Wishlist (future RFC, number TBD)** — save the candidate + verdict; re-run
+  when the wardrobe changes.
 - **Price tracking (RFC-005)** — feed a live price into cost-efficiency.
 - **Stylist tool** — a `analyzeScreenshot` tool so the chat can accept an image
   (via the tool-calling layer, once multimodal chat exists).

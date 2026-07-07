@@ -16,6 +16,7 @@ import {
   selectRecommendationData,
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
+import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import { toError } from "@/shared/utils/data-result";
 
 function relatedNames<K extends string>(
@@ -52,10 +53,12 @@ function isActive(row: RecoItemRow): boolean {
 export async function analyzeBuyVsSkip(
   item: ProspectiveItem,
 ): Promise<{ data: BuyVsSkipAnalysis | null; error: Error | null }> {
-  const [dataResult, healthResult, usageResult] = await Promise.all([
+  const [dataResult, healthResult, usageResult, preferenceResult] = await Promise.all([
     selectRecommendationData(),
     fetchWardrobeHealth(),
     fetchUsageAnalytics(),
+    // Best-effort (RFC-004): learned preferences refine the preferenceFit dimension.
+    getPreferenceProfile().catch(() => ({ data: null, error: null })),
   ]);
 
   if (dataResult.error) return { data: null, error: dataResult.error };
@@ -64,12 +67,20 @@ export async function analyzeBuyVsSkip(
   }
 
   const wardrobe = dataResult.data.items.filter(isActive).map(toStyleItem);
+  const profile = preferenceResult.data?.profile;
+  const preferences = profile
+    ? {
+        preferredStyles: profile.preferredStyles.map((p) => p.value),
+        preferredFormality: profile.preferredFormality.map((p) => p.value),
+      }
+    : null;
 
   const analysis = evaluateBuyVsSkip({
     item,
     wardrobe,
     health: healthResult.error ? null : (healthResult.data?.health ?? null),
     usage: usageResult.error ? null : (usageResult.data ?? null),
+    preferences,
     inputSource: "manual",
   });
 

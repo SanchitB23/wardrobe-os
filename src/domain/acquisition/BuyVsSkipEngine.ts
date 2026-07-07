@@ -41,6 +41,7 @@ import type {
   DimensionKey,
   ExplainabilityCode,
   PotentialOutfit,
+  PreferenceHints,
   ProspectiveItem,
   SimilarExistingItem,
 } from "@/domain/acquisition/types";
@@ -463,11 +464,27 @@ function scorePracticality(itemDna: StyleDNA): {
 function scorePreferenceFit(
   item: ProspectiveItem,
   itemDna: StyleDNA,
+  hints?: PreferenceHints | null,
 ): { dim: DecisionDimension; codes: ExplainabilityCode[] } {
   let score = 6;
   const codes: ExplainabilityCode[] = [];
   const styleHay = normalize(`${item.styleTags?.join(" ")} ${itemDna.primaryStyle} ${itemDna.secondaryStyle}`);
   if (PREFERENCE_PROFILE.preferredStyles.some((s) => styleHay.includes(s))) score += 2;
+
+  // RFC-004: refine with learned preferences when provided (additive).
+  let usedHints = false;
+  if (hints) {
+    const learnedStyles = (hints.preferredStyles ?? []).map(normalize).filter(Boolean);
+    if (learnedStyles.some((s) => styleHay.includes(s))) {
+      score += 1;
+      usedHints = true;
+    }
+    const learnedFormality = (hints.preferredFormality ?? []).map(normalize);
+    if (learnedFormality.includes(normalize(item.formality))) {
+      score += 0.5;
+      usedHints = true;
+    }
+  }
 
   const intended = (item.intendedOccasions ?? []).map(normalize);
   const isOverFormal = PREFERENCE_PROFILE.overFormal.includes(
@@ -490,7 +507,7 @@ function scorePreferenceFit(
   return {
     dim: {
       score: round1(score),
-      confidence: 0.6,
+      confidence: usedHints ? 0.7 : 0.6,
       reason:
         isOverFormal && !formalIntended
           ? "Leans more formal than your usual smart-casual direction."
@@ -531,7 +548,7 @@ export function evaluateBuyVsSkip(
   const cost = scoreCostEfficiency(input.item, usage.projectedWears);
   const healthImpact = scoreWardrobeHealthImpact(itemDna, input.item, input.health);
   const practicality = scorePracticality(itemDna);
-  const preference = scorePreferenceFit(input.item, itemDna);
+  const preference = scorePreferenceFit(input.item, itemDna, input.preferences);
 
   const breakdown: BuyVsSkipBreakdown = {
     duplicateRisk: dup.dim,

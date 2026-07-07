@@ -29,6 +29,17 @@ export interface ProspectiveItem {
 
 export type BuyVsSkipInputSource = "manual" | "url" | "image";
 
+/**
+ * Optional learned-preference hints (RFC-004). When provided, they refine the
+ * `preferenceFit` dimension on top of the built-in owner profile. Absent ⇒
+ * behaviour is unchanged. AI never populates these; they come from the
+ * deterministic Personalization Engine.
+ */
+export interface PreferenceHints {
+  preferredStyles?: string[];
+  preferredFormality?: string[];
+}
+
 export interface BuyVsSkipInput {
   item: ProspectiveItem;
   /** Active wardrobe, as StyleDNA-derivable items. */
@@ -38,6 +49,8 @@ export interface BuyVsSkipInput {
   usage?: UsageAnalytics | null;
   /** Where the prospective item came from (manual entry in RFC-001). */
   inputSource?: BuyVsSkipInputSource;
+  /** Optional learned-preference hints (RFC-004); refine preferenceFit when present. */
+  preferences?: PreferenceHints | null;
 }
 
 export type BuyDecision = "buy" | "consider" | "skip";

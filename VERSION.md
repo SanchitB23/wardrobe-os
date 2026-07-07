@@ -47,8 +47,24 @@ pure domain engines. AI explains and converses; it never decides.
 - AI Tool Calling Architecture (registry / executor / router + 8 wardrobe tools)
 - AI Stylist Chat (`/chat`) — streaming, tool-calling, session-only memory
 
-### Next planned version
+### Development status since v0.6.0
 
-**v0.7.0 — Acquisition Engine**: turn wardrobe gaps + cost-per-wear signals into
-deterministic buy/skip guidance (AI explains the advice, does not decide it).
-See [ROADMAP.md](ROADMAP.md).
+Built on `main` since the v0.6.0 tag (pending a release tag):
+
+- ✅ **Acquisition Engine** (v0.7) — RFC-001 Buy vs Skip (`/acquisition/advisor`).
+- ✅ **Vision Engine** (v0.8) — RFC-002 (`src/domain/vision` + `GeminiVisionProvider`).
+- ✅ **Shopping Screenshot Understanding** (v0.8) — RFC-003 (`/acquisition/screenshot`).
+
+**Completed engines to date:** Database · Inventory · Outfit Engine · Analytics
+Engine · Recommendation Engine · AI Platform · AI Stylist · Acquisition Engine ·
+Vision Engine · Shopping Screenshot Understanding.
+
+### Current work
+
+**v0.9 — Personalization Engine** — 🚧 **In Progress** (RFC-004). A deterministic
+engine that derives a `UserPreferenceProfile` from behaviour (wears, outfits,
+purchases, favourites, feedback, edits, acquisition decisions), with per-preference
+**confidence** and **stability**, superseding the static `DEFAULT_PREFERENCES` in
+`RecommendationContext`. Preferences are re-derived from behaviour every run,
+never incrementally mutated. The engine derives; AI only explains. See
+[ROADMAP.md](ROADMAP.md).

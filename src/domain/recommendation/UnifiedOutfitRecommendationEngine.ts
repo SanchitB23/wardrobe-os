@@ -56,6 +56,13 @@ export interface UnifiedOutfitRecommendation {
 export interface UnifiedOptions {
   occasion?: string | null;
   limit?: number;
+  /**
+   * Opt-in (RFC-004): when true, outfits aligned with the learned preferences in
+   * `context.preferences` (styles / formality) get a small score bonus. Off by
+   * default so existing behaviour is unchanged unless a caller passes a derived
+   * profile in.
+   */
+  usePreferences?: boolean;
 }
 
 export const UNIFIED_OUTFIT_ENGINE_VERSION = "1.0.0";
@@ -72,6 +79,8 @@ const BASE_WEIGHT = 0.7;
 const CONTEXT_WEIGHT = 0.3;
 /** When two duplicate candidates score within this, prefer the saved one. */
 const CLOSE_SCORE = 0.75;
+/** Max bonus (on the 0–10 scale) for alignment with learned preferences (RFC-004). */
+const PREFERENCE_BONUS = 0.6;
 
 function clamp0To10(value: number): number {
   return Math.max(0, Math.min(10, value));
@@ -128,6 +137,36 @@ function contextFit(
       ? 7
       : mean(core.map((s) => s.styleDNA.compatibility.commuteFriendliness));
   return mean([occasionFit, seasonFit, commuteFit]);
+}
+
+/**
+ * Alignment (0–1) of an outfit's core items with the learned style/formality
+ * preferences in `context.preferences` (RFC-004). Pure; returns 0 when there is
+ * nothing to match against.
+ */
+function preferenceAlignment(
+  items: readonly RecommendedOutfitItem[],
+  context: RecommendationContext,
+  byId: Map<string, WardrobeItemSnapshot>,
+): number {
+  const styles = new Set(context.preferences.preferredStyles.map(normalize));
+  const formality = new Set(context.preferences.preferredFormality.map(normalize));
+  if (styles.size === 0 && formality.size === 0) return 0;
+
+  const core = items
+    .map((item) => byId.get(item.itemId))
+    .filter((snap): snap is WardrobeItemSnapshot => Boolean(snap))
+    .filter((snap) => CORE_SLOTS.includes(snap.styleDNA.slot));
+  if (core.length === 0) return 0;
+
+  const matches = core.filter((snap) => {
+    const styleMatch =
+      styles.has(normalize(snap.styleDNA.primaryStyle)) ||
+      styles.has(normalize(snap.styleDNA.secondaryStyle));
+    const formalityMatch = formality.has(normalize(snap.styleDNA.formality));
+    return styleMatch || formalityMatch;
+  });
+  return matches.length / core.length;
 }
 
 // ---------------------------------------------------------------------------
@@ -189,6 +228,12 @@ export function recommendUnifiedOutfits(
     BASE_WEIGHT * analysis.overallScore +
     CONTEXT_WEIGHT * contextFit(items, context, styleOccasion, byId);
 
+  // RFC-004 (opt-in): reward outfits aligned with learned preferences.
+  const preferenceExtra = (items: RecommendedOutfitItem[]): number =>
+    options.usePreferences
+      ? round1(PREFERENCE_BONUS * preferenceAlignment(items, context, byId))
+      : 0;
+
   // 1. Saved outfit recommendations (only the saved ones; generation handles combos).
   const savedResult = generateOutfitRecommendations(context, {
     occasion: options.occasion ?? null,
@@ -198,7 +243,8 @@ export function recommendUnifiedOutfits(
     .filter((rec) => rec.metadata.source === "saved_outfit")
     .map((rec) => {
       const extras = savedExtras(rec);
-      const unifiedScore = round1(clamp0To10(scoreShared(rec.analysis, rec.items) + extras));
+      const prefExtra = preferenceExtra(rec.items);
+      const unifiedScore = round1(clamp0To10(scoreShared(rec.analysis, rec.items) + extras + prefExtra));
       return {
         id: `saved:${rec.outfitId ?? coreSignature(rec.items)}`,
         source: "saved_outfit" as const,
@@ -213,7 +259,10 @@ export function recommendUnifiedOutfits(
         suggestions: rec.suggestions,
         unifiedScore,
         savedScore: rec.score,
-        boosts: rec.debug.adjustments.filter((a) => a.delta > 0).map((a) => a.label),
+        boosts: [
+          ...rec.debug.adjustments.filter((a) => a.delta > 0).map((a) => a.label),
+          ...(prefExtra > 0 ? ["Matches your preferences"] : []),
+        ],
         penalties: rec.debug.adjustments.filter((a) => a.delta < 0).map((a) => a.label),
       };
     });
@@ -226,7 +275,8 @@ export function recommendUnifiedOutfits(
     const items: RecommendedOutfitItem[] = Object.values(gen.items).filter(
       (ref): ref is RecommendedOutfitItem => Boolean(ref),
     );
-    const unifiedScore = round1(clamp0To10(scoreShared(gen.analysis, items)));
+    const prefExtra = preferenceExtra(items);
+    const unifiedScore = round1(clamp0To10(scoreShared(gen.analysis, items) + prefExtra));
     const [primary, ...restReasons] = gen.reasoning;
     return {
       id: `generated:${coreSignature(items)}:${index}`,
@@ -241,7 +291,7 @@ export function recommendUnifiedOutfits(
       suggestions: gen.analysis.suggestions.slice(0, 3),
       unifiedScore,
       generatedScore: gen.score,
-      boosts: [],
+      boosts: prefExtra > 0 ? ["Matches your preferences"] : [],
       penalties: [],
     };
   });

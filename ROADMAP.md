@@ -6,69 +6,101 @@ rule throughout: **deterministic engines first, AI explanation second.**
 
 Legend: ✅ shipped · 🚧 current · 🔜 planned
 
+## Completed so far
+
+- ✅ Database
+- ✅ Inventory
+- ✅ Outfit Engine
+- ✅ Analytics Engine
+- ✅ Recommendation Engine
+- ✅ AI Platform
+- ✅ AI Stylist
+- ✅ Acquisition Engine
+- ✅ Vision Engine
+- ✅ Shopping Screenshot Understanding
+
+**In progress:** RFC-004 Personalization Engine (v0.9) — *In Progress*.
+
+## Phases
+
 | Version | Name | Status | Theme |
 | --- | --- | --- | --- |
-| v0.1 | Inventory | ✅ | Catalogue what you own |
-| v0.2 | Visual Inventory | ✅ | Images, bulk import, rich item pages |
-| v0.3 | Analytics | ✅ | Health, usage, cost, insights |
-| v0.4 | Outfit Engine | ✅ | Build + score outfits |
-| v0.5 | Recommendation Engine | ✅ | Generate + rank outfits |
-| **v0.6** | **AI Stylist Beta** | **🚧 current** | **Explain + converse via AI** |
-| v0.7 | Acquisition Engine | 🔜 | What to buy next |
-| v0.8 | Vision AI | 🔜 | Understand item photos |
-| v0.9 | Packing / Travel Engine | 🔜 | Trip-scoped capsules |
-| v1.0 | Wardrobe OS Stable | 🔜 | Hardened, complete |
+| v0.1–v0.6 | Foundation → AI Stylist | ✅ | Inventory, analytics, outfits, recommendations, AI stylist |
+| v0.7 | Acquisition Engine | ✅ | Deterministic buy/skip guidance |
+| v0.8 | Vision + Shopping Screenshot | ✅ | Understand item photos and shopping screenshots |
+| **v0.9** | **Personalization Engine** | **🚧 current** | **Learn preferences from behaviour** |
+| v1.0 | Lifestyle Engine | 🔜 | Travel, packing, weather, capsule wardrobe |
+| v1.1 | AI Runtime | 🔜 | Capability/provider routing, benchmarking, cost/latency analytics, prompt versioning |
+| v1.2 | Wardrobe Intelligence | 🔜 | Cross-engine orchestration, long-horizon planning, multi-step reasoning |
 
 ---
 
-### v0.1 — Inventory ✅
-Database schema and core item CRUD. Catalogue items with categories, colours,
-formality, and metadata.
-
-### v0.2 — Visual Inventory ✅
-Image upload (primary + thumbnails + delete), bulk JSON import, item detail
-pages, and an advanced, filterable inventory table.
-
-### v0.3 — Analytics ✅
-Dashboard analytics, the **Wardrobe Health Engine**, **Usage Analytics Engine**,
-**Purchase / cost-per-wear** tracking, and the **Insight Center**.
-
-### v0.4 — Outfit Engine ✅
-Outfit builder plus the deterministic **Outfit Scoring Engine** (colour,
-formality, season, occasion, texture, weather, footwear rules).
-
-### v0.5 — Recommendation Engine ✅
-**Outfit Generation Engine** and the **Unified Recommendation Engine** that ranks
-saved and generated outfits together, surfaced in the Recommendation Center.
-
-### v0.6 — AI Stylist Beta 🚧
-Vendor-neutral **AI infrastructure**, **Gemini** provider, **recommendation
-explanations**, a durable **AI response cache**, the **AI Playground**, the
-**tool-calling architecture**, and the streaming **AI Stylist Chat**. AI explains
-and converses on top of the deterministic engines.
-
-### v0.7 — Acquisition Engine 🚧 (in progress)
+### v0.7 — Acquisition Engine ✅
 Deterministic buy/skip guidance from wardrobe gaps, duplicates, and
 cost-per-wear. AI explains the recommendation; the engine decides it.
 - **RFC-001 Buy vs Skip — implemented** (`BuyVsSkipEngine` + `/acquisition/advisor`).
-- RFC-002…006 (duplicate detection, gap analysis, wishlist, price tracking,
-  credit-card optimization) — not started.
 
-### v0.8 — Vision AI 🚧 (in progress)
-Image understanding: derive colour/texture/category signals from item photos to
-enrich Style DNA (still feeding deterministic engines).
+### v0.8 — Vision + Shopping Screenshot ✅
+Image understanding that feeds the deterministic engines. Vision observes; the
+engines still decide.
 - **RFC-002 Vision Engine — implemented** (`src/domain/vision` +
   `GeminiVisionProvider`; standardized `VisionAnalysis`; dev Vision tab in the
-  AI Playground). Consumers (Closet Recognition, Auto Add, etc.) are next.
-- **RFC-003 Shopping Screenshot Understanding — implemented** (`interpretShoppingImage`
-  maps `VisionAnalysis` → editable `ProspectiveItemCandidate`; `/acquisition/screenshot`
-  wires screenshot → Vision Engine → user correction → Buy vs Skip verdict, with an
-  optional AI explanation). First consumer of the Vision Engine.
+  AI Playground).
+- **RFC-003 Shopping Screenshot Understanding — implemented**
+  (`interpretShoppingImage` maps `VisionAnalysis` → editable
+  `ProspectiveItemCandidate`; `/acquisition/screenshot` wires screenshot →
+  Vision Engine → user correction → Buy vs Skip verdict, with an optional AI
+  explanation). First consumer of the Vision Engine.
 
-### v0.9 — Packing / Travel Engine 🔜
-Trip-scoped capsule generation (destination, duration, weather, occasions) built
-on the outfit and recommendation engines.
+### v0.9 — Personalization Engine 🚧 (current)
+Learn the owner's taste from their own behaviour (wears, outfits, purchases,
+favourites, feedback, edits, acquisition decisions) and feed it back into every
+engine. Deterministic derivation with confidence and stability, plus user
+overrides. The engine derives; AI only explains.
+- **RFC-004 Personalization Engine — In Progress** (`derivePreferenceProfile` →
+  `UserPreferenceProfile`, superseding the static `DEFAULT_PREFERENCES` in
+  `RecommendationContext`). Preferences are re-derived from behaviour every run,
+  never incrementally mutated.
 
-### v1.0 — Wardrobe OS Stable 🔜
-Hardening pass: polish, performance, coverage, and documentation for a stable
-release.
+### v1.0 — Lifestyle Engine 🔜
+Trip- and context-scoped planning built on the outfit, recommendation, and
+personalization engines.
+- Travel
+- Packing
+- Weather
+- Capsule Wardrobe
+
+### v1.1 — AI Runtime 🔜
+Turn the AI layer into a configurable runtime — the provider is an interchangeable
+detail behind the engines.
+- Capability Routing
+- Provider Routing
+- Primary / Fallback Providers
+- Provider Benchmarking
+- Cost Analytics
+- Latency Analytics
+- Prompt Versioning
+
+**Target AI Runtime configuration** (future):
+
+| Capability | Primary | Fallback |
+| --- | --- | --- |
+| Text | OpenAI | Gemini |
+| Vision | Gemini | — |
+| Image Generation (future) | OpenAI | — |
+
+### v1.2 — Wardrobe Intelligence 🔜
+Compose the engines into higher-order reasoning.
+- Cross-engine orchestration
+- Long-horizon planning
+- Multi-step reasoning
+
+---
+
+## Explicitly out of scope (removed)
+
+These were considered and **permanently removed** — low ROI for a single-user
+product:
+
+- **Chrome / Browser Extension** — upload flows cover the shopping use case.
+- **Notification Engine** — no recurring push/notification surface.
