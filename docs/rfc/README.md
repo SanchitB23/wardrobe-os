@@ -85,6 +85,7 @@ _Update this table (and the backlog) as RFCs are created._
 | --- | --- | --- | --- |
 | [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Acquisition Engine — Buy vs Skip | Acquisition Engine | Implemented |
 | [002](RFC-002-Vision-Engine.md) | Vision Engine | Vision | Implemented |
+| [003](RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding | Vision / Acquisition | Draft |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
 reserved RFC numbers (RFC-001 … RFC-014).

@@ -12,9 +12,12 @@ items are tentative and are claimed in authoring order.
 
 Authored so far:
 - **RFC-001 — Buy vs Skip** (Acquisition) — Implemented.
-- **RFC-002 — Vision Engine** (Vision foundation) — Draft. The universal
+- **RFC-002 — Vision Engine** (Vision foundation) — Implemented. The universal
   computer-vision capability that produces one standardized `VisionAnalysis`;
   the other Vision items below consume it.
+- **RFC-003 — Shopping Screenshot Understanding** (Vision / Acquisition) —
+  Draft. Screenshot → `VisionAnalysis` → `ProspectiveItemCandidate` →
+  Buy vs Skip verdict.
 
 Guiding principle (unchanged): **deterministic engines decide, AI explains.** New
 capabilities should be solved with a domain engine first; AI is layered on for
@@ -47,8 +50,8 @@ deterministic engines still decide.
 | RFC | Title | Status |
 | --- | --- | --- |
 | [RFC-002](../rfc/RFC-002-Vision-Engine.md) | Vision Engine (foundation → `VisionAnalysis`) | Implemented (pending release) |
+| [RFC-003](../rfc/RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding | Draft |
 | _(TBD)_ | Closet Photo Recognition | Not started |
-| _(TBD)_ | Shopping Screenshot Understanding | Not started |
 | _(TBD)_ | Outfit Recognition | Not started |
 | _(TBD)_ | Auto Add Item | Not started |
 
