@@ -46,7 +46,7 @@ deterministic engines still decide.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [RFC-002](../rfc/RFC-002-Vision-Engine.md) | Vision Engine (foundation → `VisionAnalysis`) | Draft |
+| [RFC-002](../rfc/RFC-002-Vision-Engine.md) | Vision Engine (foundation → `VisionAnalysis`) | Implemented (pending release) |
 | _(TBD)_ | Closet Photo Recognition | Not started |
 | _(TBD)_ | Shopping Screenshot Understanding | Not started |
 | _(TBD)_ | Outfit Recognition | Not started |

@@ -54,9 +54,12 @@ cost-per-wear. AI explains the recommendation; the engine decides it.
 - RFC-002…006 (duplicate detection, gap analysis, wishlist, price tracking,
   credit-card optimization) — not started.
 
-### v0.8 — Vision AI 🔜
+### v0.8 — Vision AI 🚧 (in progress)
 Image understanding: derive colour/texture/category signals from item photos to
 enrich Style DNA (still feeding deterministic engines).
+- **RFC-002 Vision Engine — implemented** (`src/domain/vision` +
+  `GeminiVisionProvider`; standardized `VisionAnalysis`; dev Vision tab in the
+  AI Playground). Consumers (Closet Recognition, Auto Add, etc.) are next.
 
 ### v0.9 — Packing / Travel Engine 🔜
 Trip-scoped capsule generation (destination, duration, weather, occasions) built

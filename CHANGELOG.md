@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v0.8.0 — Vision Engine (in progress)
+
+- **Vision Engine (RFC-002)** — the universal computer-vision capability. A new
+  pure domain module (`src/domain/vision`) turns any image into ONE standardized
+  `VisionAnalysis` (detected items, colours, material/texture/pattern, brand,
+  segmentation, `StyleDNACandidate`s, confidence + quality band, `imageHash`
+  metadata) via the pipeline **Preprocess → Provider → Normalize → Validate**.
+  Provider-agnostic (`VisionProvider` interface; `GeminiVisionProvider`
+  implemented in `src/ai/vision`, with OpenAI/Claude/Local stubs); normalization
+  is deterministic. Exposed through a dev-only Vision tab in the AI Playground
+  (`POST /api/ai/vision`). Vision observes, domain interprets, AI explains — no
+  inventory, shopping, recommendations, or AI explanation here. No schema changes.
+
 ### v0.7.0 — Acquisition Engine (in progress)
 
 - **Buy vs Skip (RFC-001)** — a deterministic purchase decision-support system.

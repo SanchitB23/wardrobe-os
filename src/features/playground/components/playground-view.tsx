@@ -33,6 +33,8 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { VisionPanel } from "@/features/playground/components/VisionPanel";
 import { cn } from "@/lib/utils";
 
 const PROVIDERS = ["gemini", "openai", "claude"] as const;
@@ -97,6 +99,7 @@ export function PlaygroundView() {
   const [cacheEnabled, setCacheEnabled] = useState(false);
   const [forceRefresh, setForceRefresh] = useState(false);
   const [inputError, setInputError] = useState<string | null>(null);
+  const [tab, setTab] = useState("prompt");
 
   function selectBuilder(id: string) {
     const next = PLAYGROUND_BUILDERS.find((b) => b.id === id);
@@ -138,10 +141,17 @@ export function PlaygroundView() {
       <PageHeader
         title="AI Playground"
         badge={<Badge variant="secondary">Developer tool</Badge>}
-        description="Test prompt builders against the AI service in isolation — prompts, structured input, response, validation, latency, and cache status. Not linked from the app nav."
+        description="Test prompt builders and the Vision Engine in isolation — prompts, structured input, response, validation, latency, cache status, and image analysis. Not linked from the app nav."
       />
 
-      <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
+      <Tabs value={tab} onValueChange={(value) => value && setTab(value)}>
+        <TabsList>
+          <TabsTrigger value="prompt">Prompt builders</TabsTrigger>
+          <TabsTrigger value="vision">Vision</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="prompt" className="mt-4">
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,380px)_1fr]">
         {/* Config */}
         <Card className="h-fit">
           <CardHeader className="pb-3">
@@ -249,7 +259,13 @@ export function PlaygroundView() {
 
           {result ? <ResultPanels result={result} /> : null}
         </div>
-      </div>
+          </div>
+        </TabsContent>
+
+        <TabsContent value="vision" className="mt-4">
+          <VisionPanel />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
