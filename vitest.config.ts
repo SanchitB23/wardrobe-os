@@ -8,6 +8,7 @@ export default defineConfig({
   },
   resolve: {
     alias: [
+      { find: "@/ai", replacement: path.resolve(__dirname, "src/ai") },
       { find: "@/domain", replacement: path.resolve(__dirname, "src/domain") },
       { find: "@/features", replacement: path.resolve(__dirname, "src/features") },
       { find: "@/shared", replacement: path.resolve(__dirname, "src/shared") },
