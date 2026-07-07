@@ -49,6 +49,12 @@ export interface AIRequest {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  /**
+   * Requested output shape. "json" asks the provider to emit strict JSON
+   * (e.g. Gemini's responseMimeType) — vendor-neutral, providers map it. A
+   * ResponseParser still validates the text; this just improves the odds.
+   */
+  responseFormat?: "text" | "json";
   /** Images for vision() calls. */
   images?: AIImageInput[];
   /** Free-form, provider-specific passthrough (kept opaque here). */

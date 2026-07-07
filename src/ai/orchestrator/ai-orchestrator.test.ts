@@ -223,21 +223,22 @@ describe("AIOrchestrator", () => {
 });
 
 describe("provider stubs", () => {
-  const providers: AIProvider[] = [
+  // Gemini implements generate(); OpenAI/Claude are still full stubs.
+  const stubProviders: AIProvider[] = [new OpenAIProvider(), new ClaudeProvider()];
+  const allProviders: AIProvider[] = [
     new GeminiProvider(),
-    new OpenAIProvider(),
-    new ClaudeProvider(),
+    ...stubProviders,
   ];
 
-  it.each(providers)("%s throws NotImplementedError from generate()", async (p) => {
+  it.each(stubProviders)("%s throws NotImplementedError from generate()", async (p) => {
     await expect(p.generate(req)).rejects.toBeInstanceOf(NotImplementedError);
   });
 
-  it.each(providers)("%s throws NotImplementedError from vision()", async (p) => {
+  it.each(allProviders)("%s throws NotImplementedError from vision()", async (p) => {
     await expect(p.vision(req)).rejects.toBeInstanceOf(NotImplementedError);
   });
 
-  it.each(providers)("%s throws NotImplementedError from stream()", async (p) => {
+  it.each(allProviders)("%s throws NotImplementedError from stream()", async (p) => {
     await expect(async () => {
       for await (const _ of p.stream(req)) void _;
     }).rejects.toBeInstanceOf(NotImplementedError);
