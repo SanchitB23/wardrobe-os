@@ -83,7 +83,7 @@ _Update this table (and the backlog) as RFCs are created._
 
 | RFC | Title | Epic | Status |
 | --- | --- | --- | --- |
-| — | _No RFCs authored yet — see the backlog for reserved numbers._ | — | — |
+| [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Acquisition Engine — Buy vs Skip | Acquisition Engine | Draft |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
 reserved RFC numbers (RFC-001 … RFC-014).
