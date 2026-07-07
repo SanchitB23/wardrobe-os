@@ -9,10 +9,13 @@ import {
   CheckCircleIcon,
   EyeIcon,
   LightbulbIcon,
+  Loader2Icon,
   RefreshCwIcon,
   SaveIcon,
   ShirtIcon,
+  SparklesIcon,
   WandSparklesIcon,
+  XCircleIcon,
   XIcon,
 } from "lucide-react";
 
@@ -20,12 +23,14 @@ import { InventoryErrorState } from "@/features/inventory/components/inventory-e
 import { PageHeader } from "@/features/layout";
 import {
   useOutfitRecommendations,
+  useRecommendationExplanation,
   useSaveGeneratedOutfit,
   useWearOutfit,
   type ItemPreview,
   type RecommendationContextSummary,
   type RecommendationFilters,
 } from "@/features/recommendations/hooks";
+import type { ExplainSharedContext } from "@/features/recommendations/ai/explanation.types";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -64,6 +69,8 @@ type CardHandlers = {
   onWear: (rec: UnifiedOutfitRecommendation) => void;
   saving: boolean;
   wearing: boolean;
+  /** Shared context used to build the AI explanation input (per response). */
+  explainContext?: ExplainSharedContext;
 };
 
 function scoreTone(score: number): string {
@@ -266,6 +273,99 @@ function ActionButtons({
   );
 }
 
+function ExplanationList({ title, items }: { title: string; items: string[] }) {
+  if (items.length === 0) return null;
+  return (
+    <div className="space-y-1">
+      <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+        {title}
+      </p>
+      <ul className="list-disc space-y-0.5 pl-4">
+        {items.map((item, index) => (
+          <li key={index}>{item}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * Lazily-loaded AI explanation for a single recommendation. The query fires
+ * only when `open` is true (the user clicked ✨ Explain) and is cached by the
+ * recommendation's deterministic key. Fails gracefully with a retry.
+ */
+function ExplainSection({
+  rec,
+  shared,
+  open,
+}: {
+  rec: UnifiedOutfitRecommendation;
+  shared: ExplainSharedContext | undefined;
+  open: boolean;
+}) {
+  const query = useRecommendationExplanation(rec, shared, open);
+  if (!open) return null;
+
+  const panel = "rounded-lg border bg-muted/30 p-3 text-sm";
+
+  if (!shared) {
+    return (
+      <div className={cn(panel, "text-muted-foreground")}>
+        Explanation isn&apos;t available for this recommendation right now.
+      </div>
+    );
+  }
+
+  if (query.isLoading) {
+    return (
+      <div className={cn(panel, "flex items-center gap-2 text-muted-foreground")}>
+        <Loader2Icon className="size-4 animate-spin" />
+        Writing an explanation…
+      </div>
+    );
+  }
+
+  if (query.isError || !query.data) {
+    return (
+      <div className={cn(panel, "space-y-2")}>
+        <div className="flex items-center gap-2 text-muted-foreground">
+          <XCircleIcon className="size-4" />
+          Couldn&apos;t generate an explanation right now.
+        </div>
+        <Button size="sm" variant="outline" onClick={() => void query.refetch()}>
+          <RefreshCwIcon />
+          Try again
+        </Button>
+      </div>
+    );
+  }
+
+  const data = query.data;
+  return (
+    <div className={cn(panel, "space-y-3")}>
+      <p className="font-medium">{data.summary}</p>
+      {data.whyThisWorks ? (
+        <div className="space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            Why this works
+          </p>
+          <p className="text-muted-foreground">{data.whyThisWorks}</p>
+        </div>
+      ) : null}
+      <ExplanationList title="Styling tips" items={data.stylingTips} />
+      {data.confidenceExplanation ? (
+        <div className="space-y-1">
+          <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+            About the score
+          </p>
+          <p className="text-muted-foreground">{data.confidenceExplanation}</p>
+        </div>
+      ) : null}
+      <ExplanationList title="Things to avoid" items={data.thingsToAvoid} />
+    </div>
+  );
+}
+
 function RecommendationCard({
   rec,
   handlers,
@@ -275,7 +375,8 @@ function RecommendationCard({
   handlers: CardHandlers;
   hero?: boolean;
 }) {
-  const { previews, debug, onSave, onWear, saving, wearing } = handlers;
+  const { previews, debug, onSave, onWear, saving, wearing, explainContext } = handlers;
+  const [explaining, setExplaining] = useState(false);
   return (
     <Card
       className={cn(
@@ -303,8 +404,21 @@ function RecommendationCard({
           <MetaList title="Suggestions" icon={LightbulbIcon} items={rec.suggestions.slice(0, hero ? 99 : 2)} tone="text-blue-600 dark:text-blue-400" />
         </div>
         {debug ? <DebugBlock rec={rec} /> : null}
-        <div className="mt-auto pt-1">
-          <ActionButtons rec={rec} onSave={onSave} onWear={onWear} saving={saving} wearing={wearing} />
+        <div className="mt-auto space-y-3 pt-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <ActionButtons rec={rec} onSave={onSave} onWear={onWear} saving={saving} wearing={wearing} />
+            <Button
+              size="sm"
+              variant="ghost"
+              className="text-blue-600 dark:text-blue-400"
+              onClick={() => setExplaining((value) => !value)}
+              aria-expanded={explaining}
+            >
+              <SparklesIcon />
+              {explaining ? "Hide" : "Explain"}
+            </Button>
+          </div>
+          <ExplainSection rec={rec} shared={explainContext} open={explaining} />
         </div>
       </CardContent>
     </Card>
@@ -428,6 +542,7 @@ export function RecommendationCenterView() {
     onWear: handleWear,
     saving: saveMutation.isPending,
     wearing: wearMutation.isPending,
+    explainContext: data?.explainContext,
   };
 
   return (

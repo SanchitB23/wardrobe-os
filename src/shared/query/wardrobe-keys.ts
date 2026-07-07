@@ -25,6 +25,8 @@ export const wardrobeKeys = {
   insights: () => [...wardrobeKeys.all, "insights"] as const,
   recommendations: (filters: unknown) =>
     [...wardrobeKeys.all, "recommendations", filters] as const,
+  recommendationExplanation: (cacheKey: string) =>
+    [...wardrobeKeys.all, "recommendation-explanation", cacheKey] as const,
   wearLogs: (filters: WearLogFilters) =>
     [...wardrobeKeys.all, "wear-logs", filters] as const,
   itemWearSummary: (itemId: string) =>

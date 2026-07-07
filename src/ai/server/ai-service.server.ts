@@ -14,6 +14,7 @@
  * TypeScript consumed by route handlers (and later, server actions/services).
  */
 
+import { InMemoryAICache } from "@/ai/cache";
 import { createAIOrchestrator } from "@/ai/orchestrator";
 import { GeminiProvider } from "@/ai/providers/gemini-provider";
 import type { AIService } from "@/ai/types";
@@ -52,6 +53,9 @@ export function getServerAIService(): AIService {
   cached = createAIOrchestrator({
     providers: [new GeminiProvider()],
     retryPolicy: { maxAttempts: 1, initialDelayMs: 0, backoffFactor: 1 },
+    // Process-local cache: generate() reads/writes it only when a call passes a
+    // cacheKey. Lets us avoid re-calling Gemini for an unchanged recommendation.
+    cache: new InMemoryAICache(),
   });
   return cached;
 }

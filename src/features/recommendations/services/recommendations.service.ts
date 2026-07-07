@@ -9,11 +9,14 @@ import {
   type WeatherCondition,
   type WeatherSnapshot,
 } from "@/domain/recommendation";
+import { generateInsights } from "@/domain/analytics/InsightEngine";
 import {
   fetchUsageAnalytics,
   fetchWardrobeHealth,
 } from "@/features/analytics/services/analytics.service";
 import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
+import { buildExplainSharedContext } from "@/features/recommendations/ai/explanation-input";
+import type { ExplainSharedContext } from "@/features/recommendations/ai/explanation.types";
 import { selectPrimaryImageUrls } from "@/features/inventory/repositories/images.repository";
 import { fetchOutfitItemLinks } from "@/features/outfits/repositories/outfits.repository";
 import { createOutfit } from "@/features/outfits/services/outfits.service";
@@ -54,6 +57,11 @@ export type RecommendationCenterData = {
   recommendations: UnifiedOutfitRecommendation[];
   previews: Record<string, ItemPreview>;
   context: RecommendationContextSummary;
+  /**
+   * Curated, wardrobe-free summaries shared by every card, used to assemble the
+   * AI explanation input on the client. See src/features/recommendations/ai.
+   */
+  explainContext: ExplainSharedContext;
 };
 
 function relatedNames<K extends string>(
@@ -198,8 +206,41 @@ export async function fetchOutfitRecommendations(
     favoritesOnly: Boolean(filters.favoritesOnly),
   };
 
+  // Curated, wardrobe-free summaries for AI explanations. Insights are derived
+  // from the same health/usage/purchase analytics already fetched above; if
+  // usage analytics are unavailable we fall back to the health headline.
+  const insightSummary =
+    usageResult.error || !usageResult.data
+      ? {
+          overallSummary: healthResult.data.health.strengths[0] ?? "",
+          topActions: healthResult.data.health.recommendations.slice(0, 3),
+        }
+      : (() => {
+          const report = generateInsights(
+            {
+              wardrobeHealth: healthResult.data.health,
+              usageAnalytics: usageResult.data,
+              purchaseAnalytics:
+                purchaseResult.error || !purchaseResult.data
+                  ? undefined
+                  : purchaseResult.data,
+            },
+            { generatedAt: context.generatedAt },
+          );
+          return {
+            overallSummary: report.overallSummary,
+            topActions: report.topActions.map((action) => action.title),
+          };
+        })();
+  const explainContext = buildExplainSharedContext({
+    wardrobeHealth: healthResult.data.health,
+    insights: insightSummary,
+    weather: context.weather,
+    commute: context.commute,
+  });
+
   return {
-    data: { recommendations, previews, context: contextSummary },
+    data: { recommendations, previews, context: contextSummary, explainContext },
     error: null,
   };
 }
