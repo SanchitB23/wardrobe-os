@@ -5,8 +5,16 @@ The forward-looking backlog, organised by **epic** and mapped to roadmap phases
 every major item must have an approved RFC ([docs/rfc/](../rfc/README.md)) before
 implementation begins.
 
-**RFC numbers are permanent and sequential** — claim the next free one here when
-starting an RFC. Reserved so far: **RFC-001 … RFC-014**.
+**RFC numbers are permanent and assigned sequentially at authoring time** — an
+RFC gets the next free number when it is written, regardless of epic. The epic
+tables below are the **plan**; titles are fixed but the numbers on not-yet-written
+items are tentative and are claimed in authoring order.
+
+Authored so far:
+- **RFC-001 — Buy vs Skip** (Acquisition) — Implemented.
+- **RFC-002 — Vision Engine** (Vision foundation) — Draft. The universal
+  computer-vision capability that produces one standardized `VisionAnalysis`;
+  the other Vision items below consume it.
 
 Guiding principle (unchanged): **deterministic engines decide, AI explains.** New
 capabilities should be solved with a domain engine first; AI is layered on for
@@ -23,23 +31,26 @@ guidance. AI explains the advice; the engine decides it.
 | RFC | Title | Status |
 | --- | --- | --- |
 | [RFC-001](../rfc/RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Buy vs Skip | Implemented (pending release) |
-| RFC-002 | Duplicate Detection | Not started |
-| RFC-003 | Gap Analysis | Not started |
-| RFC-004 | Wishlist | Not started |
-| RFC-005 | Price Tracking | Not started |
-| RFC-006 | Credit Card Optimization | Not started |
+| _(TBD)_ | Duplicate Detection | Not started |
+| _(TBD)_ | Gap Analysis | Not started |
+| _(TBD)_ | Wishlist | Not started |
+| _(TBD)_ | Price Tracking | Not started |
+| _(TBD)_ | Credit Card Optimization | Not started |
 
 ## Epic 2 — Vision AI (v0.8)
 
-Image understanding to enrich the wardrobe. Vision extracts signals; those still
-feed the deterministic engines.
+Image understanding to enrich the wardrobe. The **Vision Engine** is the
+universal capability: it turns any image into one standardized `VisionAnalysis`;
+every other Vision item consumes that output. Vision perceives/proposes; the
+deterministic engines still decide.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| RFC-007 | Closet Photo Recognition | Not started |
-| RFC-008 | Shopping Screenshot Understanding | Not started |
-| RFC-009 | Outfit Recognition | Not started |
-| RFC-010 | Auto Add Item | Not started |
+| [RFC-002](../rfc/RFC-002-Vision-Engine.md) | Vision Engine (foundation → `VisionAnalysis`) | Draft |
+| _(TBD)_ | Closet Photo Recognition | Not started |
+| _(TBD)_ | Shopping Screenshot Understanding | Not started |
+| _(TBD)_ | Outfit Recognition | Not started |
+| _(TBD)_ | Auto Add Item | Not started |
 
 ## Epic 3 — Travel Engine (v0.9)
 
@@ -47,10 +58,10 @@ Trip-scoped capsule generation built on the outfit and recommendation engines.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| RFC-011 | Packing Engine | Not started |
-| RFC-012 | Weather Integration | Not started |
-| RFC-013 | Laundry Planning | Not started |
-| RFC-014 | Trip Capsule Wardrobe | Not started |
+| _(TBD)_ | Packing Engine | Not started |
+| _(TBD)_ | Weather Integration | Not started |
+| _(TBD)_ | Laundry Planning | Not started |
+| _(TBD)_ | Trip Capsule Wardrobe | Not started |
 
 ## Epic 4 — Wardrobe OS Stable (v1.0)
 
