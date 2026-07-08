@@ -76,8 +76,17 @@ are server-side).
 | `npm test` | Run the Vitest suite |
 | `npm run test:watch` | Vitest in watch mode |
 
+## Product Vision
+
+For the long-term vision and philosophy behind Wardrobe OS — the deterministic
+intelligence thesis, the strategic horizons (v1.0 → v3.0), and the boundaries
+the product deliberately holds — see
+[docs/product/PRODUCT_VISION.md](docs/product/PRODUCT_VISION.md). It is a product
+strategy document, not a roadmap.
+
 ## Documentation
 
+- [docs/product/PRODUCT_VISION.md](docs/product/PRODUCT_VISION.md) — long-term product vision & philosophy
 - [VERSION.md](VERSION.md) — current release + included modules
 - [ROADMAP.md](ROADMAP.md) — versioned roadmap (v0.1 → v1.0)
 - [CHANGELOG.md](CHANGELOG.md) — release history (Keep a Changelog)
