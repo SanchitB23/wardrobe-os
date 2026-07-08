@@ -30,6 +30,12 @@ Authored so far:
   it holds no business logic and never calls AI. Reachable by AI via the
   `runIntelligence` tool. Future Travel / Packing / Weather / Calendar /
   Shopping / AI Chat become consumers.
+- **RFC-006 — Lifestyle Engine** (Lifestyle, v1.0) — Draft. One deterministic
+  engine that turns a trip into a `LifestylePlan` (packing list, per-day outfits,
+  capsule, laundry schedule, missing items, shopping suggestions, warnings) by
+  composing the existing engines across time. Weather is a normalized provider
+  input; travel/packing/weather register as Orchestrator (RFC-005) capabilities.
+  The engine plans; AI only explains.
 
 Guiding principle (unchanged): **deterministic engines decide, AI explains.** New
 capabilities should be solved with a domain engine first; AI is layered on for
@@ -86,14 +92,14 @@ and `PreferenceEvolution`.
 ## Epic 4 — Lifestyle Engine (v1.0)
 
 Trip- and context-scoped planning built on the outfit, recommendation, and
-personalization engines.
+personalization engines, and delivered as Intelligence Orchestrator (RFC-005)
+capabilities. One deterministic Lifestyle Engine plans across time; AI only
+explains the plan.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| _(TBD)_ | Travel | Not started |
-| _(TBD)_ | Packing | Not started |
-| _(TBD)_ | Weather | Not started |
-| _(TBD)_ | Capsule Wardrobe | Not started |
+| [RFC-006](../rfc/RFC-006-Lifestyle-Engine.md) | Lifestyle Engine (trip → `LifestylePlan`: packing, capsule, laundry, missing items) | Draft |
+| _(TBD)_ | Calendar integration | Not started |
 
 ## Epic 5 — AI Runtime (v1.1)
 

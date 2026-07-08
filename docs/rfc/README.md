@@ -88,6 +88,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [003](RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding | Vision / Acquisition | Implemented |
 | [004](RFC-004-Personalization-Engine.md) | Personalization Engine | Intelligence | Draft |
 | [005](RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator | Intelligence | Implemented |
+| [006](RFC-006-Lifestyle-Engine.md) | Lifestyle Engine | Lifestyle | Draft |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
 reserved RFC numbers (RFC-001 … RFC-014).
