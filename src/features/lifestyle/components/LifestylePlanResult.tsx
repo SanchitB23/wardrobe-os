@@ -1,8 +1,12 @@
 "use client";
 
-import { AlertTriangleIcon, SparklesIcon } from "lucide-react";
+import { useState } from "react";
+import { AlertTriangleIcon, Loader2Icon, SparklesIcon } from "lucide-react";
 
+import type { LifestylePlanExplanation } from "@/ai/schemas/LifestylePlanExplanation.schema";
 import type { LifestyleResult } from "@/features/lifestyle/services/LifestyleService";
+import { useLifestyleExplanation } from "@/features/lifestyle/hooks/useLifestyleExplanation";
+import { useDevMode } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -21,6 +25,15 @@ export function LifestylePlanResult({ result }: { result: LifestyleResult }) {
   const { plan, itemNames } = result;
   const nameOf = (id: string) => itemNames[id] ?? id;
   const { tripPlan, packingPlan, laundryPlan, shoppingPlan } = plan;
+
+  const explain = useLifestyleExplanation();
+  const { devMode } = useDevMode();
+  const [open, setOpen] = useState(false);
+
+  function onExplain() {
+    setOpen((v) => (explain.data ? !v : true));
+    if (!explain.data && !explain.isPending) explain.mutate(plan);
+  }
 
   return (
     <div className="space-y-4">
@@ -45,8 +58,9 @@ export function LifestylePlanResult({ result }: { result: LifestyleResult }) {
                 <div className="text-2xl font-semibold tabular-nums">{pct(packingPlan.packingConfidence)}</div>
                 <div className="text-xs text-muted-foreground">packing confidence</div>
               </div>
-              <Button variant="outline" size="sm" disabled title="AI explanation — coming soon">
-                <SparklesIcon /> Explain
+              <Button variant="outline" size="sm" onClick={onExplain} disabled={explain.isPending}>
+                {explain.isPending ? <Loader2Icon className="animate-spin" /> : <SparklesIcon />}
+                {explain.isPending ? "Explaining…" : explain.data ? (open ? "Hide" : "Explain") : "Explain"}
               </Button>
             </div>
           </div>
@@ -64,6 +78,39 @@ export function LifestylePlanResult({ result }: { result: LifestyleResult }) {
           </CardContent>
         ) : null}
       </Card>
+
+      {/* AI explanation (expandable) — explains the deterministic plan, never changes it. */}
+      {open ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <CardTitle className="flex items-center gap-1.5 text-sm">
+                <SparklesIcon className="size-4" /> AI explanation
+              </CardTitle>
+              {devMode && explain.data?.cached ? (
+                <Badge variant="outline" className="text-[10px]">cache hit</Badge>
+              ) : null}
+            </div>
+            <CardDescription>AI narrates the plan — it never changes it.</CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-3 text-sm">
+            {explain.isPending ? (
+              <p className="flex items-center gap-2 text-muted-foreground">
+                <Loader2Icon className="size-4 animate-spin" /> Writing the explanation…
+              </p>
+            ) : null}
+            {explain.isError ? (
+              <p className="text-destructive">
+                {explain.error.message || "Couldn't explain the plan."}{" "}
+                <button type="button" className="underline" onClick={() => explain.mutate(plan)}>
+                  Retry
+                </button>
+              </p>
+            ) : null}
+            {explain.data ? <ExplanationBody explanation={explain.data.explanation} /> : null}
+          </CardContent>
+        </Card>
+      ) : null}
 
       {/* Daily outfits */}
       <Card>
@@ -161,6 +208,46 @@ export function LifestylePlanResult({ result }: { result: LifestyleResult }) {
           </CardContent>
         </Card>
       ) : null}
+    </div>
+  );
+}
+
+function Para({ title, text }: { title: string; text: string }) {
+  if (!text) return null;
+  return (
+    <div className="space-y-0.5">
+      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{title}</div>
+      <p className="text-muted-foreground">{text}</p>
+    </div>
+  );
+}
+
+function List({ title, items }: { title: string; items: string[] }) {
+  if (!items || items.length === 0) return null;
+  return (
+    <div className="space-y-0.5">
+      <div className="text-xs font-medium uppercase tracking-wide text-muted-foreground/70">{title}</div>
+      <ul className="list-inside list-disc space-y-0.5 text-muted-foreground">
+        {items.map((it, i) => (
+          <li key={i}>{it}</li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+function ExplanationBody({ explanation }: { explanation: LifestylePlanExplanation }) {
+  return (
+    <div className="space-y-3">
+      <p>{explanation.summary}</p>
+      <Para title="Packing strategy" text={explanation.packingStrategy} />
+      <List title="Daily highlights" items={explanation.dailyHighlights} />
+      <List title="Packing tips" items={explanation.packingTips} />
+      <Para title="Trade-offs" text={explanation.tradeoffExplanation} />
+      <Para title="Shopping advice" text={explanation.shoppingAdvice} />
+      <Para title="Risk assessment" text={explanation.riskAssessment} />
+      <Para title="Confidence" text={explanation.confidenceExplanation} />
+      <List title="Travel tips" items={explanation.travelTips} />
     </div>
   );
 }
