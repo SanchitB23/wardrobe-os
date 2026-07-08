@@ -67,12 +67,26 @@ function deps(overrides: Partial<WardrobeToolDeps> = {}): Partial<WardrobeToolDe
       totalWardrobeValue: 1200,
       averageCostPerWear: 4.5,
     }) as WardrobeToolDeps["fetchPurchaseAnalytics"],
+    runOrchestration: ok({
+      executedCapabilities: ["recommendation"],
+      skippedCapabilities: [],
+      failedCapabilities: [],
+      executionOrder: ["outfit", "personalization", "recommendation"],
+      dependencyGraph: {},
+      timings: {},
+      confidence: 0.8,
+      outcomes: {
+        recommendation: { id: "recommendation", status: "executed", output: [], confidence: 0.8, durationMs: 1 },
+      },
+      explainability: ["Ran recommendation (1ms)."],
+      metadata: { orchestratorVersion: "1.0.0", generatedAt: "x", totalDurationMs: 1, capabilityCount: 3 },
+    }) as WardrobeToolDeps["runOrchestration"],
     ...overrides,
   };
 }
 
 describe("createWardrobeToolRegistry", () => {
-  it("registers all eight tools with unique names and object schemas", () => {
+  it("registers all wardrobe tools with unique names and object schemas", () => {
     const registry = createWardrobeToolRegistry(deps());
     const names = registry.list().map((t) => t.name).sort();
     expect(names).toEqual(
@@ -84,6 +98,7 @@ describe("createWardrobeToolRegistry", () => {
         "getShoppingAdvice",
         "getUsageAnalytics",
         "getWardrobeHealth",
+        "runIntelligence",
         "searchInventory",
       ].sort(),
     );
@@ -96,7 +111,7 @@ describe("createWardrobeToolRegistry", () => {
 
   it("advertises Gemini + OpenAI shapes for every tool", () => {
     const registry = createWardrobeToolRegistry(deps());
-    expect(registry.toGeminiFunctionDeclarations()).toHaveLength(8);
+    expect(registry.toGeminiFunctionDeclarations()).toHaveLength(9);
     expect(registry.toOpenAITools().every((t) => t.type === "function")).toBe(true);
   });
 });

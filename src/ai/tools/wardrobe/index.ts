@@ -27,6 +27,8 @@ import {
   fetchOutfitRecommendations,
   type RecommendationFilters,
 } from "@/features/recommendations/services/recommendations.service";
+import { runOrchestration } from "@/features/orchestrator/services/orchestrator.service";
+import type { CapabilityId } from "@/domain/orchestrator";
 import type { InventoryFilters } from "@/types/wardrobe";
 
 type Result<T> = { data: T | null; error: Error | null };
@@ -47,6 +49,7 @@ export interface WardrobeToolDeps {
   fetchWardrobeItemDetail: typeof fetchWardrobeItemDetail;
   fetchWardrobeItems: typeof fetchWardrobeItems;
   fetchPurchaseAnalytics: typeof fetchPurchaseAnalytics;
+  runOrchestration: typeof runOrchestration;
 }
 
 const DEFAULT_DEPS: WardrobeToolDeps = {
@@ -58,6 +61,7 @@ const DEFAULT_DEPS: WardrobeToolDeps = {
   fetchWardrobeItemDetail,
   fetchWardrobeItems,
   fetchPurchaseAnalytics,
+  runOrchestration,
 };
 
 const SEASON: JSONSchema = {
@@ -268,6 +272,76 @@ function getShoppingAdviceTool(deps: WardrobeToolDeps): AITool {
  * Build a registry with all eight Wardrobe tools. Pass `deps` to inject fake
  * services in tests; defaults to the real feature services.
  */
+const CAPABILITY: JSONSchema = {
+  type: "string",
+  enum: [
+    "health",
+    "usage",
+    "analytics",
+    "outfit",
+    "recommendation",
+    "personalization",
+    "vision",
+    "acquisition",
+  ],
+};
+
+/**
+ * RFC-005: rather than calling a single service, the model can ask the
+ * Intelligence Orchestrator to run a set of capabilities. The Orchestrator
+ * decides execution order (dependency resolution) and runs the deterministic
+ * engines; this tool returns the execution report. The model requests; it never
+ * plans or executes — and it never decides (ADR-005).
+ */
+function runIntelligenceTool(deps: WardrobeToolDeps): AITool {
+  return {
+    name: "runIntelligence",
+    description:
+      "Run one or more wardrobe intelligence capabilities through the Intelligence Orchestrator, which resolves dependencies and executes the deterministic engines in order. Returns an execution report (what ran, order, confidence, failures). Use for multi-capability requests instead of calling engines individually.",
+    parameters: objectParams({
+      capabilities: {
+        type: "array",
+        items: CAPABILITY,
+        description: "Capabilities to run, e.g. ['recommendation'] or ['analytics'].",
+      },
+      occasion: { type: "string", description: "Optional occasion context, e.g. Office, Travel." },
+      limit: { type: "integer", description: "Max results for list-producing capabilities." },
+    }),
+    async execute(args) {
+      const capabilities = Array.isArray(args.capabilities)
+        ? (args.capabilities as CapabilityId[])
+        : [];
+      if (capabilities.length === 0) {
+        throw new Error("runIntelligence requires at least one capability.");
+      }
+      const report = required(
+        await deps.runOrchestration({
+          capabilities,
+          inputs: {
+            occasion: typeof args.occasion === "string" ? args.occasion : null,
+            limit: typeof args.limit === "number" ? args.limit : undefined,
+          },
+        }),
+      );
+      // Trim to a model-friendly summary (omit large raw engine outputs).
+      return {
+        executed: report.executedCapabilities,
+        skipped: report.skippedCapabilities,
+        failed: report.failedCapabilities,
+        executionOrder: report.executionOrder,
+        confidence: report.confidence,
+        explainability: report.explainability,
+        outcomes: Object.fromEntries(
+          Object.values(report.outcomes).map((o) => [
+            o.id,
+            { status: o.status, confidence: o.confidence, error: o.error },
+          ]),
+        ),
+      };
+    },
+  };
+}
+
 export function createWardrobeToolRegistry(
   deps: Partial<WardrobeToolDeps> = {},
 ): ToolRegistry {
@@ -281,5 +355,6 @@ export function createWardrobeToolRegistry(
     getItemTool(resolved),
     searchInventoryTool(resolved),
     getShoppingAdviceTool(resolved),
+    runIntelligenceTool(resolved),
   ]);
 }

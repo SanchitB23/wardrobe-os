@@ -60,6 +60,20 @@ outfits) that the recommendation/generation engines score against. Services do
 the I/O; engines receive the context, never raw rows. See
 [ADR-002](docs/adr/ADR-002-recommendation-context.md).
 
+### Intelligence Orchestrator
+`src/domain/orchestrator/**` (RFC-005) is a **pure, deterministic composition
+layer** over the engines. Given a `CapabilityRequest`, it resolves capability
+dependencies (topological order + stable tie-break + cycle detection), plans
+execution, runs each capability's engine with **failure isolation** (a failed
+capability is recorded; its dependents are skipped; independent capabilities
+still run), and returns one `ExecutionReport`. It **composes** engines — it holds
+no business logic, never calls AI, and engines never call each other (cross-engine
+data flows only as declared capability dependencies). A feature service
+(`src/features/orchestrator`) assembles the `ExecutionContext` from repositories;
+AI reaches the orchestrator via the `runIntelligence` tool (the model *requests*
+capabilities; the orchestrator plans and executes deterministically). See
+[ENGINE_GRAPH.md](ENGINE_GRAPH.md).
+
 ### AI abstraction
 `src/ai/**` is a vendor-neutral layer:
 

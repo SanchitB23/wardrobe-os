@@ -1,0 +1,98 @@
+# Engine Graph
+
+How Wardrobe OS's deterministic engines compose, and how the **Intelligence
+Orchestrator** (RFC-005) coordinates them. See [ENGINE.md](ENGINE.md) for each
+engine's internals and [ARCHITECTURE.md](ARCHITECTURE.md) for the layering.
+
+## Principle
+
+Engines are **pure and independent** — none imports or calls another. When a
+result needs several engines, a caller composes them. Historically each service
+hand-wired that composition; the **Intelligence Orchestrator**
+(`src/domain/orchestrator`) makes it one deterministic, testable place.
+
+- **Engines decide.** Scoring, eligibility, ranking, taste — all inside engines.
+- **The Orchestrator composes.** It owns *which* engines run and *in what order*.
+  It has no business logic, never calls AI, and never lets engines call each other.
+- **AI explains.** It consumes an `ExecutionReport`; it never plans or executes.
+
+## Capabilities → engines
+
+Each capability is a thin adapter over an existing engine (`src/domain/orchestrator/CapabilityRegistry.ts`):
+
+| Capability | Composes engine | Output |
+| --- | --- | --- |
+| `health` | WardrobeHealthEngine (`analyzeWardrobeHealth`) | wardrobe health snapshot |
+| `usage` | UsageAnalyticsEngine | usage analytics |
+| `personalization` | PersonalizationEngine (`derivePreferenceProfile`, RFC-004) | preference snapshot |
+| `analytics` | InsightEngine (`generateInsights`) | insight report |
+| `outfit` | OutfitGenerationEngine (`generateOutfits`) | generated outfits |
+| `recommendation` | UnifiedOutfitRecommendationEngine (`recommendUnifiedOutfits`) | ranked outfits |
+| `vision` | ShoppingImageInterpreter (`interpretShoppingImage`, RFC-003) | prospective-item candidate |
+| `acquisition` | BuyVsSkipEngine (`evaluateBuyVsSkip`, RFC-001) | buy/skip verdict |
+
+Reserved (declared, not yet registered): `travel`, `packing`, `weather`,
+`calendar`, `shopping`.
+
+## Dependency graph
+
+```
+health ─┐
+        ├─► analytics
+usage ──┘
+
+outfit ─────────┐
+                ├─► recommendation
+personalization ┘
+
+personalization ─► acquisition   (uses an upstream `vision` candidate when present)
+
+vision   (leaf)
+```
+
+The planner expands the requested capabilities to include transitive
+dependencies, then resolves a deterministic order (Kahn's algorithm, smallest-id
+tie-break). Cycles are detected and raised, never looped.
+
+## Execution flow
+
+```
+CapabilityRequest
+   ↓  ExecutionPlanner: buildDependencyGraph → resolveExecutionOrder
+Execution Plan (order + graph)
+   ↓  EngineExecutor: run each capability with its CapabilityContext
+      • upstream outputs threaded to dependents
+      • a failed capability → its dependents are skipped; siblings still run
+      • timing captured via an injected clock (metadata only)
+Execution Result (per-capability outcomes)
+   ↓  buildExecutionReport
+ExecutionReport
+   ↓  (optional) AI narration — consumes the report, never decides
+```
+
+## ExecutionReport
+
+`orchestrate(request, context)` returns an `ExecutionReport`:
+
+- `executedCapabilities`, `skippedCapabilities`, `failedCapabilities`
+- `executionOrder`, `dependencyGraph`
+- `timings` (per capability + `__total`)
+- `confidence` (evidence-mean of executed capabilities that report one)
+- `outcomes` (per-capability status / output / confidence / error / skippedBecause)
+- `explainability` (decision-free "what ran and why")
+- `metadata` (orchestrator version, generatedAt, total duration, capability count)
+
+## Determinism
+
+Same `request` + `context` (+ injected clock) ⇒ identical report, wall-clock
+timing aside. Timing is metadata, explicitly outside the determinism guarantee;
+`generatedAt` and the timing clock are injected so tests pin them.
+
+## Consumers
+
+- **Now:** AI chat via the `runIntelligence` tool; the orchestrator feature
+  service assembles context from repositories.
+- **Future (RFC per feature):** Travel, Packing, Weather, Calendar, Shopping —
+  each registers capabilities and is *requested*, reusing all wiring. The
+  existing Recommendation / Acquisition / Screenshot flows can migrate to
+  request capabilities incrementally (behaviour-preserving).

@@ -7,6 +7,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### v1.0.0 — Intelligence Orchestrator (in progress)
+
+- **Intelligence Orchestrator (RFC-005)** — a deterministic composition layer
+  (`src/domain/orchestrator`) that coordinates the existing engines. Given a
+  `CapabilityRequest`, it resolves capability dependencies (topological order,
+  stable tie-break, cycle detection), plans execution, runs each capability's
+  pure engine with **failure isolation** (a failed capability is recorded; its
+  dependents are skipped; independent capabilities still run), and returns one
+  `ExecutionReport` (executed / skipped / failed capabilities, execution order,
+  dependency graph, per-capability timings + confidence, explainability,
+  metadata). Registered capabilities compose real engines — health, usage,
+  analytics (`generateInsights`), outfit (`generateOutfits`), recommendation
+  (`recommendUnifiedOutfits`), personalization, vision (`interpretShoppingImage`),
+  and acquisition (`evaluateBuyVsSkip`, using an upstream vision candidate when
+  present). It holds **no business logic**, never calls AI, and engines stay
+  pure and never call each other. A feature service assembles the
+  `ExecutionContext` from repositories; AI reaches it via a new `runIntelligence`
+  tool (the model requests capabilities; the orchestrator plans/executes
+  deterministically). Timing is injected (deterministic tests). No schema
+  changes. Future Travel / Packing / Weather / Calendar / Shopping / AI Chat
+  become orchestration consumers.
+
 ### v0.9.0 — Personalization Engine (in progress)
 
 - **Personalization Engine (RFC-004)** — deterministic user-preference learning.

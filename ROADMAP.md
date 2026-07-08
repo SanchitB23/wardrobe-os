@@ -18,8 +18,11 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 - ✅ Acquisition Engine
 - ✅ Vision Engine
 - ✅ Shopping Screenshot Understanding
+- ✅ Personalization Engine
+- ✅ Intelligence Orchestrator
 
-**In progress:** RFC-004 Personalization Engine (v0.9) — *In Progress*.
+**In progress:** RFC-004 Personalization Engine (v0.9) and RFC-005 Intelligence
+Orchestrator (v1.0) — both implemented on `main`, pending a release tag.
 
 ## Phases
 
@@ -91,9 +94,15 @@ detail behind the engines.
 
 ### v1.2 — Wardrobe Intelligence 🔜
 Compose the engines into higher-order reasoning.
-- Cross-engine orchestration
+- **Cross-engine orchestration — foundation shipped** (RFC-005 Intelligence
+  Orchestrator: `src/domain/orchestrator`; deterministic capability planning +
+  execution + reporting; AI reaches it via `runIntelligence`). Consumers
+  (Travel/Packing/Weather/Calendar/Shopping/Chat) build on it.
 - Long-horizon planning
 - Multi-step reasoning
+
+See [ENGINE_GRAPH.md](ENGINE_GRAPH.md) for the engine dependency graph and the
+orchestrator capabilities.
 
 ---
 

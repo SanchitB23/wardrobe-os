@@ -23,11 +23,13 @@ Authored so far:
   outfits, purchases, favourites, feedback, edits, acquisition decisions),
   superseding the static `DEFAULT_PREFERENCES` in `RecommendationContext`. The
   engine derives; AI only explains.
-- **RFC-005 — Intelligence Orchestrator** (Intelligence, v1.0) — Draft. A
-  deterministic composition layer that resolves capability dependencies, plans
-  execution, runs the existing engines, and returns one `ExecutionResult`. It
-  composes engines; it holds no business logic and never calls AI. Future
-  Travel / Packing / Weather / Calendar / Shopping / AI Chat become consumers.
+- **RFC-005 — Intelligence Orchestrator** (Intelligence, v1.0) — ✅ Implemented.
+  A deterministic composition layer (`src/domain/orchestrator`) that resolves
+  capability dependencies, plans execution, runs the existing engines with
+  failure isolation, and returns one `ExecutionReport`. It composes engines;
+  it holds no business logic and never calls AI. Reachable by AI via the
+  `runIntelligence` tool. Future Travel / Packing / Weather / Calendar /
+  Shopping / AI Chat become consumers.
 
 Guiding principle (unchanged): **deterministic engines decide, AI explains.** New
 capabilities should be solved with a domain engine first; AI is layered on for
@@ -75,7 +77,7 @@ every run, never incrementally mutated. AI explains the profile, never derives i
 | RFC | Title | Status |
 | --- | --- | --- |
 | [RFC-004](../rfc/RFC-004-Personalization-Engine.md) | Personalization Engine (behaviour → `UserPreferenceProfile`) | 🚧 In Progress |
-| [RFC-005](../rfc/RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator (composition layer, v1.0) | Draft |
+| [RFC-005](../rfc/RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator (composition layer, v1.0) | ✅ Implemented |
 
 Documented future concepts (not built in RFC-004): Preference Timeline,
 Preference Lifecycle (core / emerging / declining / avoided), `since` metadata,
