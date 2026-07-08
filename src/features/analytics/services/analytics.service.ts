@@ -20,6 +20,7 @@ import {
   type HealthItemRow,
 } from "@/features/analytics/repositories/analytics.repository";
 import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
+import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import { toError } from "@/shared/utils/data-result";
 
 export type WardrobeHealthReport = {
@@ -134,10 +135,11 @@ export async function fetchInsightReport(): Promise<{
   data: InsightReport | null;
   error: Error | null;
 }> {
-  const [healthResult, usageResult, purchaseResult] = await Promise.all([
+  const [healthResult, usageResult, purchaseResult, profileResult] = await Promise.all([
     fetchWardrobeHealth(),
     fetchUsageAnalytics(),
     fetchPurchaseAnalytics(),
+    getPreferenceProfile(),
   ]);
 
   if (healthResult.error) return { data: null, error: healthResult.error };
@@ -145,6 +147,9 @@ export async function fetchInsightReport(): Promise<{
   if (!healthResult.data || !usageResult.data) {
     return { data: null, error: toError("Analytics data unavailable.") };
   }
+
+  // RFC-004: protected items are never flagged for removal (best-effort).
+  const protectedItemIds = profileResult.data?.profile.protectedItemIds ?? [];
 
   const report = generateInsights(
     {
@@ -155,7 +160,7 @@ export async function fetchInsightReport(): Promise<{
           ? undefined
           : purchaseResult.data,
     },
-    { generatedAt: new Date().toISOString() },
+    { generatedAt: new Date().toISOString(), protectedItemIds },
   );
 
   return { data: report, error: null };

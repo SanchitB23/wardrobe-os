@@ -79,13 +79,15 @@ const isActive = (row: RecoItemRow) => row.status === "active" || row.status ===
 export async function runOrchestration(
   request: CapabilityRequest,
 ): Promise<{ data: ExecutionReport | null; error: Error | null }> {
+  // One instant for the whole request — every engine call shares it (RFC-008/H3).
+  const generatedAt = new Date().toISOString();
   const [dataResult, healthResult, usageResult, purchaseResult, preferenceResult] =
     await Promise.all([
       selectRecommendationData(),
       fetchWardrobeHealth(),
       fetchUsageAnalytics(),
       fetchPurchaseAnalytics(),
-      getPreferenceProfile().catch(() => ({ data: null, error: null })),
+      getPreferenceProfile({ generatedAt }).catch(() => ({ data: null, error: null })),
     ]);
 
   if (dataResult.error) return { data: null, error: dataResult.error };
@@ -128,8 +130,10 @@ export async function runOrchestration(
         lastWornOn: null,
       })),
       preferences: learnedPreferences,
+      protectedItemIds: preferenceResult.data?.profile.protectedItemIds ?? [],
+      avoidedItemIds: preferenceResult.data?.profile.avoidedItemIds ?? [],
     },
-    { generatedAt: new Date().toISOString() },
+    { generatedAt },
   );
 
   const context = createExecutionContext({

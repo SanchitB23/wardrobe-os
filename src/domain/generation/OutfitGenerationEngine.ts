@@ -10,6 +10,7 @@
 
 import {
   evaluateOutfit,
+  resolveStyleOccasion,
   type OutfitAnalysis,
   type OutfitEngineItem,
   type WeatherContext,
@@ -114,21 +115,6 @@ function formalityRank(item: WardrobeItemSnapshot): number {
   return item.formality ? FORMALITY_RANK[item.formality] : 1;
 }
 
-function resolveStyleOccasion(
-  occasion: string | null | undefined,
-): StyleOccasionKey | null {
-  const value = normalize(occasion);
-  if (!value) return null;
-  if (["gym", "workout", "fitness"].includes(value)) return "gym";
-  if (["office", "work"].includes(value)) return "office";
-  if (["wedding", "formal"].includes(value)) return "wedding";
-  if (["dinner", "date", "brewery", "party", "social"].includes(value)) return "social";
-  if (["travel", "vacation"].includes(value)) return "travel";
-  if (["smart casual", "smartcasual"].includes(value)) return "smartCasual";
-  if (["home", "loungewear"].includes(value)) return "home";
-  if (["casual", "everyday"].includes(value)) return "casual";
-  return null;
-}
 
 function toEngineItem(item: WardrobeItemSnapshot): OutfitEngineItem {
   return {

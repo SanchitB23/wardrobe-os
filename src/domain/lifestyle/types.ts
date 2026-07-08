@@ -122,7 +122,9 @@ export type OrchestrateFn = (
 ) => ExecutionReport;
 
 export interface LifestyleOptions {
-  generatedAt?: string;
+  /** Required: the single instant the plan is generated at. No wall-clock
+   *  fallback — callers must inject it so plans are deterministic (RFC-008/H3). */
+  generatedAt: string;
   strategy?: PlanningStrategy;
   /** Injected orchestrator (defaults to the real one). Tests pass a spy. */
   orchestrate?: OrchestrateFn;

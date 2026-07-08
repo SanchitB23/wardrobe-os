@@ -65,7 +65,21 @@ export interface InsightOptions {
   generatedAt?: string;
   /** Max number of items in each top-N list. */
   topActionsLimit?: number;
+  /**
+   * Items the owner has explicitly protected (RFC-004). They are never surfaced
+   * as removal/declutter candidates — their ids are stripped from the
+   * `relatedItemIds` of removal-flavored insights (never-worn, stale, poor value).
+   */
+  protectedItemIds?: readonly string[];
 }
+
+/** Insight ids that read as "reconsider keeping this item". Protected items are
+ *  filtered out of these so a pinned item is never flagged for removal. */
+const REMOVAL_FLAVORED_INSIGHT_IDS: ReadonlySet<string> = new Set([
+  "never-worn",
+  "stale-items",
+  "poor-cost-per-wear",
+]);
 
 // ---------------------------------------------------------------------------
 // Tunables
@@ -492,6 +506,16 @@ export function generateInsights(
   generateFromText(context, add);
 
   const insights = collector.values().sort(comparePriority);
+
+  // RFC-004: never surface a protected item as a removal candidate.
+  const protectedSet = new Set(options.protectedItemIds ?? []);
+  if (protectedSet.size > 0) {
+    for (const insight of insights) {
+      if (REMOVAL_FLAVORED_INSIGHT_IDS.has(insight.id) && insight.relatedItemIds) {
+        insight.relatedItemIds = insight.relatedItemIds.filter((id) => !protectedSet.has(id));
+      }
+    }
+  }
 
   const topActions = insights
     .filter((insight) => insight.suggestedActions.length > 0)

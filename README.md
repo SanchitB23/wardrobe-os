@@ -109,6 +109,7 @@ strategy document, not a roadmap.
 - [DECISIONS.md](DECISIONS.md) — major decisions (indexes the ADRs)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — workflow + release discipline
 - [docs/adr/](docs/adr/) — Architecture Decision Records
+- [LICENSE](LICENSE) — MIT
 
 ## Roadmap summary
 

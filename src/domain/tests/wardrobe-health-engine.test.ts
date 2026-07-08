@@ -125,7 +125,7 @@ describe("analyzeWardrobeHealth — calibrated for a Delhi smart-casual profile"
       tags: ["Office", "Casual"],
       seasons: ["Year Round"],
       styles: ["Smart Casual"],
-    } as const;
+    };
     const worn = analyzeWardrobeHealth(many(40, { ...common, usage: "regular" }));
     const unworn = analyzeWardrobeHealth(many(40, { ...common, usage: "rare" }));
 

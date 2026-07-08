@@ -18,7 +18,7 @@ Authored so far:
 - **RFC-003 — Shopping Screenshot Understanding** (Vision / Acquisition) —
   ✅ Completed. Screenshot → `VisionAnalysis` → `ProspectiveItemCandidate` →
   Buy vs Skip verdict, at `/acquisition/screenshot`.
-- **RFC-004 — Personalization Engine** (Intelligence, v0.9) — 🚧 **In Progress.**
+- **RFC-004 — Personalization Engine** (Intelligence, v0.9) — ✅ **Implemented.**
   Deterministically derives a `UserPreferenceProfile` from behaviour (wears,
   outfits, purchases, favourites, feedback, edits, acquisition decisions),
   superseding the static `DEFAULT_PREFERENCES` in `RecommendationContext`. The
@@ -89,7 +89,7 @@ every run, never incrementally mutated. AI explains the profile, never derives i
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [RFC-004](../rfc/RFC-004-Personalization-Engine.md) | Personalization Engine (behaviour → `UserPreferenceProfile`) | 🚧 In Progress |
+| [RFC-004](../rfc/RFC-004-Personalization-Engine.md) | Personalization Engine (behaviour → `UserPreferenceProfile`) | ✅ Implemented |
 | [RFC-005](../rfc/RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator (composition layer, v1.0) | ✅ Implemented |
 
 Documented future concepts (not built in RFC-004): Preference Timeline,
@@ -145,6 +145,7 @@ accessibility / performance / release-readiness sweep.
 | RFC | Title | Status |
 | --- | --- | --- |
 | [RFC-007](../rfc/RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | ✅ Implemented |
+| [RFC-008](../rfc/RFC-008-Release-Candidate.md) | v1.0 Release Candidate — Audit Triage & Remediation | 🚧 Approved (Must Fix in progress) |
 
 ## Removed from scope
 

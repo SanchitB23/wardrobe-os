@@ -120,6 +120,8 @@ async function resolveForecast(request: PlanTripRequest): Promise<WeatherForecas
 export async function planTrip(
   request: PlanTripRequest,
 ): Promise<{ data: LifestyleResult | null; error: Error | null }> {
+  // One instant for the whole request — every engine call shares it (RFC-008/H3).
+  const generatedAt = new Date().toISOString();
   const [forecast, dataResult, healthResult, usageResult, purchaseResult, preferenceResult] =
     await Promise.all([
       resolveForecast(request),
@@ -127,7 +129,7 @@ export async function planTrip(
       fetchWardrobeHealth(),
       fetchUsageAnalytics(),
       fetchPurchaseAnalytics(),
-      getPreferenceProfile().catch(() => ({ data: null, error: null })),
+      getPreferenceProfile({ generatedAt }).catch(() => ({ data: null, error: null })),
     ]);
 
   if (dataResult.error) return { data: null, error: dataResult.error };
@@ -170,8 +172,10 @@ export async function planTrip(
         lastWornOn: null,
       })),
       preferences: learnedPreferences,
+      protectedItemIds: preferenceResult.data?.profile.protectedItemIds ?? [],
+      avoidedItemIds: preferenceResult.data?.profile.avoidedItemIds ?? [],
     },
-    { generatedAt: new Date().toISOString() },
+    { generatedAt },
   );
 
   const plan = planLifestyle(
@@ -185,7 +189,7 @@ export async function planTrip(
       usage,
       purchase,
     },
-    { strategy: request.strategy },
+    { strategy: request.strategy, generatedAt },
   );
 
   return {

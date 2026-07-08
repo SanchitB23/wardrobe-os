@@ -12,6 +12,7 @@
 
 import {
   evaluateOutfit,
+  resolveStyleOccasion,
   type OutfitAnalysis,
   type OutfitEngineItem,
   type WeatherContext,
@@ -343,23 +344,6 @@ type Adjustment = { label: string; delta: number };
 function mean(values: readonly number[]): number {
   if (values.length === 0) return 0;
   return values.reduce((sum, value) => sum + value, 0) / values.length;
-}
-
-/** Maps a requested occasion label to the StyleDNA occasion key used for scoring. */
-function resolveStyleOccasion(
-  occasion: string | null | undefined,
-): StyleOccasionKey | null {
-  const value = normalize(occasion);
-  if (!value) return null;
-  if (["gym", "workout", "fitness"].includes(value)) return "gym";
-  if (["office", "work"].includes(value)) return "office";
-  if (["wedding", "formal"].includes(value)) return "wedding";
-  if (["travel", "vacation"].includes(value)) return "travel";
-  if (["dinner", "date", "brewery", "party", "brunch", "social"].includes(value)) return "social";
-  if (["home", "loungewear"].includes(value)) return "home";
-  if (["smart casual", "smartcasual"].includes(value)) return "smartCasual";
-  if (["casual", "everyday"].includes(value)) return "casual";
-  return null;
 }
 
 function scoreCandidate(

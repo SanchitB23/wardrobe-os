@@ -20,6 +20,7 @@ import type {
   WardrobeItemSnapshot,
 } from "@/domain/recommendation/RecommendationContext";
 import type { OutfitAnalysis } from "@/domain/outfit";
+import { resolveStyleOccasion } from "@/domain/outfit";
 import type { OccasionKey as StyleOccasionKey } from "@/domain/style-dna";
 
 // ---------------------------------------------------------------------------
@@ -96,21 +97,6 @@ function mean(values: readonly number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function resolveStyleOccasion(
-  occasion: string | null | undefined,
-): StyleOccasionKey | null {
-  const value = normalize(occasion);
-  if (!value) return null;
-  if (["gym", "workout", "fitness"].includes(value)) return "gym";
-  if (["office", "work"].includes(value)) return "office";
-  if (["wedding", "formal"].includes(value)) return "wedding";
-  if (["dinner", "date", "brewery", "party", "social"].includes(value)) return "social";
-  if (["travel", "vacation"].includes(value)) return "travel";
-  if (["smart casual", "smartcasual"].includes(value)) return "smartCasual";
-  if (["home", "loungewear"].includes(value)) return "home";
-  if (["casual", "everyday"].includes(value)) return "casual";
-  return null;
-}
 
 const CORE_SLOTS = ["top", "bottom", "footwear", "outerwear"];
 
@@ -296,8 +282,15 @@ export function recommendUnifiedOutfits(
     };
   });
 
-  // 3/4. Merge and rank by the shared score.
-  const ranked = [...savedCandidates, ...generatedCandidates].sort(
+  // 3/4. Merge and rank by the shared score. RFC-004: drop any candidate whose
+  // outfit includes an owner-avoided item so avoided pieces are never recommended.
+  const avoided = new Set(context.avoidedItemIds);
+  const ranked = [...savedCandidates, ...generatedCandidates]
+    .filter(
+      (candidate) =>
+        avoided.size === 0 || !candidate.items.some((item) => avoided.has(item.itemId)),
+    )
+    .sort(
     (a, b) =>
       b.unifiedScore - a.unifiedScore ||
       b.confidence - a.confidence ||

@@ -214,8 +214,14 @@ function scoreGapFillValue(
   let best: { label: string; priority: string; matched: number } | null = null;
   for (const gap of health.gaps) {
     const gapTokens = tokens(gap.label);
+    if (gapTokens.length === 0) continue;
+    // Category gaps have single-word labels ("tops", "footwear") that could never
+    // reach a fixed 2-token threshold, so the highest-weighted gap-fill signal
+    // never fired for them. Require all tokens to match for a 1-word label and at
+    // least 2 for multi-word staple labels.
+    const required = Math.min(2, gapTokens.length);
     const matched = gapTokens.filter((t) => itemTokens.has(t)).length;
-    if (matched >= 2 && (!best || matched > best.matched)) {
+    if (matched >= required && (!best || matched > best.matched)) {
       best = { label: gap.label, priority: gap.priority, matched };
     }
   }

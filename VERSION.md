@@ -2,10 +2,10 @@
 
 ## Current: v1.0.0 — Release Candidate
 
-- **Version:** v1.0.0-rc (candidate on `main`; `package.json` bump + tag pending
-  the release cut)
+- **Version:** v1.0.0 (`package.json` bumped; annotated tag + push pending the
+  Owner's go)
 - **Release name:** Wardrobe OS 1.0 — One Assistant
-- **Status:** Release Candidate
+- **Status:** Release Candidate (RFC-008 Must-Fix landed; awaiting tag)
 
 ### What this release is
 

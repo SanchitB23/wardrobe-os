@@ -69,7 +69,26 @@ Merges **saved** outfits and freshly **generated** combinations into one ranked
 list: normalises scores, dedupes, applies eligibility and favourite caps and
 recent-wear penalties, and attaches per-recommendation debug (rejection reasons,
 penalties, boosts). Runs against the assembled `RecommendationContext`
-([ADR-002](docs/adr/ADR-002-recommendation-context.md)).
+([ADR-002](docs/adr/ADR-002-recommendation-context.md)). RFC-004: outfits
+containing an owner-**avoided** item are excluded.
+
+---
+
+## PersonalizationEngine
+**`src/domain/personalization/PersonalizationEngine.ts`** →
+`derivePreferenceProfile(input, options)` (RFC-004).
+
+Derives a `UserPreferenceProfile` purely from the owner's own behaviour — wears,
+outfits, purchases, favourites, feedback, edits, and acquisition decisions —
+normalised into weighted `PreferenceSignal`s. Each derived preference carries a
+**weight**, **confidence**, and **stability**, plus the owner's explicit
+**protected** / **avoided** item ids and per-dimension **overrides**. Preferences
+are **re-derived from scratch every run** (never incrementally mutated), so the
+profile is a pure function of current behaviour + `generatedAt`. It supersedes the
+static `DEFAULT_PREFERENCES` in the `RecommendationContext`; `toPreferenceSnapshot`
+reshapes it for the recommendation/generation engines. Protected items are never
+surfaced as removal candidates and avoided items are never recommended. The engine
+derives; AI only explains ([ADR-005](docs/adr/ADR-005-ai-does-not-decide.md)).
 
 ---
 

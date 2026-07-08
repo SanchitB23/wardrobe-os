@@ -1,6 +1,6 @@
 # RFC-004: Personalization Engine
 
-Status: Draft
+Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: ChatGPT
 Target Release: v0.9.0

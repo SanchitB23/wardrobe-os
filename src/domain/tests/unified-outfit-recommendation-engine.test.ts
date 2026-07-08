@@ -142,6 +142,22 @@ describe("recommendUnifiedOutfits", () => {
     expect(sameCombo).toHaveLength(1);
   });
 
+  it("never recommends an outfit containing an avoided item (RFC-004)", () => {
+    const context = buildRecommendationContext(
+      {
+        health: health(),
+        wardrobeItems: wardrobe(),
+        savedOutfits: [{ id: "o1", name: "Saved", itemIds: ["polo", "jeans", "nb574"] }],
+        wearLogs: [],
+        avoidedItemIds: ["nb574"],
+      },
+      { generatedAt: GENERATED_AT },
+    );
+    const result = recommendUnifiedOutfits(context, { limit: 8 });
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((r) => r.items.every((i) => i.itemId !== "nb574"))).toBe(true);
+  });
+
   it("prefers the saved outfit when a duplicate scores very close (favorited)", () => {
     const result = recommendUnifiedOutfits(
       ctx({

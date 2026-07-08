@@ -53,7 +53,7 @@ function NavLinks({
     <nav aria-label="Main navigation" className="flex flex-col gap-5">
       {sections.map((section) => (
         <div key={section.heading} className="flex flex-col gap-1">
-          <p className="px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground/70">
+          <p className="px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
             {section.heading}
           </p>
           {section.items.map((item) => {
@@ -129,7 +129,7 @@ function DevModeToggle({
         "flex w-full items-center gap-2.5 rounded-md px-3 py-2 text-xs font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring",
         devMode
           ? "text-foreground"
-          : "text-muted-foreground/70 hover:text-foreground",
+          : "text-muted-foreground hover:text-foreground",
       )}
     >
       <Code2Icon className="size-4 shrink-0" />

@@ -90,6 +90,10 @@ export interface RecommendationContextInput {
   weather?: Partial<WeatherSnapshot>;
   commute?: Partial<CommuteSnapshot>;
   savedOutfits?: readonly SavedOutfitInput[];
+  /** RFC-004: owner-pinned items to keep (never flagged for removal). */
+  protectedItemIds?: readonly string[];
+  /** RFC-004: owner-avoided items (excluded from recommendations). */
+  avoidedItemIds?: readonly string[];
 }
 
 export interface BuildOptions {
@@ -354,6 +358,8 @@ export function buildRecommendationContext(
     weather: deriveWeather(asOf, input.weather),
     commute: { ...DEFAULT_COMMUTE, ...input.commute },
     savedOutfits: buildSavedOutfits(input.savedOutfits ?? []),
+    protectedItemIds: [...(input.protectedItemIds ?? [])],
+    avoidedItemIds: [...(input.avoidedItemIds ?? [])],
   };
 }
 

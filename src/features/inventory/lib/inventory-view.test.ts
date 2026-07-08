@@ -8,7 +8,7 @@ import {
   sortItems,
   type SortRule,
 } from "@/features/inventory/lib/inventory-view";
-import type { LookupOption, WardrobeItemRow } from "@/types/wardrobe";
+import type { LookupOption, SubcategoryOption, WardrobeItemRow } from "@/types/wardrobe";
 
 function makeItem(overrides: Partial<WardrobeItemRow> = {}): WardrobeItemRow {
   return {
@@ -39,7 +39,7 @@ function makeItem(overrides: Partial<WardrobeItemRow> = {}): WardrobeItemRow {
 
 const LOOKUPS = {
   categories: [{ id: "c1", name: "Top" }] as LookupOption[],
-  subcategories: [{ id: "s1", name: "T-Shirt" }] as LookupOption[],
+  subcategories: [{ id: "s1", name: "T-Shirt", category_id: "c1" }] as SubcategoryOption[],
   brands: [{ id: "b1", name: "Nike" }] as LookupOption[],
   colors: [{ id: "col1", name: "Black" }] as LookupOption[],
   seasons: [] as LookupOption[],

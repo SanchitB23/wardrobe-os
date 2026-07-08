@@ -32,7 +32,7 @@ function deps(overrides: Partial<WardrobeToolDeps> = {}): Partial<WardrobeToolDe
       previews: {},
       context: {},
       explainContext: {},
-    }) as WardrobeToolDeps["fetchOutfitRecommendations"],
+    }) as unknown as WardrobeToolDeps["fetchOutfitRecommendations"],
     fetchWardrobeHealth: ok({
       health: {
         overallScore: 72,
@@ -46,7 +46,7 @@ function deps(overrides: Partial<WardrobeToolDeps> = {}): Partial<WardrobeToolDe
         seasons: {},
       },
       debug: {},
-    }) as WardrobeToolDeps["fetchWardrobeHealth"],
+    }) as unknown as WardrobeToolDeps["fetchWardrobeHealth"],
     fetchUsageAnalytics: ok({ totalWears: 10 }) as WardrobeToolDeps["fetchUsageAnalytics"],
     fetchInsightReport: ok({
       overallSummary: "ok",
@@ -55,10 +55,10 @@ function deps(overrides: Partial<WardrobeToolDeps> = {}): Partial<WardrobeToolDe
       warnings: [],
       strengths: [],
     }) as WardrobeToolDeps["fetchInsightReport"],
-    fetchOutfitById: ok({ id: "o1", name: "Outfit 1" }) as WardrobeToolDeps["fetchOutfitById"],
+    fetchOutfitById: ok({ id: "o1", name: "Outfit 1" }) as unknown as WardrobeToolDeps["fetchOutfitById"],
     fetchWardrobeItemDetail: ok({
       item: { id: "it1", name: "Grey tee" },
-    }) as WardrobeToolDeps["fetchWardrobeItemDetail"],
+    }) as unknown as WardrobeToolDeps["fetchWardrobeItemDetail"],
     fetchWardrobeItems: ok([
       { id: "a", name: "Grey tee", formality: "casual", rating: 8, status: "active", favorite: true },
       { id: "b", name: "Blue shirt", formality: "smart_casual", rating: 7, status: "active", favorite: false },
@@ -80,7 +80,7 @@ function deps(overrides: Partial<WardrobeToolDeps> = {}): Partial<WardrobeToolDe
       },
       explainability: ["Ran recommendation (1ms)."],
       metadata: { orchestratorVersion: "1.0.0", generatedAt: "x", totalDurationMs: 1, capabilityCount: 3 },
-    }) as WardrobeToolDeps["runOrchestration"],
+    }) as unknown as WardrobeToolDeps["runOrchestration"],
     ...overrides,
   };
 }
@@ -169,7 +169,7 @@ describe("wardrobe tool execution (via executor, injected fakes)", () => {
 
   it("getOutfit returns { found: false } when the id is missing", async () => {
     const executor = new ToolExecutor(
-      createWardrobeToolRegistry(deps({ fetchOutfitById: ok(null) as WardrobeToolDeps["fetchOutfitById"] })),
+      createWardrobeToolRegistry(deps({ fetchOutfitById: ok(null) as unknown as WardrobeToolDeps["fetchOutfitById"] })),
     );
     const result = await executor.execute({ name: "getOutfit", args: { outfitId: "nope" } });
     expect(result.ok).toBe(true);

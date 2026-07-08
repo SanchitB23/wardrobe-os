@@ -182,6 +182,9 @@ export async function fetchOutfitRecommendations(
   const learnedPreferences = preferenceResult.data
     ? toPreferenceSnapshot(preferenceResult.data.profile)
     : undefined;
+  // RFC-004: owner-pinned/avoided items flow into scoring + insights.
+  const protectedItemIds = preferenceResult.data?.profile.protectedItemIds ?? [];
+  const avoidedItemIds = preferenceResult.data?.profile.avoidedItemIds ?? [];
 
   const context = buildRecommendationContext(
     {
@@ -196,6 +199,8 @@ export async function fetchOutfitRecommendations(
       preferences: learnedPreferences,
       weather: weatherOverride(filters),
       commute: filters.commute ? { mode: filters.commute } : undefined,
+      protectedItemIds,
+      avoidedItemIds,
     },
     { generatedAt: new Date().toISOString() },
   );
@@ -236,7 +241,7 @@ export async function fetchOutfitRecommendations(
                   ? undefined
                   : purchaseResult.data,
             },
-            { generatedAt: context.generatedAt },
+            { generatedAt: context.generatedAt, protectedItemIds },
           );
           return {
             overallSummary: report.overallSummary,

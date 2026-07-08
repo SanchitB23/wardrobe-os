@@ -78,3 +78,5 @@ export {
   OutfitEngine,
   evaluateOutfit,
 } from "@/domain/outfit/outfit-engine";
+
+export { normalizeOccasion, resolveStyleOccasion } from "@/domain/outfit/occasion";

@@ -28,7 +28,7 @@ function color(value: string, occurredAt = AT, type: PreferenceSignalType = "wea
   return signal(type, [{ dimension: "color", value }], occurredAt, type === "recommendation_rejected" ? -1 : 1);
 }
 
-function find(list: { value: string }[], value: string) {
+function find<T extends { value: string }>(list: readonly T[], value: string): T | undefined {
   return list.find((p) => p.value === value);
 }
 

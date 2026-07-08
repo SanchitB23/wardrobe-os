@@ -86,10 +86,11 @@ _Update this table (and the backlog) as RFCs are created._
 | [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Acquisition Engine — Buy vs Skip | Acquisition Engine | Implemented |
 | [002](RFC-002-Vision-Engine.md) | Vision Engine | Vision | Implemented |
 | [003](RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding | Vision / Acquisition | Implemented |
-| [004](RFC-004-Personalization-Engine.md) | Personalization Engine | Intelligence | Draft |
+| [004](RFC-004-Personalization-Engine.md) | Personalization Engine | Intelligence | Implemented |
 | [005](RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator | Intelligence | Implemented |
 | [006](RFC-006-Lifestyle-Engine.md) | Lifestyle Engine | Lifestyle | Implemented |
 | [007](RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | Product Experience | Implemented |
+| [008](RFC-008-Release-Candidate.md) | v1.0 Release Candidate — Audit Triage & Remediation | Product Experience | Approved |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
 reserved RFC numbers (RFC-001 … RFC-014).

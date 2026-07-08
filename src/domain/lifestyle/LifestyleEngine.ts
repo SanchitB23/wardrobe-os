@@ -180,9 +180,9 @@ function deriveTradeoffs(
 
 export function planLifestyle(
   input: LifestyleInput,
-  options: LifestyleOptions = {},
+  options: LifestyleOptions,
 ): LifestylePlan {
-  const generatedAt = options.generatedAt ?? new Date().toISOString();
+  const generatedAt = options.generatedAt;
   const strategyKey = options.strategy ?? DEFAULT_STRATEGY;
   const strategy = strategyProfile(strategyKey);
   const orchestrate = options.orchestrate ?? realOrchestrate;

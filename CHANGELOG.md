@@ -7,7 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### v1.0.0 — Release Candidate (Today Experience + Intelligence Orchestrator + Lifestyle Engine)
+## [1.0.0] — 2026-07-08
+
+The v1.0 release: an assistant-style **Today** home, the deterministic
+**Intelligence Orchestrator** and **Lifestyle Engine**, the **Personalization
+Engine**, and the RFC-008 release-candidate hardening pass. AI explains; the
+engines decide.
+
+### RFC-008 — Release-candidate hardening (audit remediation)
+
+- **Data integrity (RLS):** added the missing anon `DELETE` policies on the six
+  item-relation junction tables and `SELECT`/`DELETE` on `care_profiles` — item
+  edits no longer silently accumulate stale relations, and care info now saves
+  and displays correctly (`docs/migrations/RFC-008-rls-policies.sql`).
+- **Personalization now bites (RFC-004):** owner-**avoided** items are excluded
+  from recommendations, and **protected** items are never flagged for removal —
+  plumbed through `RecommendationContext` and consumed by the unified recommender
+  and the Insight Engine.
+- **Determinism:** engine live paths take a single injected `generatedAt`; the
+  Lifestyle Engine no longer falls back to wall-clock time.
+- **Correctness:** Buy-vs-Skip now matches single-word **category** gaps; occasion
+  resolution (incl. `brunch`) is a single shared module used by every engine.
+- **Accessibility:** WCAG-AA contrast for focus rings, muted text, and form-field
+  borders in light and dark.
+- **Types/tests:** `tsc --noEmit` is clean (including test files); 394 unit tests
+  green. RFC-004 marked Implemented; ENGINE.md documents the Personalization
+  Engine; added a LICENSE (MIT).
+
+### Today Experience, Intelligence Orchestrator & Lifestyle Engine
 
 - **Today Experience & v1.0 Product Polish (RFC-007)** — the cohesion pass that
   makes the existing engines feel like one daily assistant. **No new engines,
@@ -70,7 +97,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   changes. Future Travel / Packing / Weather / Calendar / Shopping / AI Chat
   become orchestration consumers.
 
-### v0.9.0 — Personalization Engine (in progress)
+### v0.9.0 — Personalization Engine
 
 - **Personalization Engine (RFC-004)** — deterministic user-preference learning.
   A new pure domain module (`src/domain/personalization`) derives a
@@ -95,7 +122,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   SQL in `docs/migrations/RFC-004-personalization.sql`. Reversible; no destructive
   changes.
 
-### v0.8.0 — Vision Engine (in progress)
+### v0.8.0 — Vision Engine
 
 - **Vision Engine (RFC-002)** — the universal computer-vision capability. A new
   pure domain module (`src/domain/vision`) turns any image into ONE standardized
@@ -120,7 +147,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in plain language (AI explains, never decides). Vision observes, you edit,
   engines decide. No wishlist persistence, no browser extension, no schema changes.
 
-### v0.7.0 — Acquisition Engine (in progress)
+### v0.7.0 — Acquisition Engine
 
 - **Buy vs Skip (RFC-001)** — a deterministic purchase decision-support system.
   A new pure `BuyVsSkipEngine` (`src/domain/acquisition`) scores a prospective
@@ -196,5 +223,6 @@ explains and converses — without ever becoming the source of truth.
 
 - Database schema and inventory CRUD.
 
-[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.0...HEAD
+[1.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/SanchitB23/wardrobe-os/releases/tag/v0.6.0

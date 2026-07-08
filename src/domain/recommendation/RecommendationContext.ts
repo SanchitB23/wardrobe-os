@@ -189,6 +189,10 @@ export interface RecommendationContext {
   weather: WeatherSnapshot;
   commute: CommuteSnapshot;
   savedOutfits: SavedOutfitSnapshot;
+  /** RFC-004: items the owner pinned to keep. Never flagged for removal. */
+  protectedItemIds: string[];
+  /** RFC-004: items the owner wants to avoid. Excluded from recommendations. */
+  avoidedItemIds: string[];
 }
 
 // ---------------------------------------------------------------------------

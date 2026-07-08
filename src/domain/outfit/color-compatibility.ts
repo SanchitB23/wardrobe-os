@@ -1,5 +1,5 @@
 export type ColorInput = {
-  hex: string | null | undefined;
+  hex?: string | null;
   name?: string | null;
 };
 

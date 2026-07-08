@@ -217,6 +217,34 @@ describe("evaluateBuyVsSkip", () => {
     expect(result.decisionTrace.some((t) => t.step === "composite")).toBe(true);
   });
 
+  it("matches a single-word category gap (regression: category gaps never fired GAP_MATCH)", () => {
+    const categoryHealth: WardrobeHealth = {
+      ...gapHealth,
+      gaps: [{ label: "footwear", kind: "category", detail: "0 of 3 recommended minimum", priority: "high" }],
+    };
+    // A user with no shoes evaluating their first pair.
+    const result = evaluateBuyVsSkip(
+      baseInput({
+        item: prospective({ name: "Running Shoes", category: "Footwear", color: "Black", formality: "casual" }),
+        wardrobe: wardrobe().filter((i) => i.category !== "Sneakers"),
+        health: categoryHealth,
+      }),
+      { generatedAt: AT },
+    );
+    expect(result.explainabilityCodes).toContain("GAP_MATCH");
+    expect(result.scoreBreakdown.gapFillValue.score).toBeGreaterThanOrEqual(8);
+  });
+
+  it("handles an empty wardrobe without crashing", () => {
+    const result = evaluateBuyVsSkip(
+      { item: prospective(), wardrobe: [], health: gapHealth },
+      { generatedAt: AT },
+    );
+    expect(result).toBeTruthy();
+    expect(result.score).toBeGreaterThanOrEqual(0);
+    expect(result.score).toBeLessThanOrEqual(100);
+  });
+
   it("generates explainability codes and a final decision code", () => {
     const result = evaluateBuyVsSkip(baseInput({ health: gapHealth }), { generatedAt: AT });
     expect(result.explainabilityCodes.length).toBeGreaterThan(0);

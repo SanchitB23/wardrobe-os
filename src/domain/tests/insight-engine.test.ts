@@ -96,6 +96,24 @@ describe("generateInsights", () => {
     expect(stale?.relatedItemIds).toEqual(["s1", "s2"]);
   });
 
+  it("never flags a protected item for removal (RFC-004)", () => {
+    const report = generateInsights(
+      {
+        wardrobeHealth: health(),
+        usageAnalytics: usage({
+          staleItems: [
+            usageItem({ id: "s1", name: "Dusty Chino" }),
+            usageItem({ id: "keep", name: "Grandpa's Watch" }),
+          ],
+        }),
+      },
+      { generatedAt: GENERATED_AT, protectedItemIds: ["keep"] },
+    );
+    const stale = report.warnings.find((i) => i.id === "stale-items");
+    expect(stale?.relatedItemIds).toEqual(["s1"]);
+    expect(stale?.relatedItemIds).not.toContain("keep");
+  });
+
   it("generates an opportunity for practical gaps", () => {
     const report = run({
       wardrobeHealth: health({
