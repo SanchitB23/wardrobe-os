@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### v1.0.0 — Intelligence Orchestrator (in progress)
+### v1.0.0 — Intelligence Orchestrator + Lifestyle Engine (in progress)
+
+- **Lifestyle Engine (RFC-006)** — deterministic trip planning. A new pure
+  domain module (`src/domain/lifestyle`) turns a trip into a `LifestylePlan`
+  composed of four sub-plans — **TripPlan** (per-day outfits + capsule),
+  **PackingPlan** (packing list + `packingConfidence`), **LaundryPlan**
+  (schedule + re-wears), **ShoppingPlan** (missing items + buy/skip suggestions)
+  — plus a 0–100 **planScore**, **tradeoffs**, and **warnings**. It composes the
+  existing engines across a time horizon, requesting per-day recommendations and
+  missing-item buy/skip verdicts **through the Intelligence Orchestrator**
+  (RFC-005) — never by calling those engines directly. Planning strategies
+  (minimal / balanced / luxury / business; default balanced) tune the plan;
+  weather is a normalized input behind a vendor-neutral **WeatherProvider**
+  (Open-Meteo live fetch + manual entry; `historical`/future reserved). Surfaced
+  at **`/lifestyle/trip`** as a 3-step wizard (trip → weather → plan) with an
+  Explain placeholder. The engine plans deterministically; AI only explains.
+  No schema changes.
 
 - **Intelligence Orchestrator (RFC-005)** — a deterministic composition layer
   (`src/domain/orchestrator`) that coordinates the existing engines. Given a

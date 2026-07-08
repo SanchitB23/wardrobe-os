@@ -92,7 +92,12 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
 
 - **Now:** AI chat via the `runIntelligence` tool; the orchestrator feature
   service assembles context from repositories.
-- **Future (RFC per feature):** Travel, Packing, Weather, Calendar, Shopping —
-  each registers capabilities and is *requested*, reusing all wiring. The
-  existing Recommendation / Acquisition / Screenshot flows can migrate to
-  request capabilities incrementally (behaviour-preserving).
+- **Lifestyle Engine (RFC-006)** — the first real orchestrator consumer. Trip
+  planning (`src/domain/lifestyle`, `/lifestyle/trip`) requests the
+  `recommendation` capability per trip-day and the `acquisition` capability for
+  missing items **through the orchestrator**, never calling those engines
+  directly — composing them across a time horizon into a `LifestylePlan`.
+- **Future (RFC per feature):** Calendar, Shopping, and more — each registers
+  capabilities and is *requested*, reusing all wiring. The existing
+  Recommendation / Acquisition / Screenshot flows can migrate to request
+  capabilities incrementally (behaviour-preserving).

@@ -13,6 +13,7 @@ import {
   LayoutDashboardIcon,
   LightbulbIcon,
   MessagesSquareIcon,
+  LuggageIcon,
   ReceiptIcon,
   ScanSearchIcon,
   SettingsIcon,
@@ -88,6 +89,12 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Screenshot", href: "/acquisition/screenshot", icon: ScanSearchIcon, matchNested: true },
       { label: "Wishlist", href: "#", icon: BookmarkIcon, disabled: true, badge: "Soon" },
       { label: "Compare", href: "#", icon: GitCompareIcon, disabled: true, badge: "Soon" },
+    ],
+  },
+  {
+    heading: "Lifestyle",
+    items: [
+      { label: "Trip Planner", href: "/lifestyle/trip", icon: LuggageIcon, matchNested: true },
     ],
   },
   {

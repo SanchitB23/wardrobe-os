@@ -73,6 +73,29 @@ penalties, boosts). Runs against the assembled `RecommendationContext`
 
 ---
 
+## IntelligenceOrchestrator
+**`src/domain/orchestrator/`** → `orchestrate(request, context, options)` (RFC-005).
+
+A deterministic composition layer: resolves capability dependencies (topological
+order + cycle detection), runs each capability's engine with failure isolation,
+and returns an `ExecutionReport`. It composes engines only — no business logic,
+never calls AI, and engines never call each other. See
+[ENGINE_GRAPH.md](ENGINE_GRAPH.md).
+
+## LifestyleEngine
+**`src/domain/lifestyle/`** → `planLifestyle(input, options)` (RFC-006).
+
+Plans a trip deterministically by composing the engines across a time horizon:
+expands the trip into days, selects each day's outfit by requesting the
+`recommendation` capability **through the orchestrator** (never directly),
+derives a capsule, packing list, laundry schedule, and — via the `acquisition`
+capability — shopping suggestions for missing items. Returns a `LifestylePlan`
+(TripPlan / PackingPlan / LaundryPlan / ShoppingPlan + planScore +
+packingConfidence + tradeoffs + warnings). Weather is a normalized input behind
+a vendor-neutral `WeatherProvider` (Open-Meteo + manual).
+
+---
+
 ## AI Tool Router
 **`src/ai/tools/`** — not a domain engine, but the bridge that lets the AI stylist
 use the engines above **through services** rather than querying data.

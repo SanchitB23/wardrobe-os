@@ -1,6 +1,6 @@
 # RFC-006: Lifestyle Engine
 
-Status: Draft
+Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: ChatGPT
 Target Release: v1.0.0
@@ -81,8 +81,11 @@ items, and shopping suggestions — by composing the existing engines over time.
 - Treat **weather as a normalized input** behind a vendor-neutral
   `WeatherProvider` (server-side fetch; deterministic normalization), with manual
   entry as a fallback.
-- Produce a rich, inspectable `LifestylePlan`: `packingList`, `dailyOutfits`,
-  `laundrySchedule`, `missingItems`, `shoppingSuggestions`, `warnings`.
+- Produce a rich, inspectable `LifestylePlan` composed of four focused sub-plans
+  — **`TripPlan`** (daily outfits + capsule), **`PackingPlan`** (packing list +
+  `packingConfidence`), **`LaundryPlan`** (schedule), and **`ShoppingPlan`**
+  (missing items + buy/skip suggestions) — returned together, plus a 0–100
+  **`planScore`**, human-readable **`tradeoffs`**, and **`warnings`**.
 - Keep the principle intact: **the engine plans deterministically; AI only
   explains** the plan (ADR-005).
 - Be fully unit-testable (pure engine; weather + wardrobe injected as fixtures).
@@ -129,14 +132,14 @@ Future surface under a **Lifestyle / Travel** nav entry: route **`/lifestyle/tri
    travel style, laundry availability, luggage constraint.
 2. **Plan** — the service fetches the forecast (WeatherProvider), assembles
    per-day context, and runs the Lifestyle Engine (via the Orchestrator).
-3. **Result** — a trip plan view:
-   - **Per-day itinerary** — each day's occasion(s), forecast, and chosen outfit
-     (reusing the recommendation result card);
-   - **Packing list** — the deduplicated item set, grouped by slot, within the
-     luggage constraint;
-   - **Capsule summary** — "N items → M days";
-   - **Laundry schedule** — wash points, if any;
-   - **Missing items + shopping suggestions** — gaps with buy/skip verdicts;
+3. **Result** — a trip plan view, headed by the **`planScore`** (0–100) and any
+   **trade-offs** ("Carry-on → reduced outfit variety"), then the four sub-plans:
+   - **`TripPlan`** — per-day itinerary (each day's occasion(s), forecast, chosen
+     outfit, reusing the recommendation result card) + capsule summary "N → M days";
+   - **`PackingPlan`** — the deduplicated item set grouped by slot within the
+     luggage constraint, with `packingConfidence`;
+   - **`LaundryPlan`** — wash points, if any;
+   - **`ShoppingPlan`** — missing items + buy/skip suggestions;
    - **Warnings** — uncovered occasions/weather.
 4. **Explain (optional)** — narrate the plan via the AI layer (post-engine).
 
@@ -171,10 +174,20 @@ LifestylePlan
 - **`LifestyleEngine`** (`src/domain/lifestyle`, pure): `planLifestyle(input:
   LifestyleInput, options?) → LifestylePlan`. Deterministic — no I/O, no model,
   `generatedAt` injected. It expands the trip into a per-day schedule
-  (occasion + forecast per day), selects each day's outfit by calling the
-  existing recommendation/generation engines against a per-day
-  `RecommendationContext` slice, then derives the capsule, packing list, laundry
-  schedule, missing items, and warnings from those selections.
+  (occasion + forecast per day), selects each day's outfit by requesting the
+  **`recommendation` capability through the Intelligence Orchestrator**
+  (RFC-005) against a per-day `RecommendationContext` slice, then derives the
+  capsule, packing, laundry, missing items, trade-offs, and warnings from those
+  selections. It returns one `LifestylePlan` composed of four sub-plans
+  (`TripPlan`, `PackingPlan`, `LaundryPlan`, `ShoppingPlan`) plus `planScore`,
+  `tradeoffs`, and `warnings`.
+- **Recommendation runs through the Orchestrator, not directly.** Even though the
+  orchestrator currently delegates the `recommendation` capability straight to
+  `recommendUnifiedOutfits`, Lifestyle must invoke it *via* the Orchestrator so
+  that execution ordering, dependency resolution, and reporting stay owned in one
+  place (RFC-005). This keeps engines from calling each other and lets future
+  capabilities (weather, personalization) slot into the same per-day graph
+  without Lifestyle changing. It is an architectural rule, not an optimisation.
 - **Sub-planners** (pure helpers): `planCapsule` (minimal set-cover over daily
   outfits, deterministic greedy), `planPacking` (union + luggage-trim by
   versatility/cost-per-wear), `planLaundry` (re-wear vs wash given clean-days +
@@ -222,14 +235,15 @@ service.planTrip(request)                                        { data, error }
   → LifestyleEngine.planLifestyle({ trip, forecast, wardrobe, preferences }, { generatedAt })  ← PURE
       • expand trip → TripDay[] (occasion(s) + day forecast)
       • per day: build a RecommendationContext slice (weather/occasion) →
-        recommendUnifiedOutfits → pick top, avoiding within-laundry-cycle repeats
-      • planCapsule(dailyOutfits) → minimal covering item set
-      • planPacking(capsule, luggage) → PackingList (trim by versatility if over)
-      • planLaundry(duration, cleanDays, availability) → LaundrySchedule
-      • detectMissing(days, wardrobe) → uncovered needs
-      • evaluateBuyVsSkip(missing) → ShoppingSuggestions   (existing engine)
-      • collect Warnings
-      → LifestylePlan
+        request the `recommendation` capability VIA the Orchestrator (not the
+        engine directly) → pick top, avoiding within-laundry-cycle repeats
+      • planCapsule(dailyOutfits)           → TripPlan (dailyOutfits + capsule)
+      • planPacking(capsule, luggage)       → PackingPlan (list + packingConfidence)
+      • planLaundry(duration, availability) → LaundryPlan
+      • detectMissing + evaluateBuyVsSkip   → ShoppingPlan (missing + suggestions)
+      • derive tradeoffs, warnings, planScore
+      → LifestylePlan { tripPlan, packingPlan, laundryPlan, shoppingPlan,
+                        tradeoffs, warnings, planScore, confidence }
   → [optional] Explain → AI narrates the plan (no recompute)
 ```
 
@@ -254,6 +268,14 @@ Illustrative (final names settled at implementation). Confidence is 0–1.
 // src/domain/lifestyle/types.ts  (design)
 
 export type TravelStyle = "minimal" | "standard" | "overpacker";
+
+/**
+ * RESERVED — FUTURE (declared, not used in this RFC). A higher-level planning
+ * strategy that would tune the whole plan — capsule minimality, packing
+ * generosity, and formality bias. Not an input in v1.
+ */
+export type PlanningStrategy = "minimal" | "balanced" | "luxury" | "business";
+
 export interface LuggageConstraint {
   kind: "carry_on" | "checked" | "unbounded";
   maxItems?: number | null;
@@ -281,6 +303,13 @@ export interface Trip {
   luggage: LuggageConstraint;
 }
 
+/**
+ * Where the forecast came from. `forecast` (a live provider) and `manual` (user
+ * entry) are supported now; `historical` (climate normals for the destination /
+ * dates) is RESERVED — FUTURE.
+ */
+export type WeatherSource = "forecast" | "manual" | "historical";
+
 /** Normalized forecast the engine consumes (fetched by a provider). */
 export interface WeatherForecast {
   days: {
@@ -291,7 +320,7 @@ export interface WeatherForecast {
     lowC: number | null;
     rainRisk: number | null; // 0–1
   }[];
-  source: "provider" | "manual";
+  source: WeatherSource;
 }
 
 export interface LifestyleInput {
@@ -331,16 +360,52 @@ export interface MissingItem {
   reason: string;
 }
 
-export interface LifestylePlan {
-  packingList: PackingList;
+// The plan is composed of four focused sub-plans, returned together as one
+// LifestylePlan. Each sub-plan is independently inspectable and testable.
+
+/** What to wear across the trip. */
+export interface TripPlan {
   dailyOutfits: DailyOutfit[];
-  laundrySchedule: LaundrySchedule;
+  /** Capsule summary: itemCount covering dayCount. */
+  capsule: { itemCount: number; dayCount: number };
+}
+
+/** What to put in the bag. */
+export interface PackingPlan {
+  packingList: PackingList;
+  /**
+   * 0–1: how well the packed set covers the trip's days/occasions/weather —
+   * SEPARATE from `planScore`. Low when coverage is thin or luggage forced a trim.
+   */
+  packingConfidence: number;
+}
+
+/** How to keep clothes wearable across the trip. */
+export interface LaundryPlan {
+  schedule: LaundrySchedule;
+}
+
+/** What's missing and whether to buy it. */
+export interface ShoppingPlan {
   missingItems: MissingItem[];
   /** Buy vs Skip verdicts for missing items (from the Acquisition engine). */
   shoppingSuggestions: { need: string; analysis: BuyVsSkipAnalysis }[];
+}
+
+export interface LifestylePlan {
+  tripPlan: TripPlan;
+  packingPlan: PackingPlan;
+  laundryPlan: LaundryPlan;
+  shoppingPlan: ShoppingPlan;
   warnings: string[];
-  /** Capsule summary: itemCount covering dayCount. */
-  capsule: { itemCount: number; dayCount: number };
+  /**
+   * Cross-cutting trade-offs the plan made, e.g.
+   * "Carry-on → reduced outfit variety." Human-readable, decision-free.
+   */
+  tradeoffs: string[];
+  /** 0–100: overall quality of the generated plan (coverage × variety × fit − warnings). */
+  planScore: number;
+  /** 0–1: overall confidence in the inputs/data (distinct from planScore). */
   confidence: number;
   metadata: {
     engineVersion: string;
@@ -368,11 +433,13 @@ export interface WeatherProvider {
 | --- | --- |
 | **Trip planning** | Expand `[startDate, endDate]` into `TripDay[]`; attach each day's events (occasion) and forecast. Days with no event get a default occasion from travel style + destination. |
 | **Weather planning** | Map each day's `WeatherForecast` → the recommendation `weather` snapshot (season + condition) so per-day selection is weather-aware. |
-| **Daily outfits** | For each day, build a `RecommendationContext` slice with that day's weather/occasion and run `recommendUnifiedOutfits`; pick the top candidate, penalising items worn within the current laundry cycle (drives re-use/variety). |
-| **Capsule wardrobe** | Greedy set-cover: repeatedly pick the item covering the most remaining day-slots, deterministic tie-break by cost-per-wear then id, until all daily outfits are satisfiable. |
-| **Packing** | Union of capsule items + essentials; if `> luggage.maxItems`, trim least-versatile (fewest days covered) first, deterministic. `withinLuggage` reports the result. |
-| **Laundry** | Clean-days = wearable items ÷ items-per-day. If `duration > cleanDays` and laundry `available`, schedule wash points (respecting `turnaroundDays`) and add re-wears; else surface a packing/warning. |
-| **Missing items** | Occasions/weather in the trip not coverable by the wardrobe → `MissingItem`; each is run through `evaluateBuyVsSkip` for a shopping suggestion. |
+| **Daily outfits** (`TripPlan`) | For each day, build a `RecommendationContext` slice with that day's weather/occasion and request the **`recommendation` capability through the Intelligence Orchestrator** (RFC-005) — not by calling `recommendUnifiedOutfits` directly (see §6). Pick the top candidate, penalising items worn within the current laundry cycle (drives re-use/variety). |
+| **Capsule wardrobe** (`TripPlan`) | Greedy set-cover: repeatedly pick the item covering the most remaining day-slots, deterministic tie-break by cost-per-wear then id, until all daily outfits are satisfiable. |
+| **Packing** (`PackingPlan`) | Union of capsule items + essentials; if `> luggage.maxItems`, trim least-versatile (fewest days covered) first, deterministic. `withinLuggage` reports the result; `packingConfidence` reflects coverage after any trim. |
+| **Laundry** (`LaundryPlan`) | Clean-days = wearable items ÷ items-per-day. If `duration > cleanDays` and laundry `available`, schedule wash points (respecting `turnaroundDays`) and add re-wears; else surface a packing/warning. |
+| **Missing items** (`ShoppingPlan`) | Occasions/weather in the trip not coverable by the wardrobe → `MissingItem`; each is run through `evaluateBuyVsSkip` for a shopping suggestion. |
+| **Trade-offs** | Record human-readable trade-offs the plan made — e.g. a `carry_on` luggage cap that forced a capsule trim → "Carry-on → reduced outfit variety." Decision-free strings. |
+| **Plan score** | `planScore` (0–100): a deterministic blend of coverage (days/occasions/weather satisfied), outfit variety, preference fit, and a penalty per warning. `packingConfidence` (0–1) and overall `confidence` (0–1) are computed separately (see §9). |
 | **Warnings** | Uncovered occasion, uncovered weather (e.g. rain with no waterproof), luggage over capacity with no laundry, formal event with no formalwear. |
 
 All thresholds (items-per-day, capsule tie-breaks, luggage trim order) are
@@ -386,12 +453,16 @@ This RFC is **Approved-ready** when it defines all of the below (it does):
 - [ ] A deterministic planning model: trip expansion, weather mapping, per-day
       outfit selection (reusing the recommendation engine), capsule set-cover,
       packing trim, laundry scheduling, missing-item detection, warnings.
-- [ ] Domain contracts: `Trip`, `WeatherForecast`, `LifestyleInput`,
-      `LifestylePlan` (packingList / dailyOutfits / laundrySchedule / missingItems
-      / shoppingSuggestions / warnings / capsule), `planLifestyle`, and the
-      vendor-neutral `WeatherProvider`.
+- [ ] Domain contracts: `Trip`, `WeatherForecast` (+ `WeatherSource`),
+      `LifestyleInput`, and a `LifestylePlan` composed of `TripPlan` /
+      `PackingPlan` (with `packingConfidence`) / `LaundryPlan` / `ShoppingPlan`,
+      plus `planScore`, `tradeoffs`, `warnings`, `confidence`; `planLifestyle`,
+      and the vendor-neutral `WeatherProvider`.
 - [ ] The capability mapping onto the Intelligence Orchestrator (RFC-005):
-      `weather` / `travel` / `packing` (+ capsule/laundry), reusing `acquisition`.
+      `weather` / `travel` / `packing` (+ capsule/laundry), reusing `acquisition`;
+      recommendation is invoked **through** the Orchestrator, never directly.
+- [ ] Reserved future items declared but out of build scope: `PlanningStrategy`
+      (minimal / balanced / luxury / business) and `WeatherSource: "historical"`.
 - [ ] The UX flow (`/lifestyle/trip`: trip form → plan → result → explain).
 - [ ] Weather as a normalized input behind a provider; no AI decisions anywhere.
 - [ ] Explicit non-goals (booking, calendar sync, expenses, notifications, AI
@@ -410,6 +481,10 @@ Implementation-time acceptance criteria (tracked in that PR — not this RFC):
 - [ ] **Weather-aware outfits**: each day's outfit respects that day's forecast; a
       cold/rainy day with no suitable item raises a warning.
 - [ ] Laundry scheduling reduces packing when a trip outlasts clean clothes.
+- [ ] The plan carries a 0–100 `planScore`, a distinct 0–1 `packingConfidence`,
+      and human-readable `tradeoffs` (e.g. carry-on → reduced variety).
+- [ ] Per-day recommendation runs **through the Orchestrator** (`recommendation`
+      capability), not by calling the engine directly.
 - [ ] Removing AI leaves the plan unchanged (AI explains only).
 
 ## 11. QA / Testing Plan
@@ -427,6 +502,16 @@ Implementation-time acceptance criteria (tracked in that PR — not this RFC):
   - Missing items: uncovered formal event → `MissingItem` + a Buy vs Skip
     suggestion (the Acquisition engine is invoked, not re-implemented).
   - Determinism: same input + `generatedAt` ⇒ identical `LifestylePlan`.
+  - Sub-plan composition: the plan exposes `TripPlan` / `PackingPlan` /
+    `LaundryPlan` / `ShoppingPlan` and each is populated independently.
+  - `planScore` (0–100) drops with warnings and rises with coverage/variety;
+    `packingConfidence` moves independently of `planScore` (e.g. a forced
+    carry-on trim lowers packingConfidence).
+  - Trade-offs: a `carry_on` cap that forces a trim records a
+    "reduced outfit variety" trade-off.
+  - Orchestrator invocation: per-day selection goes through the `recommendation`
+    capability (a fake orchestrator/registry proves the engine doesn't call
+    `recommendUnifiedOutfits` directly).
 - **Golden scenarios** — fixtures (5-day work trip, wedding weekend, cold rainy
   vacation) with expected packing counts, capsule sizes, and warnings, to guard
   calibration drift.
@@ -471,6 +556,12 @@ Implementation-time acceptance criteria (tracked in that PR — not this RFC):
 - **Saved trips (`trips` table)** — persist and re-plan when wardrobe/forecast
   changes ("still packed right?").
 - **Packing progress** — check off packed items (UI state, still no scheduling).
+- **Planning strategies** — the reserved `PlanningStrategy` (minimal / balanced /
+  luxury / business) as a top-level dial that tunes capsule minimality, packing
+  generosity, and formality bias in one setting.
+- **Historical weather** — the reserved `WeatherSource: "historical"` (climate
+  normals for the destination/dates) as a fallback when no live forecast exists
+  (e.g. a trip months out).
 
 ## 14. Open Questions
 

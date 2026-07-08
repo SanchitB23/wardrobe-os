@@ -20,9 +20,11 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 - ✅ Shopping Screenshot Understanding
 - ✅ Personalization Engine
 - ✅ Intelligence Orchestrator
+- ✅ Lifestyle Engine (Trip Planner)
 
-**In progress:** RFC-004 Personalization Engine (v0.9) and RFC-005 Intelligence
-Orchestrator (v1.0) — both implemented on `main`, pending a release tag.
+**In progress:** RFC-004 Personalization (v0.9), RFC-005 Intelligence Orchestrator
+and RFC-006 Lifestyle Engine (v1.0) — all implemented on `main`, pending a
+release tag.
 
 ## Phases
 
@@ -65,13 +67,14 @@ overrides. The engine derives; AI only explains.
   `RecommendationContext`). Preferences are re-derived from behaviour every run,
   never incrementally mutated.
 
-### v1.0 — Lifestyle Engine 🔜
+### v1.0 — Lifestyle Engine 🚧 (implemented, pending release)
 Trip- and context-scoped planning built on the outfit, recommendation, and
-personalization engines.
-- Travel
-- Packing
-- Weather
-- Capsule Wardrobe
+personalization engines, delivered as a deterministic engine that composes them
+through the Intelligence Orchestrator.
+- **RFC-006 Lifestyle Engine — implemented** (`src/domain/lifestyle`;
+  `/lifestyle/trip` Trip Planner). Travel, Packing, Weather, and Capsule are
+  capabilities of this one engine.
+  - Travel · Packing · Weather (Open-Meteo + manual) · Capsule Wardrobe · Laundry
 
 ### v1.1 — AI Runtime 🔜
 Turn the AI layer into a configurable runtime — the provider is an interchangeable

@@ -74,6 +74,19 @@ AI reaches the orchestrator via the `runIntelligence` tool (the model *requests*
 capabilities; the orchestrator plans and executes deterministically). See
 [ENGINE_GRAPH.md](ENGINE_GRAPH.md).
 
+### Lifestyle Engine
+`src/domain/lifestyle/**` (RFC-006) is a **pure, deterministic** engine that
+plans a trip by composing the existing engines across a time horizon: it expands
+the trip into days, selects each day's outfit by requesting the `recommendation`
+capability **through the Intelligence Orchestrator** (never a direct engine
+call), then derives a capsule, packing list, laundry schedule, and — via the
+`acquisition` capability — shopping suggestions for anything missing. It returns
+one `LifestylePlan` (TripPlan / PackingPlan / LaundryPlan / ShoppingPlan +
+planScore + packingConfidence + tradeoffs + warnings). Weather is a normalized
+input behind a vendor-neutral `WeatherProvider` (`src/features/weather`;
+Open-Meteo + manual). Surfaced at `/lifestyle/trip`. See
+[ENGINE_GRAPH.md](ENGINE_GRAPH.md).
+
 ### AI abstraction
 `src/ai/**` is a vendor-neutral layer:
 
