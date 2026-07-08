@@ -1,25 +1,28 @@
 # Version
 
-## Current: v0.6.0 — AI Stylist Beta
+## Current: v1.0.0 — Release Candidate
 
-- **Version:** v0.6.0
-- **Release name:** AI Stylist Beta
-- **Release date:** 2026-07-07
-- **Status:** Beta
+- **Version:** v1.0.0-rc (candidate on `main`; `package.json` bump + tag pending
+  the release cut)
+- **Release name:** Wardrobe OS 1.0 — One Assistant
+- **Status:** Release Candidate
 
 ### What this release is
 
-The first release where Wardrobe OS talks back. On top of the deterministic
-recommendation stack from v0.5, this adds a full AI layer — provider
-abstraction, Gemini integration, response caching, tool calling, and a
-streaming natural-language stylist chat — while keeping every decision in the
-pure domain engines. AI explains and converses; it never decides.
+The v1.0 cohesion release. Every capability from v0.6–v0.9 already existed as a
+separate, powerful module; **1.0 makes them feel like a single daily assistant.**
+RFC-007 adds no new engines and no new AI — it introduces the **Today** home that
+composes existing deterministic outputs, finalizes the navigation IA, ships real
+Settings + About surfaces, and moves developer tooling behind a gated Developer
+Mode. Underneath it, the deterministic engine stack is complete: the Intelligence
+Orchestrator composes the engines, and the Lifestyle Engine plans trips across a
+time horizon. AI still only explains and converses; it never decides.
 
 ### Included modules
 
 **Foundation & Inventory**
 - Database schema (Supabase Postgres + Storage)
-- Inventory CRUD
+- Inventory CRUD + advanced filters
 - Image upload (primary / thumbnails / delete)
 - Bulk JSON import
 - Item detail pages
@@ -38,33 +41,52 @@ pure domain engines. AI explains and converses; it never decides.
 - Unified Recommendation Engine
 - Recommendation Center
 
-**AI Stylist (new in v0.6.0)**
-- AI Infrastructure (vendor-neutral provider abstraction, orchestrator)
-- Gemini Provider
+**AI Stylist**
+- AI Infrastructure (vendor-neutral provider abstraction)
+- Gemini Provider (text + vision)
 - AI Recommendation Explanation
 - AI Response Cache (Supabase-backed, TTL, force-refresh)
 - AI Playground (`/ai/playground`)
-- AI Tool Calling Architecture (registry / executor / router + 8 wardrobe tools)
+- AI Tool Calling Architecture (registry / executor / router + wardrobe tools)
 - AI Stylist Chat (`/chat`) — streaming, tool-calling, session-only memory
 
-### Development status since v0.6.0
+**Acquisition & Vision**
+- Acquisition Engine — Buy vs Skip (RFC-001, `/acquisition/advisor`)
+- Vision Engine (RFC-002, `src/domain/vision` + `GeminiVisionProvider`)
+- Shopping Screenshot Understanding (RFC-003, `/acquisition/screenshot`)
 
-Built on `main` since the v0.6.0 tag (pending a release tag):
+**Intelligence**
+- Personalization Engine (RFC-004) — derives `UserPreferenceProfile` from
+  behaviour with per-preference confidence + stability.
+- Intelligence Orchestrator (RFC-005, `src/domain/orchestrator`) — deterministic
+  composition layer: dependency resolution, failure isolation, one
+  `ExecutionReport`.
 
-- ✅ **Acquisition Engine** (v0.7) — RFC-001 Buy vs Skip (`/acquisition/advisor`).
-- ✅ **Vision Engine** (v0.8) — RFC-002 (`src/domain/vision` + `GeminiVisionProvider`).
-- ✅ **Shopping Screenshot Understanding** (v0.8) — RFC-003 (`/acquisition/screenshot`).
+**Lifestyle**
+- Lifestyle Engine (RFC-006, `src/domain/lifestyle`) — deterministic trip
+  planning (`TripPlan` / `PackingPlan` / `LaundryPlan` / `ShoppingPlan`) through
+  the orchestrator, behind a vendor-neutral `WeatherProvider`. Surfaced at
+  `/lifestyle/trip`.
+
+**Product Experience (new in v1.0.0 — RFC-007)**
+- **Today** (`/`) — the default assistant-style home; composes existing engine
+  output into widgets (Today's Outfit, Insight, Ask Stylist, Shopping
+  Suggestions, Wardrobe Health, Quick Actions, Recent Activity).
+- Finalized navigation IA (Acquisition folded into Stylist; dev tools gated).
+- Settings — sectioned Profile / Preferences / AI Runtime / Appearance /
+  Developer Mode / About.
+- About (`/about`) — release, architecture, provider wiring, credits, links.
+- Developer Mode hub (`/developer`) — gated Playground + planned dev tools.
+- Accessibility / performance / release-readiness polish.
 
 **Completed engines to date:** Database · Inventory · Outfit Engine · Analytics
 Engine · Recommendation Engine · AI Platform · AI Stylist · Acquisition Engine ·
-Vision Engine · Shopping Screenshot Understanding.
+Vision Engine · Shopping Screenshot Understanding · Personalization Engine ·
+Intelligence Orchestrator · Lifestyle Engine.
 
-### Current work
+### Cutting the release
 
-**v0.9 — Personalization Engine** — 🚧 **In Progress** (RFC-004). A deterministic
-engine that derives a `UserPreferenceProfile` from behaviour (wears, outfits,
-purchases, favourites, feedback, edits, acquisition decisions), with per-preference
-**confidence** and **stability**, superseding the static `DEFAULT_PREFERENCES` in
-`RecommendationContext`. Preferences are re-derived from behaviour every run,
-never incrementally mutated. The engine derives; AI only explains. See
-[ROADMAP.md](ROADMAP.md).
+This is a **Release Candidate** on `main`. Per the release checklist
+([CLAUDE.md](CLAUDE.md) §13), the formal cut still needs: bump `version` in
+`package.json` to `1.0.0`, confirm `npm test` green, and create the annotated
+tag `v1.0.0`. See [CHANGELOG.md](CHANGELOG.md) and [ROADMAP.md](ROADMAP.md).

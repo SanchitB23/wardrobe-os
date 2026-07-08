@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import {
   BugIcon,
   DatabaseIcon,
@@ -124,10 +125,21 @@ export function ChatView() {
   const [input, setInput] = useState("");
   const [debug, setDebug] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const seededRef = useRef(false);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
   }, [messages]);
+
+  // Deep-link from Today's "Ask the stylist": /chat?q=… auto-sends once.
+  useEffect(() => {
+    const q = searchParams.get("q");
+    if (!seededRef.current && q && messages.length === 0) {
+      seededRef.current = true;
+      void send(q);
+    }
+  }, [searchParams, messages.length, send]);
 
   function submit(text: string) {
     if (!text.trim() || isStreaming) return;

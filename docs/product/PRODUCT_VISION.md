@@ -115,12 +115,14 @@ timeline
 
 **Focus:** daily wardrobe decisions.
 
-**Capabilities:** Inventory · Outfits · Analytics · Recommendation · AI Stylist ·
-Vision · Shopping · Personalization · Lifestyle.
+**Capabilities:** Today · Inventory · Outfits · Analytics · Recommendation ·
+AI Stylist · Vision · Shopping · Personalization · Lifestyle.
 
 The foundation: a personal system that catalogues what you own, understands how
 you use it, scores and generates outfits, and explains its guidance in natural
-language.
+language. The **Today** home is where it all converges — one assistant-style
+front door that composes every engine into the day's answer, so the system feels
+like a single assistant rather than a set of separate tools.
 
 ### v1.1 — Intelligence Refinement
 

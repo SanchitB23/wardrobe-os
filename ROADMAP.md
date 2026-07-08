@@ -22,9 +22,12 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 - ✅ Intelligence Orchestrator
 - ✅ Lifestyle Engine (Trip Planner)
 
-**In progress:** RFC-004 Personalization (v0.9), RFC-005 Intelligence Orchestrator
-and RFC-006 Lifestyle Engine (v1.0) — all implemented on `main`, pending a
-release tag.
+- ✅ Today Experience & v1.0 Product Polish (RFC-007)
+
+**Current:** **v1.0.0 Release Candidate.** RFC-004 Personalization, RFC-005
+Intelligence Orchestrator, RFC-006 Lifestyle Engine, and RFC-007 Today Experience
+& v1.0 Polish are all implemented on `main` — pending the `package.json` bump and
+the `v1.0.0` release tag.
 
 ## Phases
 
@@ -33,8 +36,8 @@ release tag.
 | v0.1–v0.6 | Foundation → AI Stylist | ✅ | Inventory, analytics, outfits, recommendations, AI stylist |
 | v0.7 | Acquisition Engine | ✅ | Deterministic buy/skip guidance |
 | v0.8 | Vision + Shopping Screenshot | ✅ | Understand item photos and shopping screenshots |
-| **v0.9** | **Personalization Engine** | **🚧 current** | **Learn preferences from behaviour** |
-| v1.0 | Lifestyle Engine | 🔜 | Travel, packing, weather, capsule wardrobe |
+| v0.9 | Personalization Engine | ✅ | Learn preferences from behaviour |
+| **v1.0** | **Lifestyle Engine + Today Experience** | **🚧 release candidate** | **Trip planning, and the assistant-style Today home that unifies every surface** |
 | v1.1 | AI Runtime | 🔜 | Capability/provider routing, benchmarking, cost/latency analytics, prompt versioning |
 | v1.2 | Wardrobe Intelligence | 🔜 | Cross-engine orchestration, long-horizon planning, multi-step reasoning |
 
@@ -57,7 +60,7 @@ engines still decide.
   Vision Engine → user correction → Buy vs Skip verdict, with an optional AI
   explanation). First consumer of the Vision Engine.
 
-### v0.9 — Personalization Engine 🚧 (current)
+### v0.9 — Personalization Engine ✅
 Learn the owner's taste from their own behaviour (wears, outfits, purchases,
 favourites, feedback, edits, acquisition decisions) and feed it back into every
 engine. Deterministic derivation with confidence and stability, plus user
@@ -67,14 +70,22 @@ overrides. The engine derives; AI only explains.
   `RecommendationContext`). Preferences are re-derived from behaviour every run,
   never incrementally mutated.
 
-### v1.0 — Lifestyle Engine 🚧 (implemented, pending release)
-Trip- and context-scoped planning built on the outfit, recommendation, and
-personalization engines, delivered as a deterministic engine that composes them
-through the Intelligence Orchestrator.
+### v1.0 — Lifestyle Engine + Today Experience 🚧 (release candidate)
+The v1.0 release pairs the last deterministic engine with the cohesion pass that
+turns every module into one assistant.
 - **RFC-006 Lifestyle Engine — implemented** (`src/domain/lifestyle`;
-  `/lifestyle/trip` Trip Planner). Travel, Packing, Weather, and Capsule are
+  `/lifestyle/trip` Trip Planner). Trip- and context-scoped planning built on the
+  outfit, recommendation, and personalization engines, composed through the
+  Intelligence Orchestrator. Travel, Packing, Weather, and Capsule are
   capabilities of this one engine.
   - Travel · Packing · Weather (Open-Meteo + manual) · Capsule Wardrobe · Laundry
+- **RFC-007 Today Experience & v1.0 Product Polish — implemented.** No new engines
+  or AI — it composes existing surfaces. **Today** (`/`) is the default
+  assistant-style home (Today's Outfit, Insight, Ask Stylist, Shopping
+  Suggestions, Wardrobe Health, Quick Actions, Recent Activity). Navigation IA is
+  finalized (Acquisition folded into Stylist; dev tools gated behind Developer
+  Mode). Real Settings + About (`/about`) surfaces, a gated Developer hub
+  (`/developer`), and an accessibility / performance / release-readiness sweep.
 
 ### v1.1 — AI Runtime 🔜
 Turn the AI layer into a configurable runtime — the provider is an interchangeable

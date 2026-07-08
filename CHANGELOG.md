@@ -7,7 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### v1.0.0 — Intelligence Orchestrator + Lifestyle Engine (in progress)
+### v1.0.0 — Release Candidate (Today Experience + Intelligence Orchestrator + Lifestyle Engine)
+
+- **Today Experience & v1.0 Product Polish (RFC-007)** — the cohesion pass that
+  makes the existing engines feel like one daily assistant. **No new engines,
+  no new AI.**
+  - **Today** is now the default route (`/`) — an assistant-style home that
+    *composes* existing deterministic outputs into widgets: Today's Outfit
+    (top recommendation), Today's Insight, Ask Stylist (deep-links into `/chat`
+    via `?q=`), Shopping Suggestions (health gaps), Wardrobe Health, Quick
+    Actions, and Recent Activity. Each widget degrades independently
+    (loading / error / empty). It surfaces engine output; it decides nothing.
+  - **Navigation IA finalized** — Acquisition folded into the Stylist group
+    ("Buy vs Skip", "Screenshot"); developer tools removed from the normal
+    sidebar and moved behind **Developer Mode** into a dedicated **Developer
+    Section** (shown only when Developer Mode is on).
+  - **Settings** rebuilt as sectioned surfaces — Profile (display name),
+    Preferences, AI Runtime (provider wiring), Appearance (theme), Developer
+    Mode toggle, and About.
+  - **About** (`/about`) — release, architecture (engine list), current AI
+    provider wiring, credits, and links to the source + docs.
+  - **Developer Mode** (`/developer`) — a gated hub for the AI Playground,
+    Prompt Viewer, Cache Viewer, Execution Graph, Runtime Statistics, and
+    Feature Flags (Playground + AI test live; the rest listed as planned).
+  - **Polish** — accessibility (labels, `aria-pressed`, focus), empty/loading/
+    error states across the new surfaces, and hydration-safe client reads.
+  - Prepares the **v1.0.0 Release Candidate**. No schema changes.
 
 - **Lifestyle Engine (RFC-006)** — deterministic trip planning. A new pure
   domain module (`src/domain/lifestyle`) turns a trip into a `LifestylePlan`

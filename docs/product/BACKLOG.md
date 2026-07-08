@@ -38,10 +38,11 @@ Authored so far:
   (never directly). Weather is a normalized provider input (Open-Meteo + manual).
   Surfaced at `/lifestyle/trip`. The engine plans; AI only explains.
 - **RFC-007 — Today Experience & v1.0 Product Polish** (Product Experience, v1.0)
-  — Draft. The v1.0 cohesion pass: an assistant-style Today home, finalized
-  navigation IA, real Settings + About, a gated Developer Mode hub, and an
-  accessibility / performance / release-readiness sweep. No new engines or AI —
-  it composes existing surfaces so the app feels like one assistant.
+  — ✅ Implemented. The v1.0 cohesion pass: an assistant-style Today home (the
+  default route), finalized navigation IA, real Settings + About (`/about`), a
+  gated Developer Mode hub (`/developer`), and an accessibility / performance /
+  release-readiness sweep. No new engines or AI — it composes existing surfaces
+  so the app feels like one assistant. Prepares the **v1.0.0 Release Candidate**.
 
 Guiding principle (unchanged): **deterministic engines decide, AI explains.** New
 capabilities should be solved with a domain engine first; AI is layered on for
@@ -143,7 +144,7 @@ accessibility / performance / release-readiness sweep.
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [RFC-007](../rfc/RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | Draft |
+| [RFC-007](../rfc/RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | ✅ Implemented |
 
 ## Removed from scope
 

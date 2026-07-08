@@ -1,15 +1,26 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
-  CalendarPlusIcon,
+  AlertTriangleIcon,
+  HeartPulseIcon,
+  LayersIcon,
   LightbulbIcon,
-  MessagesSquareIcon,
+  LuggageIcon,
+  PlusIcon,
+  SendIcon,
   ShirtIcon,
+  ShoppingBagIcon,
+  SparklesIcon,
   WandSparklesIcon,
 } from "lucide-react";
 
+import { useInsightReport, useWardrobeHealth } from "@/features/analytics/hooks";
+import { useOutfitRecommendations } from "@/features/recommendations/hooks";
+import { useWearLogs } from "@/features/wear-logs/hooks";
+import { PageHeader } from "@/features/layout";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -18,115 +29,317 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { cn } from "@/lib/utils";
+import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Textarea } from "@/components/ui/textarea";
 
-function greeting(hour: number): string {
+/** Hydration-safe current time (server renders neutral, client fills on mount). */
+function useNow(): Date | null {
+  const [now, setNow] = useState<Date | null>(null);
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client-time read, hydration-safe
+  useEffect(() => setNow(new Date()), []);
+  return now;
+}
+
+function greetingFor(hour: number): string {
   if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
+  if (hour < 18) return "Good afternoon";
   return "Good evening";
 }
 
+function Loading({ lines = 2 }: { lines?: number }) {
+  return (
+    <div className="space-y-2" aria-busy="true">
+      {Array.from({ length: lines }).map((_, i) => (
+        <Skeleton key={i} className="h-4 w-full" />
+      ))}
+    </div>
+  );
+}
+
+function ErrorLine({ message }: { message: string }) {
+  return (
+    <p className="flex items-start gap-2 text-sm text-destructive">
+      <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" /> {message}
+    </p>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Widgets — each backed by an existing engine/service, independently degradable.
+// ---------------------------------------------------------------------------
+
+function TodaysOutfitWidget() {
+  const query = useOutfitRecommendations({});
+  const top = query.data?.recommendations[0] ?? null;
+  const previews = query.data?.previews ?? {};
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShirtIcon className="size-4" /> Today&apos;s outfit
+          </CardTitle>
+          <Button variant="ghost" size="sm" render={<a href="/recommendations">All</a>} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        {query.isPending ? <Loading lines={3} /> : null}
+        {query.isError ? <ErrorLine message="Couldn't load recommendations." /> : null}
+        {!query.isPending && !query.isError && !top ? (
+          <p className="text-sm text-muted-foreground">
+            No recommendation yet — add items and outfits to get a daily pick.
+          </p>
+        ) : null}
+        {top ? (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between gap-2">
+              <span className="font-medium">{top.name}</span>
+              <Badge variant="secondary" className="tabular-nums">{top.score.toFixed(1)}/10</Badge>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              {top.items.map((i) => previews[i.itemId]?.name ?? i.name).join(" · ")}
+            </p>
+            {top.reason ? <p className="text-sm text-muted-foreground">{top.reason}</p> : null}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function AskStylistWidget() {
+  const router = useRouter();
+  const [text, setText] = useState("");
+  function ask() {
+    const q = text.trim();
+    router.push(q ? `/chat?q=${encodeURIComponent(q)}` : "/chat");
+  }
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center gap-2 text-base">
+          <SparklesIcon className="size-4" /> Ask the stylist
+        </CardTitle>
+        <CardDescription>Plain-language questions about your wardrobe.</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="flex items-end gap-2"
+          onSubmit={(e) => {
+            e.preventDefault();
+            ask();
+          }}
+        >
+          <Textarea
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && !e.shiftKey) {
+                e.preventDefault();
+                ask();
+              }
+            }}
+            placeholder="What should I wear to the office today?"
+            aria-label="Ask the stylist"
+            className="max-h-28 min-h-[2.5rem] flex-1 resize-none"
+          />
+          <Button type="submit" aria-label="Ask">
+            <SendIcon /> Ask
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
+}
+
+function TodaysInsightWidget() {
+  const query = useInsightReport();
+  const report = query.data;
+  const action = report?.topActions[0] ?? null;
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <LightbulbIcon className="size-4" /> Today&apos;s insight
+          </CardTitle>
+          <Button variant="ghost" size="sm" render={<a href="/dashboard/insights">More</a>} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        {query.isPending ? <Loading /> : null}
+        {query.isError ? <ErrorLine message="Couldn't load insights." /> : null}
+        {report ? (
+          <div className="space-y-1.5">
+            <p className="text-sm">{report.overallSummary}</p>
+            {action ? (
+              <p className="text-sm text-muted-foreground">
+                <span className="font-medium text-foreground">Next:</span> {action.title}
+              </p>
+            ) : null}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function ShoppingSuggestionsWidget() {
+  const query = useWardrobeHealth();
+  const gaps = query.data?.health.gaps ?? [];
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <ShoppingBagIcon className="size-4" /> Shopping suggestions
+          </CardTitle>
+          <Button variant="ghost" size="sm" render={<a href="/acquisition/advisor">Advisor</a>} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        {query.isPending ? <Loading /> : null}
+        {query.isError ? <ErrorLine message="Couldn't load gaps." /> : null}
+        {query.data && gaps.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No gaps flagged — your wardrobe looks complete.</p>
+        ) : null}
+        {gaps.length > 0 ? (
+          <ul className="space-y-1.5">
+            {gaps.slice(0, 3).map((gap, i) => (
+              <li key={i} className="text-sm">
+                <span className="font-medium">{gap.label}</span>
+                {gap.detail ? <span className="text-muted-foreground"> — {gap.detail}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+function WardrobeHealthWidget() {
+  const query = useWardrobeHealth();
+  const health = query.data?.health;
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <HeartPulseIcon className="size-4" /> Wardrobe health
+          </CardTitle>
+          <Button variant="ghost" size="sm" render={<a href="/dashboard/health">Details</a>} />
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {query.isPending ? <Loading /> : null}
+        {query.isError ? <ErrorLine message="Couldn't load health." /> : null}
+        {health ? (
+          <>
+            <div className="flex items-baseline gap-2">
+              <span className="text-2xl font-semibold tabular-nums">{Math.round(health.overallScore)}</span>
+              <span className="text-xs text-muted-foreground">/ 100</span>
+            </div>
+            <Progress value={Math.round(health.overallScore)} className="h-1.5" />
+            {health.strengths[0] ? (
+              <p className="text-sm text-muted-foreground">{health.strengths[0]}</p>
+            ) : null}
+          </>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
 const QUICK_ACTIONS = [
-  { label: "View Recommendations", href: "/recommendations", icon: WandSparklesIcon },
-  { label: "Open Inventory", href: "/inventory", icon: ShirtIcon },
-  { label: "Log Wear", href: "/wear-logs", icon: CalendarPlusIcon },
-] as const;
+  { label: "Add item", href: "/inventory", icon: PlusIcon },
+  { label: "Create outfit", href: "/outfits/new", icon: LayersIcon },
+  { label: "Plan a trip", href: "/lifestyle/trip", icon: LuggageIcon },
+  { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
+];
+
+function QuickActionsWidget() {
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-base">Quick actions</CardTitle>
+      </CardHeader>
+      <CardContent className="grid grid-cols-2 gap-2">
+        {QUICK_ACTIONS.map((a) => (
+          <Button key={a.href} variant="outline" className="justify-start" render={<a href={a.href} />}>
+            <a.icon /> {a.label}
+          </Button>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
+
+function RecentActivityWidget() {
+  const query = useWearLogs({});
+  const recent = [...(query.data ?? [])]
+    .sort((a, b) => (a.worn_on < b.worn_on ? 1 : -1))
+    .slice(0, 5);
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <CardTitle className="text-base">Recent activity</CardTitle>
+          <Button variant="ghost" size="sm" render={<a href="/wear-logs">Wear logs</a>} />
+        </div>
+      </CardHeader>
+      <CardContent>
+        {query.isPending ? <Loading lines={3} /> : null}
+        {query.isError ? <ErrorLine message="Couldn't load recent wears." /> : null}
+        {query.data && recent.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No wears logged yet.</p>
+        ) : null}
+        {recent.length > 0 ? (
+          <ul className="space-y-1.5">
+            {recent.map((log) => (
+              <li key={log.id} className="flex items-center justify-between gap-2 text-sm">
+                <span className="truncate">{log.item?.name ?? "Item"}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">{log.worn_on}</span>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </CardContent>
+    </Card>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 export function TodayView() {
-  // Compute greeting + date on the client to respect the viewer's local time.
-  const [now, setNow] = useState<Date | null>(null);
-  useEffect(() => setNow(new Date()), []);
-
-  const hello = now ? greeting(now.getHours()) : "Welcome back";
+  const now = useNow();
+  const greeting = now ? greetingFor(now.getHours()) : "Welcome back";
   const dateLabel = now
-    ? now.toLocaleDateString(undefined, {
-        weekday: "long",
-        month: "long",
-        day: "numeric",
-      })
+    ? now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })
     : "";
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-      <header className="space-y-1">
-        <h1 className="text-3xl font-semibold tracking-tight">{hello}</h1>
-        <p className="text-muted-foreground">
-          {dateLabel ? `${dateLabel} — ` : ""}here&apos;s your wardrobe at a glance.
-        </p>
-      </header>
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
+      <PageHeader
+        title={greeting}
+        badge={<Badge variant="secondary">Today</Badge>}
+        description={dateLabel || "Your wardrobe at a glance — today's outfit, insights, and what to do next."}
+      />
 
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Today's recommendation */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <WandSparklesIcon className="size-5 text-blue-600 dark:text-blue-400" />
-              <CardTitle className="text-base">Today&apos;s recommendation</CardTitle>
-            </div>
-            <CardDescription>
-              Your ranked outfit picks — saved and freshly generated — live in the
-              Recommendation Center.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mt-auto flex flex-wrap gap-2">
-            <Button render={<Link href="/recommendations" />}>
-              <WandSparklesIcon />
-              See today&apos;s picks
-            </Button>
-            <Button variant="outline" render={<Link href="/chat" />}>
-              <MessagesSquareIcon />
-              Ask the Stylist
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Today's insight */}
-        <Card className="flex flex-col">
-          <CardHeader>
-            <div className="flex items-center gap-2">
-              <LightbulbIcon className="size-5 text-amber-600 dark:text-amber-400" />
-              <CardTitle className="text-base">Today&apos;s insight</CardTitle>
-            </div>
-            <CardDescription>
-              Wardrobe health, usage, and gaps are summarised in the Insight
-              Center. A daily highlight will surface here soon.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="mt-auto flex flex-wrap gap-2">
-            <Button variant="outline" render={<Link href="/dashboard/insights" />}>
-              <LightbulbIcon />
-              Open Insight Center
-            </Button>
-          </CardContent>
-        </Card>
+        <TodaysOutfitWidget />
+        <AskStylistWidget />
+        <TodaysInsightWidget />
+        <ShoppingSuggestionsWidget />
+        <WardrobeHealthWidget />
+        <QuickActionsWidget />
       </div>
 
-      {/* Quick actions */}
-      <section className="space-y-3">
-        <h2 className="text-sm font-medium uppercase tracking-wider text-muted-foreground/70">
-          Quick actions
-        </h2>
-        <div className="grid gap-3 sm:grid-cols-3">
-          {QUICK_ACTIONS.map((action) => {
-            const Icon = action.icon;
-            return (
-              <Link
-                key={action.href}
-                href={action.href}
-                className={cn(
-                  "flex items-center gap-3 rounded-xl border bg-card p-4 text-sm font-medium outline-none transition-colors",
-                  "hover:bg-accent/60 hover:text-foreground focus-visible:ring-2 focus-visible:ring-ring",
-                )}
-              >
-                <span className="flex size-9 items-center justify-center rounded-lg bg-muted">
-                  <Icon className="size-4" />
-                </span>
-                {action.label}
-              </Link>
-            );
-          })}
-        </div>
-      </section>
+      <RecentActivityWidget />
     </div>
   );
 }

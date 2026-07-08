@@ -1,3 +1,4 @@
+import { Suspense } from "react";
 import type { Metadata } from "next";
 
 import { ChatView } from "@/features/chat/components/chat-view";
@@ -7,5 +8,10 @@ export const metadata: Metadata = {
 };
 
 export default function ChatPage() {
-  return <ChatView />;
+  // ChatView reads `?q=` (useSearchParams) → needs a Suspense boundary.
+  return (
+    <Suspense>
+      <ChatView />
+    </Suspense>
+  );
 }

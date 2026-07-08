@@ -1,10 +1,12 @@
 # Wardrobe OS
 
-**Version:** v0.6.0 — _AI Stylist Beta_
+**Version:** v1.0.0 — _Release Candidate_
 
 Wardrobe OS is a personal wardrobe operating system: a single place to catalogue
-what you own, understand how you use it, score and generate outfits, and — new
-in this release — talk to an **AI stylist** that answers in natural language.
+what you own, understand how you use it, score and generate outfits, plan trips,
+and talk to an **AI stylist** that answers in natural language. In v1.0 it opens
+on **Today** — an assistant-style home that answers "what do I do about my
+wardrobe today?" by composing every engine into one daily view.
 
 Its defining principle: **deterministic engines decide, AI explains.** All
 scoring, eligibility, ranking, health, and cost analysis are computed by pure
@@ -14,6 +16,10 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
 
 ## Key features
 
+- **Today** — the default home. An assistant-style dashboard that *composes*
+  existing deterministic output: today's outfit, an insight, an Ask-Stylist box
+  (deep-links into chat), shopping suggestions, wardrobe health, quick actions,
+  and recent activity. It surfaces engine output; it decides nothing new.
 - **Inventory** — full item CRUD, images (upload + primary + delete), bulk JSON
   import, rich item detail pages, and an advanced filterable inventory table.
 - **Analytics** — dashboard, **Wardrobe Health**, **Usage Analytics**,
@@ -22,9 +28,17 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
   **Outfit Generation** from your wardrobe.
 - **Recommendations** — a **Unified Recommendation Engine** (saved + generated
   outfits ranked together) with a debuggable Recommendation Center.
-- **AI Stylist (Beta)** — natural-language explanations of recommendations, a
+- **Acquisition & Vision** — deterministic **Buy vs Skip** guidance
+  (`/acquisition/advisor`), item-photo understanding, and **shopping screenshot**
+  interpretation (`/acquisition/screenshot`).
+- **Lifestyle** — a deterministic **Trip Planner** (`/lifestyle/trip`): per-day
+  outfits, packing, laundry, and shopping plans, with live or manual weather.
+- **AI Stylist** — natural-language explanations of recommendations, a
   streaming **tool-calling chat** (`/chat`), a durable AI response cache, and a
-  developer **AI Playground** (`/ai/playground`).
+  developer **AI Playground** (behind Developer Mode).
+- **One assistant** — a finalized navigation IA, real **Settings** and
+  **About** (`/about`) surfaces, and a gated **Developer Mode** hub
+  (`/developer`) that keeps internal tooling out of the everyday sidebar.
 
 ## Tech stack
 
@@ -100,7 +114,8 @@ strategy document, not a roadmap.
 
 `v0.1` Inventory → `v0.2` Visual Inventory → `v0.3` Analytics →
 `v0.4` Outfit Engine → `v0.5` Recommendation Engine →
-**`v0.6` AI Stylist Beta (current)** → `v0.7` Acquisition Engine →
-`v0.8` Vision AI → `v0.9` Packing / Travel Engine → `v1.0` Stable.
+`v0.6` AI Stylist Beta → `v0.7` Acquisition Engine → `v0.8` Vision AI →
+`v0.9` Personalization Engine →
+**`v1.0` Lifestyle Engine + Today Experience (release candidate)**.
 
 See [ROADMAP.md](ROADMAP.md) for details.

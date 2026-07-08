@@ -1,14 +1,12 @@
 import {
-  BookmarkIcon,
   CalendarDaysIcon,
   ChartLineIcon,
   ClipboardCheckIcon,
   CompassIcon,
-  DatabaseIcon,
   FlaskConicalIcon,
-  GitCompareIcon,
   HeartPulseIcon,
   HomeIcon,
+  InfoIcon,
   LayersIcon,
   LayoutDashboardIcon,
   LightbulbIcon,
@@ -22,6 +20,7 @@ import {
   TerminalIcon,
   UploadIcon,
   WandSparklesIcon,
+  WrenchIcon,
   type LucideIcon,
 } from "lucide-react";
 
@@ -66,10 +65,14 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    // Stylist = advice + shopping decisions. Acquisition (Advisor/Screenshot)
+    // folds in here so the top level stays five focused groups (RFC-007 IA).
     heading: "Stylist",
     items: [
       { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
       { label: "Chat", href: "/chat", icon: MessagesSquareIcon },
+      { label: "Buy vs Skip", href: "/acquisition/advisor", icon: CompassIcon, matchNested: true },
+      { label: "Screenshot", href: "/acquisition/screenshot", icon: ScanSearchIcon, matchNested: true },
     ],
   },
   {
@@ -80,15 +83,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Usage", href: "/dashboard/usage", icon: ChartLineIcon },
       { label: "Purchases", href: "/purchases", icon: ReceiptIcon },
       { label: "Insight Center", href: "/dashboard/insights", icon: LightbulbIcon },
-    ],
-  },
-  {
-    heading: "Acquisition",
-    items: [
-      { label: "Advisor", href: "/acquisition/advisor", icon: CompassIcon, matchNested: true },
-      { label: "Screenshot", href: "/acquisition/screenshot", icon: ScanSearchIcon, matchNested: true },
-      { label: "Wishlist", href: "#", icon: BookmarkIcon, disabled: true, badge: "Soon" },
-      { label: "Compare", href: "#", icon: GitCompareIcon, disabled: true, badge: "Soon" },
     ],
   },
   {
@@ -104,6 +98,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Preferences", href: "/settings/preferences", icon: SlidersHorizontalIcon },
       { label: "Import", href: "/inventory/import", icon: UploadIcon },
       { label: "Review", href: "/inventory/review", icon: ClipboardCheckIcon },
+      { label: "About", href: "/about", icon: InfoIcon },
     ],
   },
 ];
@@ -117,10 +112,9 @@ export const NAV_SECTIONS: NavSection[] = [
 export const DEVELOPER_SECTION: NavSection = {
   heading: "Developer",
   items: [
+    { label: "Developer", href: "/developer", icon: WrenchIcon, matchNested: true },
     { label: "AI Playground", href: "/ai/playground", icon: FlaskConicalIcon },
     { label: "AI Test", href: "/api/ai/test", icon: TerminalIcon, external: true },
-    // Placeholder for a future AI cache inspector (no UI yet).
-    { label: "AI Cache", href: "#", icon: DatabaseIcon, disabled: true, badge: "Soon" },
   ],
 };
 

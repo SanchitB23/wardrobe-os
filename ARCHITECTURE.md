@@ -87,6 +87,25 @@ input behind a vendor-neutral `WeatherProvider` (`src/features/weather`;
 Open-Meteo + manual). Surfaced at `/lifestyle/trip`. See
 [ENGINE_GRAPH.md](ENGINE_GRAPH.md).
 
+### Product surfaces & the Today home
+The UI is organized as feature-first surfaces under `src/features/**` mounted by
+routes under `app/**`, wrapped by a single `AppShell` (sidebar + mobile sheet)
+and `PageHeader`. Navigation is declared in `src/features/layout/nav-config.ts`.
+
+**Today** (`src/features/today`, route `/` — the default home, RFC-007) is a pure
+**consumer**: each widget calls an existing hook (recommendations, insights,
+wardrobe health, wear logs) and renders it with independent loading / error /
+empty states. It composes engine output and deep-links into the stylist chat
+(`/chat?q=`); it contains **no business logic and computes nothing new** — the
+same "engines decide, UI surfaces" rule that governs every other view.
+
+**Developer Mode** is a client toggle (`useDevMode`, persisted to
+`localStorage`); when on, `nav-config` appends a `DEVELOPER_SECTION` that exposes
+otherwise-hidden internal tooling (the AI Playground, and the `/developer` hub).
+This keeps developer surfaces out of the everyday IA without a separate build.
+**Settings** (`/settings`) and **About** (`/about`) are thin presentational
+surfaces sourcing static release/architecture metadata.
+
 ### AI abstraction
 `src/ai/**` is a vendor-neutral layer:
 
@@ -137,3 +156,9 @@ cookie-aware).
 `/chat` → `POST /api/chat` → `streamChat` → `GeminiChatModel` (function calling)
 → on tool calls, `ToolRouter` → wardrobe tools → services → repositories →
 Supabase → results fed back → streamed final answer.
+
+**Today home (composition, no new logic):**
+`/` → `TodayView` widgets → existing hooks (`useOutfitRecommendations`,
+`useInsightReport`, `useWardrobeHealth`, `useWearLogs`) → their services /
+engines → rendered as widgets. Today aggregates and surfaces; it never scores or
+decides.
