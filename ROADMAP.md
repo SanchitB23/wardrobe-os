@@ -92,6 +92,11 @@ turns every module into one assistant.
 ### v1.1 — AI Runtime 🔜
 Turn the AI layer into a configurable runtime — the provider is an interchangeable
 detail behind the engines.
+- **Weather Runtime — shipped** (RFC-011: `src/runtime/weather` + `src/domain/weather`).
+  Provider-agnostic (`OpenMeteo` / `Manual`, `WEATHER_PROVIDER`); recommendation
+  consumes a normalized `WeatherSnapshot`; a first-class Orchestrator `weather`
+  capability; in-memory cache + metrics; seasonal-fallback on failure (the AI
+  explains it, never hallucinates); inspector at `/developer/weather`.
 - Capability Routing
 - Provider Routing
 - Primary / Fallback Providers

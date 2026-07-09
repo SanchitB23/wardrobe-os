@@ -113,7 +113,12 @@ describe("TripPlanner — expansion", () => {
 describe("WeatherPlanner — normalization", () => {
   it("averages high/low into a temperature snapshot", () => {
     const snap = toWeatherSnapshot({ date: "d", season: "winter", condition: "cold", highC: 10, lowC: 4, rainRisk: 0 });
-    expect(snap).toEqual({ season: "winter", condition: "cold", temperatureC: 7, humidity: null });
+    // RFC-011: enriched snapshot — assert the core projected fields.
+    expect(snap.season).toBe("winter");
+    expect(snap.condition).toBe("cold");
+    expect(snap.temperatureC).toBe(7);
+    expect(snap.labels).toContain("COLD");
+    expect(snap.source).toBe("live");
   });
 });
 

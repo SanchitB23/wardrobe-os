@@ -10,6 +10,9 @@
 
 import type { WardrobeHealth } from "@/domain/analytics/WardrobeHealthEngine";
 import type { UsageAnalytics } from "@/domain/analytics/UsageAnalyticsEngine";
+// RFC-011: WeatherSnapshot now lives in the weather domain (type-only import,
+// no runtime cycle) and is re-exported below for existing consumers.
+import type { WeatherSnapshot, WeatherSnapshotSource } from "@/domain/weather/WeatherSnapshot";
 import type { StyleDNA } from "@/domain/style-dna";
 import type {
   FormalityEnum,
@@ -137,12 +140,10 @@ export type WeatherCondition =
   | "cold"
   | "rainy";
 
-export interface WeatherSnapshot {
-  season: SeasonLabel;
-  condition: WeatherCondition;
-  temperatureC: number | null;
-  humidity: number | null;
-}
+// RFC-011: WeatherSnapshot is defined in `@/domain/weather` (enriched with
+// feelsLike/rainRisk/wind/uv/labels/confidence/source). Re-exported here so
+// existing `@/domain/recommendation` consumers are unaffected.
+export type { WeatherSnapshot, WeatherSnapshotSource };
 
 // ---------------------------------------------------------------------------
 // Commute

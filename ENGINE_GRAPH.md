@@ -26,13 +26,18 @@ Each capability is a thin adapter over an existing engine (`src/domain/orchestra
 | `usage` | UsageAnalyticsEngine | usage analytics |
 | `personalization` | PersonalizationEngine (`derivePreferenceProfile`, RFC-004) | preference snapshot |
 | `analytics` | InsightEngine (`generateInsights`) | insight report |
+| `weather` | Weather Runtime (`WeatherSnapshot`, RFC-011) | current weather snapshot |
 | `outfit` | OutfitGenerationEngine (`generateOutfits`) | generated outfits |
 | `recommendation` | UnifiedOutfitRecommendationEngine (`recommendUnifiedOutfits`) | ranked outfits |
 | `vision` | ShoppingImageInterpreter (`interpretShoppingImage`, RFC-003) | prospective-item candidate |
 | `acquisition` | BuyVsSkipEngine (`evaluateBuyVsSkip`, RFC-001) | buy/skip verdict |
 
-Reserved (declared, not yet registered): `travel`, `packing`, `weather`,
-`calendar`, `shopping`.
+The `weather` capability surfaces the `WeatherSnapshot` already resolved into the
+`RecommendationContext` (weather is data — it never recommends); the runtime that
+fetches it lives outside the pure engine graph in `src/runtime/weather`.
+
+Reserved (declared, not yet registered): `travel`, `packing`, `calendar`,
+`shopping`.
 
 ## Dependency graph
 
@@ -41,9 +46,12 @@ health ─┐
         ├─► analytics
 usage ──┘
 
-outfit ─────────┐
+weather ────────┐
+outfit ─────────┤
                 ├─► recommendation
 personalization ┘
+
+weather ─► outfit
 
 personalization ─► acquisition   (uses an upstream `vision` candidate when present)
 

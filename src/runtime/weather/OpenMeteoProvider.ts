@@ -1,13 +1,13 @@
 /**
- * OpenMeteoProvider (RFC-006) — the concrete WeatherProvider backed by the
- * key-free Open-Meteo APIs (geocoding + daily forecast). Server-side I/O only;
- * all mapping is delegated to the pure WeatherNormalizer. If geocoding fails, it
- * throws — callers fall back to manual weather entry.
+ * OpenMeteoProvider (RFC-011; relocated from src/features/weather) — the concrete
+ * WeatherProvider backed by the key-free Open-Meteo APIs (geocoding + daily
+ * forecast). Server-side I/O only; mapping is delegated to the pure normalizer.
  */
 
-import type { WeatherForecast } from "@/domain/lifestyle";
-import type { WeatherProvider } from "@/features/weather/provider/WeatherProvider";
-import { normalizeOpenMeteo } from "@/features/weather/provider/WeatherNormalizer";
+import type { WeatherForecast } from "@/domain/weather";
+import type { WeatherProvider } from "@/runtime/weather/WeatherProvider";
+import type { WeatherQuery } from "@/runtime/weather/types";
+import { normalizeOpenMeteo } from "@/runtime/weather/WeatherNormalizer";
 
 const GEOCODE_URL = "https://geocoding-api.open-meteo.com/v1/search";
 const FORECAST_URL = "https://api.open-meteo.com/v1/forecast";
@@ -25,19 +25,15 @@ async function geocode(destination: string): Promise<{ latitude: number; longitu
 export class OpenMeteoProvider implements WeatherProvider {
   readonly id = "open-meteo";
 
-  async forecast(
-    destination: string,
-    startDate: string,
-    endDate: string,
-  ): Promise<WeatherForecast> {
-    const { latitude, longitude } = await geocode(destination);
+  async forecast(query: WeatherQuery): Promise<WeatherForecast> {
+    const { latitude, longitude } = await geocode(query.location);
     const params = new URLSearchParams({
       latitude: String(latitude),
       longitude: String(longitude),
       daily: "temperature_2m_max,temperature_2m_min,precipitation_probability_max",
       timezone: "UTC",
-      start_date: startDate,
-      end_date: endDate,
+      start_date: query.startDate,
+      end_date: query.endDate,
     });
     const res = await fetch(`${FORECAST_URL}?${params.toString()}`);
     if (!res.ok) throw new Error(`Forecast fetch failed (${res.status}).`);

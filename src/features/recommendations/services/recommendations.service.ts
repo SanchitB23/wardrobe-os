@@ -11,6 +11,7 @@ import {
 } from "@/domain/recommendation";
 import { generateInsights } from "@/domain/analytics/InsightEngine";
 import { toPreferenceSnapshot } from "@/domain/personalization";
+import { weatherRuntime } from "@/runtime/weather";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import {
   fetchUsageAnalytics,
@@ -102,6 +103,33 @@ function weatherOverride(
 }
 
 /**
+ * RFC-011: resolve the weather the recommendation context should use.
+ *   1. explicit filter override (manual) wins;
+ *   2. else, if a home location is configured, fetch a live snapshot via the
+ *      Weather Runtime (cached, never throws);
+ *   3. else `undefined` → the builder applies a deterministic seasonal fallback.
+ */
+async function resolveWeatherSnapshot(
+  filters: RecommendationFilters,
+  generatedAt: string,
+): Promise<Partial<WeatherSnapshot> | undefined> {
+  const override = weatherOverride(filters);
+  if (override) return override;
+
+  const home = process.env.WEATHER_HOME_LOCATION;
+  if (!home) return undefined;
+
+  const day = generatedAt.slice(0, 10);
+  const { snapshot } = await weatherRuntime.getSnapshot({
+    location: home,
+    startDate: day,
+    endDate: day,
+    at: day,
+  });
+  return snapshot;
+}
+
+/**
  * Orchestrates the Recommendation Center: fetches raw domain data + the health,
  * usage, and purchase analytics, assembles a RecommendationContext, and runs
  * the pure OutfitRecommendationEngine. Filters bias the context (occasion,
@@ -186,6 +214,14 @@ export async function fetchOutfitRecommendations(
   const protectedItemIds = preferenceResult.data?.profile.protectedItemIds ?? [];
   const avoidedItemIds = preferenceResult.data?.profile.avoidedItemIds ?? [];
 
+  const generatedAt = new Date().toISOString();
+
+  // RFC-011: weather comes from the Weather Runtime as a WeatherSnapshot. A manual
+  // filter override wins; otherwise, if a home location is configured, fetch live
+  // weather; otherwise the builder uses a deterministic seasonal fallback (which
+  // the AI explains as an estimate). The engine never fetches weather.
+  const weather = await resolveWeatherSnapshot(filters, generatedAt);
+
   const context = buildRecommendationContext(
     {
       health: healthResult.data.health,
@@ -197,12 +233,12 @@ export async function fetchOutfitRecommendations(
       purchases: raw.purchases.map((p) => ({ itemId: p.item_id, price: p.price })),
       savedOutfits,
       preferences: learnedPreferences,
-      weather: weatherOverride(filters),
+      weather,
       commute: filters.commute ? { mode: filters.commute } : undefined,
       protectedItemIds,
       avoidedItemIds,
     },
-    { generatedAt: new Date().toISOString() },
+    { generatedAt },
   );
 
   const unified = recommendUnifiedOutfits(context, {

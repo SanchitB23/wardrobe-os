@@ -1,27 +1,16 @@
 /**
- * WeatherNormalizer (RFC-006) — PURE mapping of a raw Open-Meteo daily response
- * into the canonical {@link WeatherForecast} the Lifestyle Engine consumes. No
- * I/O; deterministic. Also builds a `manual` forecast from user-entered days.
+ * WeatherNormalizer (RFC-011; relocated from src/features/weather) — PURE mapping
+ * of a raw provider response into the canonical {@link WeatherForecast}. No I/O;
+ * deterministic. `conditionFor` is reused from the weather domain.
  */
 
-import type { WeatherForecast, WeatherForecastDay } from "@/domain/lifestyle";
-import type { SeasonLabel, WeatherCondition } from "@/domain/recommendation";
+import type { SeasonLabel, WeatherForecast, WeatherForecastDay } from "@/domain/weather";
+import { conditionFor } from "@/domain/weather";
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
 function num(v: unknown): number | null {
   return typeof v === "number" && Number.isFinite(v) ? v : null;
-}
-
-/** Deterministic condition band from average temperature + rain risk. */
-export function conditionFor(avgC: number | null, rainRisk: number | null): WeatherCondition {
-  if (rainRisk != null && rainRisk >= 0.5) return "rainy";
-  if (avgC == null) return "mild";
-  if (avgC >= 30) return "hot";
-  if (avgC >= 24) return "warm";
-  if (avgC >= 16) return "mild";
-  if (avgC >= 8) return "cool";
-  return "cold";
 }
 
 /** Month → season (northern hemisphere; flipped when latitude < 0). */
@@ -32,11 +21,7 @@ export function seasonFor(dateIso: string, latitude: number): SeasonLabel {
     "summer", "summer", "autumn", "autumn", "autumn", "winter",
   ];
   const idx = Math.max(0, Math.min(11, month - 1));
-  if (latitude < 0) {
-    const shifted = northern[(idx + 6) % 12];
-    return shifted;
-  }
-  return northern[idx];
+  return latitude < 0 ? northern[(idx + 6) % 12] : northern[idx];
 }
 
 interface OpenMeteoRaw {

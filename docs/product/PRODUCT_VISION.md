@@ -128,6 +128,10 @@ like a single assistant rather than a set of separate tools.
 
 Sharpen, don't sprawl. This horizon refines the engines that already exist:
 
+- **Weather Runtime — shipped** (RFC-011): a provider-agnostic runtime that is the
+  single deterministic weather source. Weather is *data* (a normalized
+  `WeatherSnapshot`); the engines decide, and AI explains — including explaining
+  the seasonal fallback when live weather is unavailable, never hallucinating it.
 - Recommendation Engine v2
 - Personalization v2
 - Insights v2

@@ -30,13 +30,12 @@ import {
   type RecommendationContext,
   type SavedOutfit,
   type SavedOutfitSnapshot,
-  type SeasonLabel,
   type UsageSnapshot,
   type WardrobeItemSnapshot,
   type WardrobeSnapshot,
-  type WeatherCondition,
   type WeatherSnapshot,
 } from "@/domain/recommendation/RecommendationContext";
+import { seasonalFallbackSnapshot } from "@/domain/weather";
 
 // ---------------------------------------------------------------------------
 // Raw inputs
@@ -264,53 +263,19 @@ function buildHealth(health: WardrobeHealth): HealthSnapshot {
 }
 
 /** Delhi NCR seasonal profile derived from the month of `generatedAt`. */
-const SEASON_BY_MONTH: SeasonLabel[] = [
-  "winter", // Jan
-  "winter", // Feb
-  "spring", // Mar
-  "spring", // Apr
-  "summer", // May
-  "summer", // Jun
-  "monsoon", // Jul
-  "monsoon", // Aug
-  "monsoon", // Sep
-  "autumn", // Oct
-  "autumn", // Nov
-  "winter", // Dec
-];
-
-const SEASON_WEATHER: Record<
-  SeasonLabel,
-  { condition: WeatherCondition; temperatureC: number; humidity: number }
-> = {
-  summer: { condition: "hot", temperatureC: 38, humidity: 45 },
-  monsoon: { condition: "rainy", temperatureC: 32, humidity: 80 },
-  autumn: { condition: "mild", temperatureC: 28, humidity: 55 },
-  winter: { condition: "cool", temperatureC: 15, humidity: 50 },
-  spring: { condition: "warm", temperatureC: 30, humidity: 50 },
-};
-
-function deriveWeather(
+/**
+ * RFC-011: weather is no longer derived here. The service layer calls the
+ * Weather Runtime and passes a live `WeatherSnapshot` as `input.weather`. When
+ * absent (or a partial override in tests), we fall back to the deterministic
+ * `seasonalFallbackSnapshot` (source: "seasonal_fallback"), merging any override
+ * on top. The builder stays pure — it never fetches weather.
+ */
+function resolveWeather(
   asOf: Date,
   override: Partial<WeatherSnapshot> | undefined,
 ): WeatherSnapshot {
-  const month = Number.isNaN(asOf.getTime()) ? 0 : asOf.getUTCMonth();
-  const season = SEASON_BY_MONTH[month] ?? "summer";
-  const profile = SEASON_WEATHER[season];
-  const base: WeatherSnapshot = {
-    season,
-    condition: profile.condition,
-    temperatureC: profile.temperatureC,
-    humidity: profile.humidity,
-  };
-  if (!override) return base;
-  return {
-    season: override.season ?? base.season,
-    condition: override.condition ?? base.condition,
-    temperatureC:
-      override.temperatureC !== undefined ? override.temperatureC : base.temperatureC,
-    humidity: override.humidity !== undefined ? override.humidity : base.humidity,
-  };
+  const base = seasonalFallbackSnapshot(asOf);
+  return override ? { ...base, ...override } : base;
 }
 
 function buildSavedOutfits(
@@ -355,7 +320,7 @@ export function buildRecommendationContext(
     purchase: buildPurchase(input.purchases ?? [], input.purchaseAnalytics ?? null),
     health: buildHealth(input.health),
     preferences: { ...DEFAULT_PREFERENCES, ...input.preferences },
-    weather: deriveWeather(asOf, input.weather),
+    weather: resolveWeather(asOf, input.weather),
     commute: { ...DEFAULT_COMMUTE, ...input.commute },
     savedOutfits: buildSavedOutfits(input.savedOutfits ?? []),
     protectedItemIds: [...(input.protectedItemIds ?? [])],

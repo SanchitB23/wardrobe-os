@@ -110,8 +110,27 @@ expands the trip into days, selects each day's outfit by requesting the
 derives a capsule, packing list, laundry schedule, and — via the `acquisition`
 capability — shopping suggestions for missing items. Returns a `LifestylePlan`
 (TripPlan / PackingPlan / LaundryPlan / ShoppingPlan + planScore +
-packingConfidence + tradeoffs + warnings). Weather is a normalized input behind
-a vendor-neutral `WeatherProvider` (Open-Meteo + manual).
+packingConfidence + tradeoffs + warnings). Weather arrives as a normalized
+`WeatherSnapshot` from the **Weather Runtime** (below).
+
+---
+
+## Weather Runtime
+**`src/domain/weather/` (pure) + `src/runtime/weather/` (I/O)** (RFC-011).
+
+The single deterministic weather source — **weather is data; the engines decide;
+AI explains.** The pure domain half defines `WeatherForecast` (rich provider
+output), the narrow engine-facing `WeatherSnapshot` (temperature, feels-like,
+rain risk, humidity, wind, UV, season, deterministic enum `WeatherLabel`s,
+confidence, source), `deriveWeatherLabels`, `forecastConfidence`, and
+`seasonalFallbackSnapshot`. The runtime half (`WeatherRuntime`) selects a provider
+(`OpenMeteo` / `Manual`, via `WEATHER_PROVIDER`), fetches, normalizes into a
+`WeatherForecast`, projects a `WeatherSnapshot`, and caches (60-min TTL; key =
+provider + location + date range) with `WeatherMetrics`. It **never throws** and
+**never recommends**; `getForecast` returns `{ data, error }` and `getSnapshot`
+returns a seasonal-fallback snapshot (`source = seasonal_fallback`) on failure.
+The Recommendation context consumes the snapshot; the orchestrator exposes a
+`weather` capability. Not a domain engine — a runtime sibling to the AI layer.
 
 ---
 

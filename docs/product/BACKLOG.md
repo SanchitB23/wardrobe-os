@@ -115,6 +115,7 @@ detail behind the deterministic engines.
 
 | RFC | Title | Status |
 | --- | --- | --- |
+| [RFC-011](../rfc/RFC-011-Weather-Runtime.md) | Weather Runtime (provider-agnostic; weather as a first-class capability) | ✅ Implemented |
 | _(TBD)_ | Capability Routing | Not started |
 | _(TBD)_ | Provider Routing | Not started |
 | _(TBD)_ | Primary / Fallback Providers | Not started |
