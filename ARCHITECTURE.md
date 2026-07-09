@@ -20,6 +20,7 @@ Alongside, two cross-cutting pillars:
 
 ```
 domain engines         src/domain/**   (pure, deterministic — the source of truth)
+runtime layer          src/runtime/**  (deterministic I/O adapters; e.g. weather)
 AI layer               src/ai/**       (vendor-neutral; explains + converses)
 ```
 
@@ -82,10 +83,26 @@ capability **through the Intelligence Orchestrator** (never a direct engine
 call), then derives a capsule, packing list, laundry schedule, and — via the
 `acquisition` capability — shopping suggestions for anything missing. It returns
 one `LifestylePlan` (TripPlan / PackingPlan / LaundryPlan / ShoppingPlan +
-planScore + packingConfidence + tradeoffs + warnings). Weather is a normalized
-input behind a vendor-neutral `WeatherProvider` (`src/features/weather`;
-Open-Meteo + manual). Surfaced at `/lifestyle/trip`. See
+planScore + packingConfidence + tradeoffs + warnings). Weather comes from the
+**Weather Runtime** (below) — the engine consumes a normalized `WeatherSnapshot`,
+never a provider. Surfaced at `/lifestyle/trip`. See
 [ENGINE_GRAPH.md](ENGINE_GRAPH.md).
+
+### Weather Runtime
+`src/runtime/weather/**` (RFC-011) is the **single deterministic weather source**:
+**weather is data; the engines decide; AI explains.** It is a runtime (I/O)
+sibling to the AI layer, not a domain engine — the pure part lives in
+`src/domain/weather` (`WeatherForecast`, the narrow engine-facing
+`WeatherSnapshot`, deterministic enum `WeatherLabel`s, forecast confidence, and a
+`seasonalFallbackSnapshot`). `WeatherRuntime` selects a provider (`OpenMeteo` /
+`Manual`, `WEATHER_PROVIDER`), fetches, normalizes, projects a `WeatherSnapshot`,
+and caches it (60-min TTL; `WeatherMetrics` for cache hit/miss, provider,
+latency). It **never throws** and **never recommends**; on failure `getSnapshot`
+returns a seasonal-fallback snapshot (`source = seasonal_fallback`) which the AI
+*explains* rather than hallucinates. The Recommendation builder consumes a
+`WeatherSnapshot`; the Orchestrator registers `weather` as a capability that
+recommendation and outfit depend on (failure-isolated). Inspect it at
+`/developer/weather`. See [ENGINE_GRAPH.md](ENGINE_GRAPH.md).
 
 ### Product surfaces & the Today home
 The UI is organized as feature-first surfaces under `src/features/**` mounted by
@@ -101,7 +118,8 @@ same "engines decide, UI surfaces" rule that governs every other view.
 
 **Developer Mode** is a client toggle (`useDevMode`, persisted to
 `localStorage`); when on, `nav-config` appends a `DEVELOPER_SECTION` that exposes
-otherwise-hidden internal tooling (the AI Playground, and the `/developer` hub).
+otherwise-hidden internal tooling (the AI Playground, the Weather Runtime
+inspector at `/developer/weather`, and the `/developer` hub).
 This keeps developer surfaces out of the everyday IA without a separate build.
 **Settings** (`/settings`) and **About** (`/about`) are thin presentational
 surfaces sourcing static release/architecture metadata.

@@ -72,10 +72,22 @@ const analytics: CapabilityDefinition = {
   },
 };
 
+/** weather (RFC-011) — surface the deterministic WeatherSnapshot the service
+ *  placed on the RecommendationContext (produced by the Weather Runtime). It
+ *  DECIDES nothing; it only exposes weather. outfit/recommendation depend on it,
+ *  and failure isolation means recommendation still runs on the always-present
+ *  (possibly seasonal-fallback) snapshot. Pure — reads context only. */
+export const weatherCapability: CapabilityDefinition = {
+  id: "weather",
+  dependsOn: [],
+  run: (ctx) => ctx.shared.recommendation.weather,
+  confidenceOf: (out) => (out as { confidence?: number } | null)?.confidence ?? null,
+};
+
 /** outfit — generate candidate outfits from the wardrobe. */
 const outfit: CapabilityDefinition = {
   id: "outfit",
-  dependsOn: [],
+  dependsOn: ["weather"],
   run: (ctx) =>
     generateOutfits(ctx.shared.recommendation, {
       occasion: occasionOf(ctx),
@@ -86,7 +98,7 @@ const outfit: CapabilityDefinition = {
 /** recommendation — unified ranking of saved + generated outfits. */
 const recommendation: CapabilityDefinition = {
   id: "recommendation",
-  dependsOn: ["outfit", "personalization"],
+  dependsOn: ["outfit", "personalization", "weather"],
   run: (ctx) =>
     recommendUnifiedOutfits(ctx.shared.recommendation, {
       occasion: occasionOf(ctx),
@@ -150,6 +162,7 @@ export const DEFAULT_CAPABILITY_REGISTRY: CapabilityRegistry = {
   health,
   usage,
   personalization,
+  weather: weatherCapability,
   analytics,
   outfit,
   recommendation,

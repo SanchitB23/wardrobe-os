@@ -199,8 +199,15 @@ describe("orchestrate — real-engine composition (default registry)", () => {
 
     const report = orchestrate({ capabilities: ["recommendation"] }, context, { clock: fakeClock() });
 
-    expect(report.executionOrder).toEqual(["outfit", "personalization", "recommendation"]);
+    // RFC-011: recommendation + outfit now depend on the `weather` capability.
+    expect(report.executionOrder).toEqual([
+      "personalization",
+      "weather",
+      "outfit",
+      "recommendation",
+    ]);
     expect(report.failedCapabilities).toEqual([]);
+    expect(report.outcomes.weather.output).toBeTruthy(); // WeatherSnapshot surfaced
     expect(Array.isArray(report.outcomes.recommendation.output)).toBe(true);
   });
 });

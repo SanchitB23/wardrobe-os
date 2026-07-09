@@ -10,6 +10,7 @@ export default defineConfig({
     alias: [
       { find: "@/ai", replacement: path.resolve(__dirname, "src/ai") },
       { find: "@/domain", replacement: path.resolve(__dirname, "src/domain") },
+      { find: "@/runtime", replacement: path.resolve(__dirname, "src/runtime") },
       { find: "@/features", replacement: path.resolve(__dirname, "src/features") },
       { find: "@/shared", replacement: path.resolve(__dirname, "src/shared") },
       { find: "@/lib/supabase", replacement: path.resolve(__dirname, "src/lib/supabase") },

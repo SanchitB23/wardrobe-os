@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  CloudSunIcon,
   DatabaseIcon,
   FlagIcon,
   FlaskConicalIcon,
@@ -37,6 +38,13 @@ const TOOLS: DevTool[] = [
     description: "Run prompt builders in isolation; inspect prompt, response, validation, cache.",
     icon: FlaskConicalIcon,
     href: "/ai/playground",
+    status: "available",
+  },
+  {
+    title: "Weather Runtime",
+    description: "Provider, cache hit/miss, latency, and the current WeatherSnapshot (RFC-011).",
+    icon: CloudSunIcon,
+    href: "/developer/weather",
     status: "available",
   },
   {

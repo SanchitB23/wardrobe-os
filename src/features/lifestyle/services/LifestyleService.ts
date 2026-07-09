@@ -28,8 +28,7 @@ import {
   selectRecommendationData,
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
-import { openMeteoProvider } from "@/features/weather/provider/OpenMeteoProvider";
-import { manualForecast } from "@/features/weather/provider/WeatherNormalizer";
+import { manualForecast, weatherRuntime } from "@/runtime/weather";
 import { toError } from "@/shared/utils/data-result";
 
 export interface PlanTripRequest {
@@ -104,17 +103,16 @@ function fallbackForecast(trip: Trip): WeatherForecast {
 }
 
 async function resolveForecast(request: PlanTripRequest): Promise<WeatherForecast> {
+  // RFC-011: weather comes from the shared Weather Runtime — never a direct
+  // provider call. The runtime never throws (returns { data, error }); on failure
+  // we degrade to a neutral seasonal forecast.
   if (request.weather?.mode === "manual") return manualForecast(request.weather.days);
-  try {
-    const f = await openMeteoProvider.forecast(
-      request.trip.destination,
-      request.trip.startDate,
-      request.trip.endDate,
-    );
-    return f.days.length > 0 ? f : fallbackForecast(request.trip);
-  } catch {
-    return fallbackForecast(request.trip);
-  }
+  const { data } = await weatherRuntime.getForecast({
+    location: request.trip.destination,
+    startDate: request.trip.startDate,
+    endDate: request.trip.endDate,
+  });
+  return data && data.days.length > 0 ? data : fallbackForecast(request.trip);
 }
 
 export async function planTrip(

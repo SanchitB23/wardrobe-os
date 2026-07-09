@@ -120,7 +120,11 @@ describe("buildExplainSharedContext", () => {
         gaps: [],
       },
       insights: { overallSummary: "sum", topActions: ["x", "y", "z", "extra"] },
-      weather: { season: "winter", condition: "cold", temperatureC: 8, humidity: null },
+      weather: {
+        season: "winter", condition: "cold", temperatureC: 8, feelsLikeC: 8,
+        rainRisk: null, humidity: null, windKph: null, uvIndex: null,
+        labels: [], confidence: 0.3, source: "seasonal_fallback",
+      },
       commute: { mode: "metro", officeDaysPerWeek: 4, durationMinutes: 45 },
     });
     expect(result.wardrobeHealth.strengths).toHaveLength(5);

@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Weather Runtime (RFC-011)
+
+Promote weather to a **provider-agnostic runtime** — the single deterministic
+weather source. Core principle: **weather is data; the engines decide; AI
+explains.** The Weather Runtime never performs recommendation, the Recommendation
+Engine never fetches weather, and AI never generates weather.
+
+- **Domain** (`src/domain/weather`, pure) — `WeatherForecast` (rich, provider
+  output), `WeatherSnapshot` (the narrow, engine-facing projection recommendation
+  consumes), deterministic enum-style `WeatherLabel`s (`HOT`, `WARM`, `MILD`,
+  `COOL`, `COLD`, `RAINY`, `HUMID`, `WINDY`, `SUNNY`, `LAYER_REQUIRED`,
+  `LIGHTWEIGHT`, `WATERPROOF`, `FORMAL_SAFE`, `SNEAKER_SAFE`), forecast
+  confidence, and `seasonalFallbackSnapshot()`.
+- **Runtime** (`src/runtime/weather`, I/O) — `WeatherRuntime` selects a provider
+  (`WEATHER_PROVIDER`, default `open-meteo`), fetches, normalizes, projects a
+  `WeatherSnapshot`, and caches. It **never throws** — `{ data, error }` on
+  forecast; a seasonal-fallback snapshot on `getSnapshot` failure. Providers:
+  `OpenMeteoProvider`, `ManualWeatherProvider`, plus `WeatherApi`/`Tomorrow`
+  stubs. In-memory cache (60-min TTL, key = provider + location + date range)
+  with `WeatherMetrics` (cache hit/miss, provider, latency, provider errors).
+- **Integration** — the Intelligence Orchestrator registers `weather` as a
+  first-class capability (recommendation & outfit depend on it; failure is
+  isolated so recommendation still runs on the fallback snapshot). The
+  recommendation builder consumes a `WeatherSnapshot`; when live weather is
+  unavailable it falls back to seasonal defaults marked
+  `source = seasonal_fallback` (which the AI explains, never hallucinates).
+- **Developer Mode** — a Weather Runtime page (`/developer/weather`) surfacing the
+  current provider, TTL, cache hit/miss & latency metrics, and the live
+  `WeatherSnapshot`.
+- The previous partial `src/features/weather` provider is relocated into the
+  runtime. Additive; **no schema changes**. 414 tests green (+14).
+
 ## [1.0.2] — 2026-07-09
 
 ### Added — Application Access Guard (RFC-010)

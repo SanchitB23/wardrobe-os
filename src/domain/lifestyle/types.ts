@@ -21,6 +21,11 @@ import type {
   SeasonLabel,
   WeatherCondition,
 } from "@/domain/recommendation";
+import type {
+  WeatherForecast,
+  WeatherForecastDay,
+  WeatherSource,
+} from "@/domain/weather";
 import type { StyleDNAItem } from "@/domain/style-dna";
 import type { PurchaseAnalytics } from "@/types/wardrobe";
 
@@ -68,26 +73,9 @@ export interface Trip {
 // Weather
 // ---------------------------------------------------------------------------
 
-/**
- * Where the forecast came from. `forecast` (live provider) + `manual` (user
- * entry) are supported now; `historical` (climate normals) is RESERVED — FUTURE.
- */
-export type WeatherSource = "forecast" | "manual" | "historical";
-
-export interface WeatherForecastDay {
-  date: string; // ISO date
-  season: SeasonLabel;
-  condition: WeatherCondition;
-  highC: number | null;
-  lowC: number | null;
-  /** 0–1 chance of rain. */
-  rainRisk: number | null;
-}
-
-export interface WeatherForecast {
-  days: WeatherForecastDay[];
-  source: WeatherSource;
-}
+// RFC-011: the forecast types now live in the weather domain; re-exported here
+// (and imported above for local use) so `@/domain/lifestyle` consumers are unaffected.
+export type { WeatherForecast, WeatherForecastDay, WeatherSource };
 
 // ---------------------------------------------------------------------------
 // Engine input
