@@ -188,6 +188,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     setMobileNavOpen(false);
   }, [pathname]);
 
+  // The unlock screen (RFC-010) renders without app chrome — no nav/sidebar.
+  if (pathname === "/unlock") {
+    return <div className="flex min-h-full flex-1 flex-col">{children}</div>;
+  }
+
   return (
     <div className="flex min-h-full flex-1">
       <a

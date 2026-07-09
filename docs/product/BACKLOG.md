@@ -147,6 +147,7 @@ accessibility / performance / release-readiness sweep.
 | [RFC-007](../rfc/RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | ✅ Implemented |
 | [RFC-008](../rfc/RFC-008-Release-Candidate.md) | v1.0 Release Candidate — Audit Triage & Remediation | ✅ Implemented (v1.0.0) |
 | [RFC-009](../rfc/RFC-009-v1-0-1-Stabilization.md) | v1.0.1 Stabilization Release (quality only, no features) | ✅ Implemented (v1.0.1) |
+| [RFC-010](../rfc/RFC-010-Application-Access-Guard.md) | Application Access Guard (single access code; not auth) | ✅ Implemented (v1.0.2) |
 
 ## Removed from scope
 

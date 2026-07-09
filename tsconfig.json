@@ -24,7 +24,8 @@
       "@/features/*": ["./src/features/*"],
       "@/shared/*": ["./src/shared/*"],
       "@/domain/*": ["./src/domain/*"],
-      "@/lib/supabase/*": ["./src/lib/supabase/*"]
+      "@/lib/supabase/*": ["./src/lib/supabase/*"],
+      "@/lib/access/*": ["./src/lib/access/*"]
     }
   },
   "include": [

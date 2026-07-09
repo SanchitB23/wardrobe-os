@@ -13,6 +13,7 @@ export default defineConfig({
       { find: "@/features", replacement: path.resolve(__dirname, "src/features") },
       { find: "@/shared", replacement: path.resolve(__dirname, "src/shared") },
       { find: "@/lib/supabase", replacement: path.resolve(__dirname, "src/lib/supabase") },
+      { find: "@/lib/access", replacement: path.resolve(__dirname, "src/lib/access") },
       { find: "@", replacement: path.resolve(__dirname, ".") },
     ],
   },

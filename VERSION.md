@@ -1,26 +1,28 @@
 # Version
 
-## Current: v1.0.1 — Stabilization
+## Current: v1.0.2 — Access Guard
 
-- **Version:** v1.0.1
-- **Release name:** Wardrobe OS 1.0.1 — Stabilization
-- **Status:** Stable (RFC-009 quality pass — no new features)
+- **Version:** v1.0.2
+- **Release name:** Wardrobe OS 1.0.2 — Access Guard
+- **Status:** Stable (RFC-010 — Application Access Guard)
 
 ### What this release is
 
-A quality-only stabilization patch (RFC-009) on top of v1.0.0. No new features,
-engines, or AI capabilities — it pays down deferred audit debt across
-**performance** (lazy/gated CommandPalette, batched bulk import),
-**accessibility** (labeled form controls, chat live region, headings + skip
-link), **developer experience** (single-source version, ES2022, release docs),
-and **resilience** (chat + vision retry on transient failures, request-size caps
-and generic client-facing errors on the AI routes). See [CHANGELOG.md](CHANGELOG.md).
+Adds the **Application Access Guard** (RFC-010): the whole app can sit behind a
+single shared access code — **application-level access control, not
+authentication**. A Next.js proxy verifies an HMAC-signed HttpOnly cookie and
+redirects locked page requests to `/unlock` (API routes get `401`); static
+assets, `/unlock`, and `/api/access/*` are excluded. 30-day session; logout from
+Settings. No database, no user model, no auth provider, no Supabase Auth. The
+guard is disabled when `APP_ACCESS_CODE` is blank (local dev). See
+[SECURITY.md](SECURITY.md) and [CHANGELOG.md](CHANGELOG.md).
 
-### Prior release
+### Prior releases
 
-**v1.0.0 — One Assistant** (2026-07-08): the Today home, Intelligence
-Orchestrator, Lifestyle & Personalization engines, and the RFC-008
-release-candidate hardening pass.
+- **v1.0.1 — Stabilization** (2026-07-09): RFC-009 quality pass (performance,
+  accessibility, DX, resilience; no new features).
+- **v1.0.0 — One Assistant** (2026-07-08): the Today home, Intelligence
+  Orchestrator, Lifestyle & Personalization engines, RFC-008 hardening.
 
 ### What this release is
 

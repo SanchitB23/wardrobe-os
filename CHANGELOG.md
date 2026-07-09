@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-07-09
+
+### Added — Application Access Guard (RFC-010)
+
+Gate the entire application behind a **single shared access code**. This is
+**application-level access control, not authentication** — no users, no database,
+no auth provider, no Supabase Auth, no JWT.
+
+- **Proxy** (`proxy.ts` — Next.js 16's renamed middleware) verifies an HMAC-signed
+  cookie on every request. Valid ⇒ allow; otherwise pages redirect to `/unlock`
+  and API routes return `401`. Protects all pages, `/api/*`, Developer pages, and
+  AI routes; static assets (`_next`, favicon, public files) and `/unlock` +
+  `/api/access/*` are excluded.
+- **Unlock** (`/unlock`) — a minimal code entry; `POST /api/access/unlock`
+  constant-time compares to `APP_ACCESS_CODE` and issues the cookie.
+- **Cookie** `wos_access` — **HttpOnly · Secure (prod) · SameSite=Lax ·
+  HMAC-SHA256 signed** (Web Crypto), carrying only an expiry. **30-day** session.
+  No `localStorage`/`sessionStorage`.
+- **Logout** — Settings → Access → "Lock app" clears the cookie
+  (`POST /api/access/logout`) and returns to `/unlock`.
+- **Config** — `APP_ACCESS_CODE` + `APP_COOKIE_SECRET` (server-only). Guard is
+  **disabled when `APP_ACCESS_CODE` is blank** (local dev) and **fails closed**
+  if the code is set without a secret. See [SECURITY.md](SECURITY.md).
+
+No schema changes. Verified end-to-end (page redirect, API 401, static assets
+pass, HttpOnly cookie, unlock/logout). 400 tests green; lint at baseline; build
+passes.
+
 ## [1.0.1] — 2026-07-09
 
 Stabilization release (RFC-009) — **quality only, no new features**. Pays down
@@ -272,7 +300,8 @@ explains and converses — without ever becoming the source of truth.
 
 - Database schema and inventory CRUD.
 
-[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.1...HEAD
+[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/SanchitB23/wardrobe-os/releases/tag/v0.6.0

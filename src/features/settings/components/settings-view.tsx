@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import {
   InfoIcon,
+  LockIcon,
   PaletteIcon,
   SlidersHorizontalIcon,
   SparklesIcon,
@@ -11,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { PageHeader, ThemeToggle, useDevMode } from "@/features/layout";
+import { LogoutButton } from "@/features/access/components/logout-button";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -138,6 +140,14 @@ export function SettingsView() {
         <Button variant={devMode ? "default" : "outline"} size="sm" onClick={toggle} aria-pressed={devMode}>
           Developer mode: {devMode ? "On" : "Off"}
         </Button>
+      </SettingRow>
+
+      <SettingRow
+        icon={LockIcon}
+        title="Access"
+        description="This workspace can be gated behind a shared access code. Lock it to require the code again on this device."
+      >
+        <LogoutButton />
       </SettingRow>
 
       <SettingRow

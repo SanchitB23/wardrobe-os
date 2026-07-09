@@ -1,6 +1,6 @@
 # Wardrobe OS
 
-**Version:** v1.0.1 — _Stabilization_
+**Version:** v1.0.2 — _Access Guard_
 
 Wardrobe OS is a personal wardrobe operating system: a single place to catalogue
 what you own, understand how you use it, score and generate outfits, plan trips,
@@ -78,6 +78,13 @@ are server-side).
 | `AI_PROVIDER` | Which AI backend to use | `gemini` |
 | `GEMINI_API_KEY` | Gemini API key (server-side only) | — |
 | `GEMINI_MODEL` | Gemini model id | `gemini-2.5-flash` |
+| `APP_ACCESS_CODE` | Shared access code for the [Access Guard](SECURITY.md) (server-side only). Blank ⇒ guard disabled. | — |
+| `APP_COOKIE_SECRET` | HMAC secret signing the access cookie (required when `APP_ACCESS_CODE` is set) | — |
+
+When `APP_ACCESS_CODE` is set, the whole app is gated behind an
+[Application Access Guard](SECURITY.md) (a single shared code — **not** auth):
+unauthenticated requests redirect to `/unlock` (pages) or get `401` (API). Lock
+it again from **Settings → Access → Lock app**.
 
 ## How to run
 
@@ -109,6 +116,7 @@ strategy document, not a roadmap.
 - [DECISIONS.md](DECISIONS.md) — major decisions (indexes the ADRs)
 - [CONTRIBUTING.md](CONTRIBUTING.md) — workflow + release discipline
 - [docs/adr/](docs/adr/) — Architecture Decision Records
+- [SECURITY.md](SECURITY.md) — security model + Application Access Guard
 - [LICENSE](LICENSE) — MIT
 
 ## Roadmap summary
