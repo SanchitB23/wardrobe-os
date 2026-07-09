@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import { useMutation } from "@tanstack/react-query";
 import {
   AlertCircleIcon,
@@ -56,10 +56,18 @@ function CodeBlock({ children }: { children: string }) {
 }
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  const labelId = useId();
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      {children}
+      <Label id={labelId} className="text-xs text-muted-foreground">
+        {label}
+      </Label>
+      {React.isValidElement(children)
+        ? React.cloneElement(
+            children as React.ReactElement<{ "aria-labelledby"?: string }>,
+            { "aria-labelledby": labelId },
+          )
+        : children}
     </div>
   );
 }

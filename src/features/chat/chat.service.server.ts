@@ -63,6 +63,20 @@ function addUsage(a: AIUsage | undefined, b: AIUsage | undefined): AIUsage | und
 }
 
 /** Split text into small chunks on word boundaries for progressive rendering. */
+/** Heuristic: is this a transient provider error worth one retry? (RFC-009/H5) */
+function isTransientChatError(error: unknown): boolean {
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  return (
+    message.includes("429") ||
+    message.includes("500") ||
+    message.includes("503") ||
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("unavailable") ||
+    message.includes("overloaded")
+  );
+}
+
 function* chunkText(text: string, size = 60): Generator<string> {
   const words = text.split(/(\s+)/);
   let buffer = "";
@@ -121,14 +135,28 @@ export async function* streamChat(
       return;
     }
 
-    const session = await model.startSession({
+    const sessionOptions = {
       system: SYSTEM,
       history: messages.slice(0, -1),
       tools: registry.definitions() as ChatToolSpec[],
       model: modelId,
-    });
+    };
 
-    let turn = await session.send({ text: lastUser.content });
+    // Resilience (RFC-009/H5): retry the opening turn once on a transient
+    // provider error (429/503/timeout) so a blip doesn't kill the conversation.
+    const openTurn = async () => {
+      const s = await model.startSession(sessionOptions);
+      return { session: s, turn: await s.send({ text: lastUser.content }) };
+    };
+    let session: Awaited<ReturnType<typeof openTurn>>["session"];
+    let turn: Awaited<ReturnType<typeof openTurn>>["turn"];
+    try {
+      ({ session, turn } = await openTurn());
+    } catch (error) {
+      if (!isTransientChatError(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      ({ session, turn } = await openTurn());
+    }
     let usage = turn.usage;
     const toolTrace: ToolTraceEntry[] = [];
     let steps = 0;

@@ -7,6 +7,55 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-07-09
+
+Stabilization release (RFC-009) — **quality only, no new features**. Pays down
+the highest-value deferred audit debt across performance, accessibility,
+developer experience, and resilience.
+
+### Performance
+- **CommandPalette no longer taxes every route (H11):** it is lazy-loaded
+  (`next/dynamic`, `ssr:false`) and its wardrobe query is gated on open — the
+  Supabase client and a full wardrobe fetch are no longer pulled into the shared
+  First-Load JS or fired on pages like `/about`, `/settings`, `/developer`.
+- **Bulk JSON import (M5):** items now sync with bounded concurrency instead of
+  fully sequentially, cutting wall-clock on large imports (per-item logic
+  unchanged).
+
+### Accessibility
+- **Labeled form controls (H10):** the shared `Field` helpers (Lifestyle wizard,
+  Playground) associate their label with the control, and all Inventory filter /
+  sort selects expose an accessible name.
+- **Chat is no longer silent to screen readers (M1):** the message log is a
+  `role="log"` `aria-live` region and the composer has an accessible name.
+- **Headings + landmarks (M2, N7):** `CardTitle` renders a real `<h2>`; added a
+  "Skip to main content" link and `id="main"`; labeled the developer tool links
+  (with an "opens in a new tab" cue) and the previously-unlabeled progress bars.
+- **Contrast (carried from v1.0.0):** focus-ring / muted-text / form-border
+  tokens meet WCAG AA in light and dark.
+
+### Developer Experience
+- **Single-source version (N10):** the About page reads the version from
+  `package.json` instead of a hardcoded string.
+- **Modern TS target (N2a):** `tsconfig` `target` bumped ES2017 → ES2022.
+- **Docs (N9):** documented the "push branch + tag" release step in CLAUDE.md.
+
+### Resilience
+- **Chat retries transient failures (H5):** the opening turn retries once on a
+  429/503/timeout instead of surfacing a raw error.
+- **Vision retries transient failures (N17a):** `GeminiVisionProvider.analyze`
+  now retries once, mirroring the text provider.
+- **Safer API surface (M6, M7):** the chat and vision routes cap request size
+  (message count/length; image ≤ ~8 MB + JPEG/PNG/WebP allow-list) and return
+  generic client-facing errors while logging detail server-side.
+
+### Deferred to v1.0.2
+- **next/image migration (M4)** — needs verification of signed-URL/next-image
+  cache interaction; kept out of a stabilization patch.
+- **`server-only` guards (N8)** — runtime guards already exist; adds a dependency.
+- **Architecture-group items** (H8, M10, M16, M9, N11) — out of the stated
+  Perf/A11y/DX/Resilience focus and would touch layering.
+
 ## [1.0.0] — 2026-07-08
 
 The v1.0 release: an assistant-style **Today** home, the deterministic
@@ -223,6 +272,7 @@ explains and converses — without ever becoming the source of truth.
 
 - Database schema and inventory CRUD.
 
-[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.0...HEAD
+[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v0.6.0...v1.0.0
 [0.6.0]: https://github.com/SanchitB23/wardrobe-os/releases/tag/v0.6.0

@@ -1,11 +1,26 @@
 # Version
 
-## Current: v1.0.0 — Release Candidate
+## Current: v1.0.1 — Stabilization
 
-- **Version:** v1.0.0 (`package.json` bumped; annotated tag + push pending the
-  Owner's go)
-- **Release name:** Wardrobe OS 1.0 — One Assistant
-- **Status:** Release Candidate (RFC-008 Must-Fix landed; awaiting tag)
+- **Version:** v1.0.1
+- **Release name:** Wardrobe OS 1.0.1 — Stabilization
+- **Status:** Stable (RFC-009 quality pass — no new features)
+
+### What this release is
+
+A quality-only stabilization patch (RFC-009) on top of v1.0.0. No new features,
+engines, or AI capabilities — it pays down deferred audit debt across
+**performance** (lazy/gated CommandPalette, batched bulk import),
+**accessibility** (labeled form controls, chat live region, headings + skip
+link), **developer experience** (single-source version, ES2022, release docs),
+and **resilience** (chat + vision retry on transient failures, request-size caps
+and generic client-facing errors on the AI routes). See [CHANGELOG.md](CHANGELOG.md).
+
+### Prior release
+
+**v1.0.0 — One Assistant** (2026-07-08): the Today home, Intelligence
+Orchestrator, Lifestyle & Personalization engines, and the RFC-008
+release-candidate hardening pass.
 
 ### What this release is
 

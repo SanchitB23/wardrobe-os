@@ -156,7 +156,7 @@ export function LifestylePlanResult({ result }: { result: LifestyleResult }) {
               </div>
             ))}
             <Separator />
-            <Progress value={Math.round(packingPlan.packingConfidence * 100)} className="h-1.5" />
+            <Progress value={Math.round(packingPlan.packingConfidence * 100)} aria-label="Packing confidence" className="h-1.5" />
             <div className="text-xs text-muted-foreground">{pct(packingPlan.packingConfidence)} of days fully packable</div>
           </CardContent>
         </Card>

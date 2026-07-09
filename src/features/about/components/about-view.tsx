@@ -9,6 +9,8 @@ import {
   SparklesIcon,
 } from "lucide-react";
 
+import pkg from "@/package.json";
+
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -20,7 +22,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 
-const RELEASE = "v1.0.0 — Release Candidate";
+// Single source of truth: the version comes from package.json (RFC-009/N10).
+const RELEASE = `v${pkg.version}`;
 const REPO_URL = "https://github.com/sanchitbhatnagar/wardrobe-os";
 
 const ENGINES = [

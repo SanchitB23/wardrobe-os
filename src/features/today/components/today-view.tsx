@@ -242,7 +242,7 @@ function WardrobeHealthWidget() {
               <span className="text-2xl font-semibold tabular-nums">{Math.round(health.overallScore)}</span>
               <span className="text-xs text-muted-foreground">/ 100</span>
             </div>
-            <Progress value={Math.round(health.overallScore)} className="h-1.5" />
+            <Progress value={Math.round(health.overallScore)} aria-label="Wardrobe health score" className="h-1.5" />
             {health.strengths[0] ? (
               <p className="text-sm text-muted-foreground">{health.strengths[0]}</p>
             ) : null}

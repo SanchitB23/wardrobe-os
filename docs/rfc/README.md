@@ -91,6 +91,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [006](RFC-006-Lifestyle-Engine.md) | Lifestyle Engine | Lifestyle | Implemented |
 | [007](RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | Product Experience | Implemented |
 | [008](RFC-008-Release-Candidate.md) | v1.0 Release Candidate — Audit Triage & Remediation | Product Experience | Approved |
+| [009](RFC-009-v1-0-1-Stabilization.md) | v1.0.1 Stabilization Release | Product Experience | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
 reserved RFC numbers (RFC-001 … RFC-014).

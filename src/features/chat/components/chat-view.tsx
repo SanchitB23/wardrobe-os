@@ -173,6 +173,10 @@ export function ChatView() {
 
       <div
         ref={scrollRef}
+        role="log"
+        aria-live="polite"
+        aria-relevant="additions"
+        aria-label="Conversation with the AI stylist"
         className="flex-1 space-y-4 overflow-y-auto rounded-xl border bg-muted/10 p-4"
       >
         {messages.length === 0 ? (
@@ -210,6 +214,7 @@ export function ChatView() {
       >
         <Textarea
           value={input}
+          aria-label="Message the AI stylist"
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => {
             if (e.key === "Enter" && !e.shiftKey) {

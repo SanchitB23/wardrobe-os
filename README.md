@@ -1,6 +1,6 @@
 # Wardrobe OS
 
-**Version:** v1.0.0 — _Release Candidate_
+**Version:** v1.0.1 — _Stabilization_
 
 Wardrobe OS is a personal wardrobe operating system: a single place to catalogue
 what you own, understand how you use it, score and generate outfits, plan trips,

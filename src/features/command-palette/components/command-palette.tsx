@@ -32,8 +32,9 @@ export function CommandPalette() {
   const [open, setOpen] = useState(false);
   const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
 
-  // Item rows load lazily: only once the palette is opened.
-  const itemsQuery = useWardrobeItems({});
+  // Item rows load lazily: the query itself is gated on `open`, so no wardrobe
+  // fetch fires until the palette is first opened (RFC-009/H11).
+  const itemsQuery = useWardrobeItems({}, { enabled: open });
   const items = useMemo(
     () => (open ? (itemsQuery.data ?? []) : []),
     [open, itemsQuery.data],

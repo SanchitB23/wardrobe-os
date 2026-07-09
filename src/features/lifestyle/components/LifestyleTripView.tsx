@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import React, { useId, useMemo, useState } from "react";
 import { Loader2Icon, LuggageIcon, SparklesIcon } from "lucide-react";
 
 import { eachDateInclusive } from "@/domain/lifestyle";
@@ -11,6 +11,7 @@ import type {
   WeatherForecastDay,
 } from "@/domain/lifestyle";
 import type { WeatherCondition } from "@/domain/recommendation";
+import { seasonFor } from "@/features/weather/provider/WeatherNormalizer";
 import { useLifestylePlan } from "@/features/lifestyle/hooks/useLifestylePlan";
 import { LifestylePlanResult } from "@/features/lifestyle/components/LifestylePlanResult";
 import { PageHeader } from "@/features/layout";
@@ -38,20 +39,23 @@ const LUGGAGE = ["carry_on", "checked", "unbounded"] as const;
 const CONDITIONS: WeatherCondition[] = ["hot", "warm", "mild", "cool", "cold", "rainy"];
 
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
+  // Associate the visible label with the control (RFC-009/H10): the label gets an
+  // id and the child is given aria-labelledby, which works for both <Input> and
+  // the Base UI Select trigger.
+  const labelId = useId();
   return (
     <div className="space-y-1.5">
-      <Label className="text-xs text-muted-foreground">{label}</Label>
-      {children}
+      <Label id={labelId} className="text-xs text-muted-foreground">
+        {label}
+      </Label>
+      {React.isValidElement(children)
+        ? React.cloneElement(
+            children as React.ReactElement<{ "aria-labelledby"?: string }>,
+            { "aria-labelledby": labelId },
+          )
+        : children}
     </div>
   );
-}
-
-function seasonForMonth(month: number): WeatherForecastDay["season"] {
-  const map: WeatherForecastDay["season"][] = [
-    "winter", "winter", "spring", "spring", "spring", "summer",
-    "summer", "summer", "autumn", "autumn", "autumn", "winter",
-  ];
-  return map[Math.max(0, Math.min(11, month - 1))];
 }
 
 export function LifestyleTripView() {
@@ -81,7 +85,9 @@ export function LifestyleTripView() {
       const condition = manual[date] ?? "mild";
       return {
         date,
-        season: seasonForMonth(Number(date.slice(5, 7))),
+        // Manual entry has no coordinates, so assume northern hemisphere (lat 0);
+        // reuses the single hemisphere-aware season mapping (RFC-009/M15).
+        season: seasonFor(date, 0),
         condition,
         highC: null,
         lowC: null,

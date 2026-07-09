@@ -42,7 +42,7 @@ export function ScoreBreakdown({ breakdown }: { breakdown: BuyVsSkipBreakdown })
                 {dim.score.toFixed(1)}/10
               </span>
             </div>
-            <Progress value={dim.score * 10} />
+            <Progress value={dim.score * 10} aria-label={`${label} score`} />
             <p className="text-xs text-muted-foreground">{dim.reason}</p>
           </div>
         );

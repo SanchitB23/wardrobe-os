@@ -106,9 +106,25 @@ export async function bulkSyncJsonWardrobeItems(
   let inserted = 0;
   let updated = 0;
 
-  for (const payload of payloads) {
-    const result = await syncJsonWardrobeItem(payload);
+  // Process items with bounded concurrency instead of fully sequentially
+  // (RFC-009/M5): each payload is a distinct item (distinct code) with no
+  // cross-item contention, so this cuts wall-clock on large imports without
+  // changing per-item logic. Results are kept index-ordered for a stable report.
+  const CONCURRENCY = 5;
+  const results = new Array<Awaited<ReturnType<typeof syncJsonWardrobeItem>>>(
+    payloads.length,
+  );
+  let cursor = 0;
+  async function worker() {
+    for (let i = cursor++; i < payloads.length; i = cursor++) {
+      results[i] = await syncJsonWardrobeItem(payloads[i]);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(CONCURRENCY, payloads.length) }, worker),
+  );
 
+  for (const result of results) {
     switch (result.status) {
       case "inserted":
         inserted += 1;

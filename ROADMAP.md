@@ -24,10 +24,11 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 
 - ✅ Today Experience & v1.0 Product Polish (RFC-007)
 
-**Current:** **v1.0.0 Release Candidate.** RFC-004 Personalization, RFC-005
-Intelligence Orchestrator, RFC-006 Lifestyle Engine, and RFC-007 Today Experience
-& v1.0 Polish are all implemented on `main` — pending the `package.json` bump and
-the `v1.0.0` release tag.
+**Current:** **v1.0.1 — Stabilization** (shipped). v1.0.0 (RFC-004 Personalization,
+RFC-005 Intelligence Orchestrator, RFC-006 Lifestyle Engine, RFC-007 Today
+Experience, and the RFC-008 hardening pass) is tagged; **v1.0.1 (RFC-009)** is a
+quality-only patch — performance, accessibility, developer-experience, and
+resilience improvements, no new features.
 
 ## Phases
 
@@ -37,7 +38,8 @@ the `v1.0.0` release tag.
 | v0.7 | Acquisition Engine | ✅ | Deterministic buy/skip guidance |
 | v0.8 | Vision + Shopping Screenshot | ✅ | Understand item photos and shopping screenshots |
 | v0.9 | Personalization Engine | ✅ | Learn preferences from behaviour |
-| **v1.0** | **Lifestyle Engine + Today Experience** | **🚧 release candidate** | **Trip planning, and the assistant-style Today home that unifies every surface** |
+| v1.0 | Lifestyle Engine + Today Experience | ✅ | Trip planning, and the assistant-style Today home that unifies every surface |
+| **v1.0.1** | **Stabilization (RFC-009)** | **✅** | **Quality only: performance, accessibility, DX, resilience — no new features** |
 | v1.1 | AI Runtime | 🔜 | Capability/provider routing, benchmarking, cost/latency analytics, prompt versioning |
 | v1.2 | Wardrobe Intelligence | 🔜 | Cross-engine orchestration, long-horizon planning, multi-step reasoning |
 
@@ -70,7 +72,7 @@ overrides. The engine derives; AI only explains.
   `RecommendationContext`). Preferences are re-derived from behaviour every run,
   never incrementally mutated.
 
-### v1.0 — Lifestyle Engine + Today Experience 🚧 (release candidate)
+### v1.0 — Lifestyle Engine + Today Experience ✅ (v1.0.1 stabilization shipped)
 The v1.0 release pairs the last deterministic engine with the cohesion pass that
 turns every module into one assistant.
 - **RFC-006 Lifestyle Engine — implemented** (`src/domain/lifestyle`;

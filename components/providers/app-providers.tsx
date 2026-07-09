@@ -3,9 +3,16 @@
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
+import dynamic from "next/dynamic";
 
-import { CommandPalette } from "@/features/command-palette";
 import { ThemedToaster } from "@/features/layout/components/themed-toaster";
+
+// Lazy: keeps cmdk + the Supabase-backed inventory query chain out of the shared
+// First-Load JS on every route (RFC-009/H11). Still mounts for the Cmd+K hotkey.
+const CommandPalette = dynamic(
+  () => import("@/features/command-palette").then((m) => m.CommandPalette),
+  { ssr: false },
+);
 
 function makeQueryClient() {
   return new QueryClient({

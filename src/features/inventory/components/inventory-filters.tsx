@@ -70,7 +70,7 @@ function LookupFilterSelect({
         onValueChange={(next) => onChange(next || undefined)}
         disabled={disabled}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full" aria-label={label}>
           <span
             className={
               selectedLabel
@@ -118,7 +118,7 @@ function EnumFilterSelect({
         value={value ?? ""}
         onValueChange={(next) => onChange(next || undefined)}
       >
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full" aria-label={label}>
           <span
             className={
               selectedLabel
@@ -316,7 +316,7 @@ export function InventoryFiltersPanel({
                 handleSortFieldChange(value as InventorySortField)
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Sort by">
                 <span>
                   {INVENTORY_SORT_OPTIONS.find(
                     (option) => option.field === sortField,
@@ -346,7 +346,7 @@ export function InventoryFiltersPanel({
                 })
               }
             >
-              <SelectTrigger className="w-full">
+              <SelectTrigger className="w-full" aria-label="Sort direction">
                 <span>{sortAscending ? "Ascending" : "Descending"}</span>
               </SelectTrigger>
               <SelectContent>

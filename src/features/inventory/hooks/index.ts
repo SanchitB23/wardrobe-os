@@ -60,9 +60,13 @@ export function useInventorySummary() {
   });
 }
 
-export function useWardrobeItems(filters: InventoryFilters) {
+export function useWardrobeItems(
+  filters: InventoryFilters,
+  options: { enabled?: boolean } = {},
+) {
   return useQuery({
     queryKey: wardrobeKeys.items(filters),
+    enabled: options.enabled ?? true,
     queryFn: async () => {
       const items = unwrapData(await fetchWardrobeItems(filters));
       const imageMap = unwrapData(

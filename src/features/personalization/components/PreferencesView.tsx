@@ -79,7 +79,7 @@ function PreferenceRow({
           )}
         </div>
       </div>
-      <Progress value={Math.round(pref.weight * 100)} className="h-1.5" />
+      <Progress value={Math.round(pref.weight * 100)} aria-label={`${pref.value} preference weight`} className="h-1.5" />
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span title="How sure we are now">confidence {pct(pref.confidence)}</span>
         <span aria-hidden>·</span>

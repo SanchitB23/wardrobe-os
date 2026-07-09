@@ -64,6 +64,20 @@ function parseItems(text: string | undefined): RawDetectedItem[] {
   return [];
 }
 
+/** Heuristic: is this a transient provider error worth one retry? (RFC-009/N17a) */
+function isTransientVisionError(error: unknown): boolean {
+  const message = (error instanceof Error ? error.message : String(error)).toLowerCase();
+  return (
+    message.includes("429") ||
+    message.includes("500") ||
+    message.includes("503") ||
+    message.includes("timeout") ||
+    message.includes("timed out") ||
+    message.includes("unavailable") ||
+    message.includes("overloaded")
+  );
+}
+
 export class GeminiVisionProvider implements VisionProvider {
   readonly id: VisionProviderId = "gemini";
   readonly capabilities: VisionCapabilities = {
@@ -91,11 +105,22 @@ export class GeminiVisionProvider implements VisionProvider {
         ? { inlineData: { mimeType: input.mimeType, data: input.data } }
         : { fileData: { mimeType: input.mimeType, fileUri: input.data } };
 
-    const response = await client.models.generateContent({
-      model,
-      contents: [{ role: "user", parts: [{ text: EXTRACTION_PROMPT }, imagePart] }],
-      config: { responseMimeType: "application/json", temperature: 0 },
-    });
+    // Resilience (RFC-009/N17a): retry once on a transient provider error,
+    // mirroring GeminiProvider.generate().
+    const call = () =>
+      client.models.generateContent({
+        model,
+        contents: [{ role: "user", parts: [{ text: EXTRACTION_PROMPT }, imagePart] }],
+        config: { responseMimeType: "application/json", temperature: 0 },
+      });
+    let response;
+    try {
+      response = await call();
+    } catch (error) {
+      if (!isTransientVisionError(error)) throw error;
+      await new Promise((resolve) => setTimeout(resolve, 400));
+      response = await call();
+    }
 
     return {
       provider: this.id,

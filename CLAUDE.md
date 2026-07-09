@@ -73,6 +73,8 @@ An RFC is a product/architecture spec, not an implementation prompt.
       ```bash
       git tag -a v0.6.0 -m "Release v0.6.0: AI Stylist Beta"
       ```
+    - push the branch and the tag to `origin` (e.g. `git push origin main`
+      then `git push origin v0.6.0`).
 14. **Never create a release tag without tests passing** (`npm test` green).
 
 ## Testing note

@@ -123,6 +123,7 @@ export function DeveloperView() {
                     render={
                       <a
                         href={tool.href}
+                        aria-label={`Open ${tool.title}${tool.external ? " (opens in a new tab)" : ""}`}
                         {...(tool.external ? { target: "_blank", rel: "noreferrer" } : {})}
                       >
                         Open

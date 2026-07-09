@@ -33,9 +33,11 @@ function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
   )
 }
 
-function CardTitle({ className, ...props }: React.ComponentProps<"div">) {
+function CardTitle({ className, ...props }: React.ComponentProps<"h2">) {
+  // Renders a real heading (h2) so card-sectioned pages have a navigable
+  // heading structure under the page's h1 (RFC-009/M2).
   return (
-    <div
+    <h2
       data-slot="card-title"
       className={cn(
         "font-heading text-base leading-snug font-medium group-data-[size=sm]/card:text-sm",
