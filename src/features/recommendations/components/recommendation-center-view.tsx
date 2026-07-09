@@ -46,9 +46,10 @@ import { ColorSwatch } from "@/shared/ui";
 import { cn } from "@/lib/utils";
 import type {
   CommuteMode,
+  RecommendationQuality,
+  RecommendationV2,
   RecommendedOutfitItem,
   SeasonLabel,
-  UnifiedOutfitRecommendation,
   WeatherCondition,
 } from "@/domain/recommendation";
 
@@ -66,8 +67,8 @@ const COMMUTES: readonly CommuteMode[] = ["wfh", "metro", "car", "walk", "mixed"
 type CardHandlers = {
   previews: Record<string, ItemPreview>;
   debug: boolean;
-  onSave: (rec: UnifiedOutfitRecommendation) => void;
-  onWear: (rec: UnifiedOutfitRecommendation) => void;
+  onSave: (rec: RecommendationV2) => void;
+  onWear: (rec: RecommendationV2) => void;
   saving: boolean;
   wearing: boolean;
   /** Shared context used to build the AI explanation input (per response). */
@@ -138,7 +139,7 @@ function OutfitPreview({
   previews,
   large,
 }: {
-  rec: UnifiedOutfitRecommendation;
+  rec: RecommendationV2;
   previews: Record<string, ItemPreview>;
   large?: boolean;
 }) {
@@ -151,7 +152,7 @@ function OutfitPreview({
   );
 }
 
-function SourceBadge({ source }: { source: UnifiedOutfitRecommendation["source"] }) {
+function SourceBadge({ source }: { source: RecommendationV2["source"] }) {
   return source === "saved_outfit" ? (
     <Badge variant="secondary">Saved outfit</Badge>
   ) : (
@@ -161,7 +162,7 @@ function SourceBadge({ source }: { source: UnifiedOutfitRecommendation["source"]
   );
 }
 
-function ScoreConfidence({ rec }: { rec: UnifiedOutfitRecommendation }) {
+function ScoreConfidence({ rec }: { rec: RecommendationV2 }) {
   return (
     <div className="flex items-center gap-3">
       <div className="text-right">
@@ -206,7 +207,7 @@ function MetaList({
   );
 }
 
-function DebugBlock({ rec }: { rec: UnifiedOutfitRecommendation }) {
+function DebugBlock({ rec }: { rec: RecommendationV2 }) {
   const d = rec.debug;
   if (!d) return null;
   return (
@@ -226,8 +227,55 @@ function DebugBlock({ rec }: { rec: UnifiedOutfitRecommendation }) {
         {d.penalties && d.penalties.length > 0 ? (
           <li className="text-destructive">penalties: {d.penalties.join(", ")}</li>
         ) : null}
+        {rec.reasonCodes.length > 0 ? <li>reasonCodes: {rec.reasonCodes.join(", ")}</li> : null}
+        <li>
+          diversity: rank {rec.diversity.rank}
+          {rec.diversity.heldBackNearDuplicates > 0
+            ? ` · held back ${rec.diversity.heldBackNearDuplicates} near-dup`
+            : ""}
+          {rec.diversity.relaxed ? " · relaxed" : ""}
+        </li>
+        <li className="pt-1 text-muted-foreground">
+          top dims:{" "}
+          {[...rec.breakdown.dimensions]
+            .sort((a, b) => b.weighted - a.weighted)
+            .slice(0, 3)
+            .map((dim) => `${dim.dimension} ${dim.raw.toFixed(1)}`)
+            .join(", ")}
+        </li>
       </ul>
     </div>
+  );
+}
+
+/** RFC-012 per-run recommendation quality metrics (Developer Mode). */
+function QualityPanel({ quality }: { quality: RecommendationQuality }) {
+  const rows: [string, string][] = [
+    ["Eligible", String(quality.eligibleCandidateCount)],
+    ["Rejected", String(quality.rejectedCandidateCount)],
+    ["Diversity", `${Math.round(quality.diversityScore * 100)}%`],
+    ["Avg confidence", `${Math.round(quality.averageConfidence * 100)}%`],
+    ["Source mix", `${quality.sourceMix.saved} saved · ${quality.sourceMix.generated} generated`],
+    ["Weather influence", `${Math.round(quality.weatherInfluence * 100)}%`],
+    ["Personalization influence", `${Math.round(quality.personalizationInfluence * 100)}%`],
+  ];
+  return (
+    <Card className="border-dashed">
+      <CardHeader className="pb-3">
+        <div className="flex items-center gap-2">
+          <BugIcon className="size-4 text-muted-foreground" />
+          <CardTitle className="text-base">Recommendation quality (RFC-012)</CardTitle>
+        </div>
+        <CardDescription>Per-run metrics from Recommendation Engine v2.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {rows.map(([label, value]) => (
+          <Badge key={label} variant="secondary" className="tabular-nums">
+            {label}: {value}
+          </Badge>
+        ))}
+      </CardContent>
+    </Card>
   );
 }
 
@@ -238,9 +286,9 @@ function ActionButtons({
   saving,
   wearing,
 }: {
-  rec: UnifiedOutfitRecommendation;
-  onSave: (rec: UnifiedOutfitRecommendation) => void;
-  onWear: (rec: UnifiedOutfitRecommendation) => void;
+  rec: RecommendationV2;
+  onSave: (rec: RecommendationV2) => void;
+  onWear: (rec: RecommendationV2) => void;
   saving: boolean;
   wearing: boolean;
 }) {
@@ -300,7 +348,7 @@ function ExplainSection({
   shared,
   open,
 }: {
-  rec: UnifiedOutfitRecommendation;
+  rec: RecommendationV2;
   shared: ExplainSharedContext | undefined;
   open: boolean;
 }) {
@@ -397,7 +445,7 @@ function RecommendationCard({
   handlers,
   hero,
 }: {
-  rec: UnifiedOutfitRecommendation;
+  rec: RecommendationV2;
   handlers: CardHandlers;
   hero?: boolean;
 }) {
@@ -455,7 +503,7 @@ function CardGrid({
   recs,
   handlers,
 }: {
-  recs: UnifiedOutfitRecommendation[];
+  recs: RecommendationV2[];
   handlers: CardHandlers;
 }) {
   return (
@@ -534,10 +582,10 @@ export function RecommendationCenterView() {
     setFilters({});
   }
 
-  function handleSave(rec: UnifiedOutfitRecommendation) {
+  function handleSave(rec: RecommendationV2) {
     saveMutation.mutate({ items: rec.items });
   }
-  function handleWear(rec: UnifiedOutfitRecommendation) {
+  function handleWear(rec: RecommendationV2) {
     wearMutation.mutate({
       itemIds: rec.items.map((item) => item.itemId),
       outfitId: rec.savedOutfitId,
@@ -652,6 +700,8 @@ export function RecommendationCenterView() {
       </div>
 
       {showDebug && data ? <ContextPanel context={data.context} /> : null}
+
+      {showDebug && data ? <QualityPanel quality={data.quality} /> : null}
 
       {showDebug && rejectionReasons.length > 0 ? (
         <Card className="border-destructive/30">

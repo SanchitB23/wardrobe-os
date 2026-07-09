@@ -16,8 +16,8 @@ import type {
 } from "@/domain/orchestrator/Capability";
 import { generateInsights } from "@/domain/analytics/InsightEngine";
 import { generateOutfits } from "@/domain/generation/OutfitGenerationEngine";
-import { recommendUnifiedOutfits } from "@/domain/recommendation";
-import type { UnifiedOutfitRecommendation } from "@/domain/recommendation";
+import { recommendV2 } from "@/domain/recommendation";
+import type { RecommendationV2 } from "@/domain/recommendation";
 import { evaluateBuyVsSkip, interpretShoppingImage } from "@/domain/acquisition";
 import type {
   BuyVsSkipAnalysis,
@@ -95,18 +95,19 @@ const outfit: CapabilityDefinition = {
     }),
 };
 
-/** recommendation — unified ranking of saved + generated outfits. */
+/** recommendation — RFC-012 v2 ranking of saved + generated outfits. Returns the
+ *  ranked array (the full RecommendationResult's `.recommendations`) so existing
+ *  consumers (Lifestyle, AI narration) keep receiving an array. */
 const recommendation: CapabilityDefinition = {
   id: "recommendation",
   dependsOn: ["outfit", "personalization", "weather"],
   run: (ctx) =>
-    recommendUnifiedOutfits(ctx.shared.recommendation, {
+    recommendV2(ctx.shared.recommendation, {
       occasion: occasionOf(ctx),
-      usePreferences: true,
       limit: numberOr(ctx.shared.inputs.limit, 12),
-    }),
+    }).recommendations,
   confidenceOf: (out) => {
-    const recs = out as UnifiedOutfitRecommendation[];
+    const recs = out as RecommendationV2[];
     return Array.isArray(recs) && recs.length > 0 ? (recs[0].confidence ?? null) : null;
   },
 };

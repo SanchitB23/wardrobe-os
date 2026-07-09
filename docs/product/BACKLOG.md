@@ -116,6 +116,7 @@ detail behind the deterministic engines.
 | RFC | Title | Status |
 | --- | --- | --- |
 | [RFC-011](../rfc/RFC-011-Weather-Runtime.md) | Weather Runtime (provider-agnostic; weather as a first-class capability) | ✅ Implemented |
+| [RFC-012](../rfc/RFC-012-Recommendation-Engine-v2.md) | Recommendation Engine v2 (multi-objective, weather- & preference-aware, diverse, explainable) | ✅ Implemented |
 | _(TBD)_ | Capability Routing | Not started |
 | _(TBD)_ | Provider Routing | Not started |
 | _(TBD)_ | Primary / Fallback Providers | Not started |

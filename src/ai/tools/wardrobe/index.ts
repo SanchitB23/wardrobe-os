@@ -106,6 +106,8 @@ function getRecommendationsTool(deps: WardrobeToolDeps): AITool {
       const limit = typeof args.limit === "number" ? args.limit : 5;
       return {
         count: data.recommendations.length,
+        // RFC-012: surface the v2 reason codes so the stylist can explain the
+        // deterministic ranking (it never re-ranks).
         recommendations: data.recommendations.slice(0, limit).map((rec) => ({
           id: rec.id,
           name: rec.name,
@@ -113,6 +115,7 @@ function getRecommendationsTool(deps: WardrobeToolDeps): AITool {
           score: rec.score,
           confidence: rec.confidence,
           reason: rec.reason,
+          reasonCodes: rec.reasonCodes,
           items: rec.items.map((item) => ({
             slot: item.slot,
             name: item.name,

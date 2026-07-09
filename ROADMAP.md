@@ -97,6 +97,10 @@ detail behind the engines.
   consumes a normalized `WeatherSnapshot`; a first-class Orchestrator `weather`
   capability; in-memory cache + metrics; seasonal-fallback on failure (the AI
   explains it, never hallucinates); inspector at `/developer/weather`.
+- **Recommendation Engine v2 — shipped** (RFC-012: `src/domain/recommendation/v2`).
+  Multi-objective, weather- & personalization-aware scoring; hard-constraint
+  eligibility; diversity reranking; full explainability (score breakdown, reason
+  codes, trace) and per-run quality metrics. Deterministic; no AI ranking, no ML.
 - Capability Routing
 - Provider Routing
 - Primary / Fallback Providers

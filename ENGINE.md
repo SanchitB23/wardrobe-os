@@ -61,16 +61,33 @@ Assembles candidate outfits from the wardrobe (respecting slots, eligibility,
 and Style DNA compatibility) and scores each with the OutfitEngine, returning
 ranked `GeneratedOutfit`s. Deterministic and bounded for performance.
 
-## UnifiedRecommendationEngine
-**`src/domain/recommendation/UnifiedOutfitRecommendationEngine.ts`** →
-`recommendUnifiedOutfits(context, options)`.
+## RecommendationEngine v2
+**`src/domain/recommendation/v2/`** → `recommendV2(context, options)` (RFC-012).
 
-Merges **saved** outfits and freshly **generated** combinations into one ranked
-list: normalises scores, dedupes, applies eligibility and favourite caps and
-recent-wear penalties, and attaches per-recommendation debug (rejection reasons,
-penalties, boosts). Runs against the assembled `RecommendationContext`
-([ADR-002](docs/adr/ADR-002-recommendation-context.md)). RFC-004: outfits
-containing an owner-**avoided** item are excluded.
+The current recommendation engine — a pure, deterministic, multi-objective
+pipeline that supersedes the v1 `recommendUnifiedOutfits` (still exported as a
+fallback). Stages: **Candidate Generation** (reuses the saved + generated
+engines) → **Eligibility** (hard constraints, reject before scoring) →
+**Scoring** (weighted sum over nine dimensions: base `OutfitAnalysis`, weather
+suitability from the RFC-011 `WeatherSnapshot`, occasion, formality,
+personal-preference fit from the RFC-004 profile, colour harmony, texture,
+comfort/commute, wardrobe-health contribution — plus recency/over-rotation
+penalties and a favourite boost) → **Diversity Rerank** (top-K not near-duplicate
+by skeleton/palette/footwear) → **Trace**. Returns a `RecommendationResult`
+(ranked `RecommendationV2[]` + per-run quality metrics + metadata). Every
+recommendation carries a per-dimension score breakdown, boosts/penalties, reason
+codes, the hard constraints it passed, a diversity decision, and a confidence.
+Avoided/retired items and severe weather/occasion mismatches are **rejected**;
+protected items are never penalised for underuse; weather influence scales with
+snapshot confidence. Deterministic; **no AI ranking, no ML**. Runs against the
+assembled `RecommendationContext`
+([ADR-002](docs/adr/ADR-002-recommendation-context.md)); the Orchestrator's
+`recommendation` capability, the Recommendation Center, the Today widget, and the
+AI stylist tool all consume it.
+
+The v1 **UnifiedRecommendationEngine**
+(`src/domain/recommendation/UnifiedOutfitRecommendationEngine.ts` →
+`recommendUnifiedOutfits`) remains as the temporary fallback contract.
 
 ---
 

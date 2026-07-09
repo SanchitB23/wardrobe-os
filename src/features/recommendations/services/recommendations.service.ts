@@ -1,10 +1,11 @@
 import {
   buildRecommendationContext,
-  recommendUnifiedOutfits,
+  recommendV2,
   type CommuteMode,
+  type RecommendationQuality,
+  type RecommendationV2,
   type RecommendedOutfitItem,
   type SeasonLabel,
-  type UnifiedOutfitRecommendation,
   type WardrobeItemInput,
   type WeatherCondition,
   type WeatherSnapshot,
@@ -57,9 +58,11 @@ export type RecommendationContextSummary = {
 };
 
 export type RecommendationCenterData = {
-  recommendations: UnifiedOutfitRecommendation[];
+  recommendations: RecommendationV2[];
   previews: Record<string, ItemPreview>;
   context: RecommendationContextSummary;
+  /** RFC-012: per-run recommendation quality metrics (for Developer Mode). */
+  quality: RecommendationQuality;
   /**
    * Curated, wardrobe-free summaries shared by every card, used to assemble the
    * AI explanation input on the client. See src/features/recommendations/ai.
@@ -241,14 +244,16 @@ export async function fetchOutfitRecommendations(
     { generatedAt },
   );
 
-  const unified = recommendUnifiedOutfits(context, {
+  // RFC-012: Recommendation Engine v2 — multi-objective, weather- and
+  // preference-aware, diversity-ranked, explainable. Returns quality metrics too.
+  const v2 = recommendV2(context, {
     occasion: filters.occasion ?? null,
     limit: 12,
-    usePreferences: Boolean(learnedPreferences),
+    favoritesOnly: Boolean(filters.favoritesOnly),
+    personalizationApplied: Boolean(learnedPreferences),
   });
-  const recommendations = filters.favoritesOnly
-    ? unified.filter((rec) => rec.source === "saved_outfit")
-    : unified;
+  const recommendations = v2.recommendations;
+  const quality = v2.quality;
 
   const contextSummary: RecommendationContextSummary = {
     occasion: filters.occasion ?? null,
@@ -292,7 +297,7 @@ export async function fetchOutfitRecommendations(
   });
 
   return {
-    data: { recommendations, previews, context: contextSummary, explainContext },
+    data: { recommendations, previews, context: contextSummary, quality, explainContext },
     error: null,
   };
 }

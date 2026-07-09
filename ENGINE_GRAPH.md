@@ -28,7 +28,7 @@ Each capability is a thin adapter over an existing engine (`src/domain/orchestra
 | `analytics` | InsightEngine (`generateInsights`) | insight report |
 | `weather` | Weather Runtime (`WeatherSnapshot`, RFC-011) | current weather snapshot |
 | `outfit` | OutfitGenerationEngine (`generateOutfits`) | generated outfits |
-| `recommendation` | UnifiedOutfitRecommendationEngine (`recommendUnifiedOutfits`) | ranked outfits |
+| `recommendation` | RecommendationEngine v2 (`recommendV2`, RFC-012) | ranked outfits (+ quality metrics) |
 | `vision` | ShoppingImageInterpreter (`interpretShoppingImage`, RFC-003) | prospective-item candidate |
 | `acquisition` | BuyVsSkipEngine (`evaluateBuyVsSkip`, RFC-001) | buy/skip verdict |
 

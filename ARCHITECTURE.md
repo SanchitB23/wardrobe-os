@@ -168,7 +168,9 @@ cookie-aware).
 **Recommendations (deterministic):**
 `RecommendationCenter` → `useOutfitRecommendations` →
 `fetchOutfitRecommendations` → repositories + analytics services →
-`buildRecommendationContext` → `recommendUnifiedOutfits` → ranked list.
+`buildRecommendationContext` → `recommendV2` (RFC-012 Recommendation Engine v2:
+multi-objective, weather- & preference-aware, diverse, explainable) → ranked list
++ quality metrics.
 
 **Stylist chat (AI + tools):**
 `/chat` → `POST /api/chat` → `streamChat` → `GeminiChatModel` (function calling)

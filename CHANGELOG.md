@@ -7,6 +7,45 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — Recommendation Engine v2 (RFC-012)
+
+Replace the v1 two-term unified ranking with a **multi-objective, weather- and
+personalization-aware, diversity-ranked, fully explainable** recommendation
+pipeline. Same philosophy — **engines decide, AI explains** — better quality. No
+AI ranking, no ML, no schema changes.
+
+- **Pipeline** (`src/domain/recommendation/v2`, pure) — Candidate Generation
+  (reuses the existing saved + generated engines) → Eligibility (hard
+  constraints) → Scoring (weighted multi-objective) → Diversity Rerank → Trace →
+  `RecommendationResult`.
+- **Scoring** — a weighted sum over nine named dimensions (base `OutfitAnalysis`,
+  weather suitability from the RFC-011 `WeatherSnapshot`, occasion, formality,
+  personal-preference fit from the RFC-004 profile, colour harmony, texture,
+  comfort/commute, wardrobe-health contribution) plus recency / over-rotation
+  penalties and a favourite boost. Weather influence scales with snapshot
+  confidence (a seasonal-fallback snapshot moves the ranking less).
+- **Hard constraints** (reject before scoring) — avoided items, retired items,
+  severe weather mismatch (only when weather is confident enough), occasion
+  mismatch, missing required slots, invalid formality combinations. Mild
+  mismatches are penalties, not rejections, so the engine degrades gracefully.
+- **Protected items** are exempt from recency / over-rotation penalties (never
+  penalised for underuse).
+- **Diversity** — the top-K avoid repeating the same skeleton, dominant colour
+  palette, or footwear; the threshold relaxes for thin wardrobes so a full list
+  is still returned.
+- **Explainability** — every recommendation carries a per-dimension score
+  breakdown, applied boosts/penalties, machine-readable reason codes, the hard
+  constraints it passed, a diversity decision, and a confidence.
+- **Quality metrics** — per run: eligible/rejected counts, diversity score,
+  average confidence, saved-vs-generated mix, and weather/personalization
+  **influence** (a deterministic zeroed-weight counterfactual).
+- **Integration** — the Recommendation Center, the Today outfit widget, the AI
+  stylist `getRecommendations` tool, and the Orchestrator `recommendation`
+  capability all use v2; the v1 unified engine remains exported as a temporary
+  fallback. Developer Mode on the Recommendation Center surfaces the quality
+  metrics, rejection reasons, per-card diversity, reason codes, and top
+  dimensions. Deterministic; 426 tests green (+12).
+
 ### Added — Weather Runtime (RFC-011)
 
 Promote weather to a **provider-agnostic runtime** — the single deterministic
