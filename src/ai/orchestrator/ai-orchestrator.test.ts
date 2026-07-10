@@ -283,14 +283,16 @@ describe("AIOrchestrator", () => {
 });
 
 describe("provider stubs", () => {
-  // Gemini implements generate(); OpenAI/Claude are still full stubs.
-  const stubProviders: AIProvider[] = [new OpenAIProvider(), new ClaudeProvider()];
+  // Gemini + OpenAI implement generate() (RFC-014A); Claude is still a full stub.
+  // vision() / stream() remain stubs on every provider.
+  const generateStubs: AIProvider[] = [new ClaudeProvider()];
   const allProviders: AIProvider[] = [
     new GeminiProvider(),
-    ...stubProviders,
+    new OpenAIProvider(),
+    new ClaudeProvider(),
   ];
 
-  it.each(stubProviders)("%s throws NotImplementedError from generate()", async (p) => {
+  it.each(generateStubs)("%s throws NotImplementedError from generate()", async (p) => {
     await expect(p.generate(req)).rejects.toBeInstanceOf(NotImplementedError);
   });
 

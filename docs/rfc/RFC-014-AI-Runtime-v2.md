@@ -1,6 +1,6 @@
 # RFC-014: AI Runtime v2
 
-Status: Implemented
+Status: Implemented (with OpenAI provider support — RFC-014A)
 Owner: Sanchit Bhatnagar
 Author: Claude (Opus 4.8)
 Target Release: v1.1.0

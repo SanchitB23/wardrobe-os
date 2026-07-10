@@ -132,11 +132,14 @@ surfaces sourcing static release/architecture metadata.
   `AIResponse`, and the `AIService` façade.
 - **Orchestrator** — provider selection, retry with backoff, cross-provider
   fallback, logging, and cache.
-- **Providers** — `GeminiProvider` (real, `@google/genai`); OpenAI/Claude stubs.
-  Selected via `AI_PROVIDER`. The composition root
-  (`src/ai/server/ai-service.server.ts`) is the only place a provider meets real
-  credentials; all AI calls run server-side. See
-  [ADR-004](docs/adr/ADR-004-ai-provider-abstraction.md).
+- **Providers** — `GeminiProvider` (real, `@google/genai`) and `OpenAIProvider`
+  (real, `openai` SDK — RFC-014A); `ClaudeProvider` remains a stub. The legacy
+  single-provider path is selected via `AI_PROVIDER`; the AI Runtime v2 routes by
+  capability policy (below). Composition roots
+  (`src/ai/server/ai-service.server.ts`, `ai-runtime.server.ts`) are the only
+  places a provider meets real credentials; all AI calls run server-side. When
+  `OPENAI_API_KEY` is unset the OpenAI provider is unavailable and routing falls
+  back to Gemini. See [ADR-004](docs/adr/ADR-004-ai-provider-abstraction.md).
 - **Prompt builders / schemas / parsers** — structured, validated output.
 - **Cache** — `src/ai/cache` (Supabase-backed with in-memory fallback);
   [ADR-006](docs/adr/ADR-006-ai-cache.md).
@@ -145,8 +148,10 @@ surfaces sourcing static release/architecture metadata.
   vision / conversation / summarization / …), declarative **provider policies**
   choose the provider (primary → fallback + retry), and the runtime versions
   prompts, benchmarks providers, and records latency / cost / token metrics per
-  capability × provider × prompt version. Inspector at `/developer/ai-runtime`.
-  It routes and measures; it never decides (ADR-005).
+  capability × provider × prompt version. The shipped default (RFC-014A) is
+  **OpenAI-primary + Gemini-fallback** for text; vision + image generation stay
+  Gemini. Inspector at `/developer/ai-runtime`. It routes and measures; it never
+  decides (ADR-005).
 
 AI **explains and converses only** — it is never the source of truth for
 scoring, eligibility, ranking, health, or cost.

@@ -23,10 +23,11 @@ function assertServerSide(): void {
 let cached: AIRuntime | undefined;
 
 /**
- * The app-wide {@link AIRuntime}. Gemini is the only fully-wired provider today;
- * OpenAI/Claude are registered as stubs so policy fallback is exercised the
- * moment their providers become real. Policies come from `AI_POLICY_<CAP>` env
- * overrides, defaulting to Gemini-primary everywhere.
+ * The app-wide {@link AIRuntime}. Gemini and OpenAI are real providers (RFC-014A);
+ * Claude is still a stub. The default policy is OpenAI-primary + Gemini-fallback
+ * for text (Gemini-only for vision/image-gen); when `OPENAI_API_KEY` is unset the
+ * OpenAI provider is unavailable and routing falls back to Gemini. Policies come
+ * from `AI_POLICY_<CAP>` env overrides on top of that default.
  */
 export function getServerAIRuntime(): AIRuntime {
   assertServerSide();

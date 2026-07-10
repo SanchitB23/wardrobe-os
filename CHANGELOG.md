@@ -7,6 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — OpenAI provider (RFC-014A)
+
+Wires a **real OpenAI provider** into the AI Runtime v2 (RFC-014), which
+previously had OpenAI as a stub. OpenAI is now the **primary text/reasoning
+provider with Gemini as fallback**; vision + image generation stay Gemini.
+
+- **Provider** (`src/ai/providers/openai-provider.ts`): real `generate()` on the
+  official `openai` SDK (chat completions), lazy + injectable client. Reads
+  `OPENAI_API_KEY`, `OPENAI_MODEL_TEXT` (default `gpt-5.5`), and
+  `OPENAI_MODEL_STRUCTURED` (default `gpt-5.4-mini`) — structured/JSON requests
+  use the structured model + `response_format: json_object`. Capabilities:
+  generate (explanation / summarization / conversation) + structured output;
+  vision/image-gen intentionally not implemented.
+- **Availability + fallback:** if `OPENAI_API_KEY` is missing the provider is
+  unavailable and throws a non-retryable error, so the router **falls straight
+  through to Gemini** — no crash, no wasted retries. Errors are normalized to
+  `ProviderError`; one retry on transient failures.
+- **Routing default (`DEFAULT_POLICIES`):** OpenAI→Gemini for
+  EXPLANATION/SUMMARIZATION/CONVERSATION; Gemini-only for VISION/IMAGE_GENERATION.
+  Override per capability with `AI_POLICY_<CAPABILITY>=primary,fallback`.
+- **Tests:** provider contract (request mapping, structured model + response
+  format, empty/error normalization, transient retry, missing-key unavailability)
+  + AI-Runtime integration with a **mocked** OpenAI client (served-by-OpenAI,
+  missing-key fallback to Gemini with recorded metrics, schema-respected
+  structured output, vision stays Gemini). No real OpenAI calls in tests.
+- Installed the `openai` SDK; updated `.env.example`, README, `src/ai/README.md`,
+  ARCHITECTURE, PRODUCT_VISION. **RFC-014 is now Implemented with OpenAI provider
+  support.** 515 unit tests green.
+
 ### Added — Shopping Intelligence (RFC-018)
 
 Turns the single-purchase evaluator (RFC-001) into a continuous shopping system:

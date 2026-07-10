@@ -15,9 +15,19 @@ See `.env.example`.
 
 | Var | Purpose | Default |
 | --- | --- | --- |
-| `AI_PROVIDER` | Which backend `getServerAIService()` uses | `gemini` |
+| `AI_PROVIDER` | Legacy single-provider backend for `getServerAIService()` | `gemini` |
 | `GEMINI_API_KEY` | Gemini API key (required to call Gemini) | — |
-| `GEMINI_MODEL` | Model id | `gemini-2.5-flash` (low cost) |
+| `GEMINI_MODEL` | Gemini model id | `gemini-2.5-flash` (low cost) |
+| `OPENAI_API_KEY` | OpenAI key (RFC-014A). Blank ⇒ provider unavailable → runtime falls back to Gemini | — |
+| `OPENAI_MODEL_TEXT` | OpenAI text/reasoning model | `gpt-5.5` |
+| `OPENAI_MODEL_STRUCTURED` | OpenAI JSON/structured-output model | `gpt-5.4-mini` |
+| `AI_POLICY_<CAPABILITY>` | AI Runtime v2 routing override, `primary[,fallback]` | see `DEFAULT_POLICIES` |
+
+**AI Runtime v2 routing (RFC-014/014A):** the capability router defaults to
+**OpenAI-primary + Gemini-fallback** for text (explanation / summarization /
+conversation); vision + image generation stay Gemini. Providers live in
+`src/ai/providers/` (`GeminiProvider`, `OpenAIProvider` real; `ClaudeProvider`
+stub) and are wired with credentials in `src/ai/server/ai-runtime.server.ts`.
 
 ## Server boundary & debug route
 

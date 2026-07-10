@@ -49,7 +49,7 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
 | Styling | Tailwind CSS + shadcn/ui (Base UI) |
 | Data | Supabase (Postgres + Storage) |
 | Client data | TanStack Query |
-| AI | Gemini, behind a vendor-neutral AI abstraction |
+| AI | OpenAI + Gemini, behind a vendor-neutral AI abstraction (capability routing, primary → fallback) |
 | Tests | Vitest (pure domain + AI layer) |
 
 ## Local setup
@@ -75,9 +75,13 @@ are server-side).
 | --- | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | Supabase project URL | — |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase anon key (RLS-gated) | — |
-| `AI_PROVIDER` | Which AI backend to use | `gemini` |
+| `AI_PROVIDER` | Legacy single-provider backend | `gemini` |
 | `GEMINI_API_KEY` | Gemini API key (server-side only) | — |
 | `GEMINI_MODEL` | Gemini model id | `gemini-2.5-flash` |
+| `OPENAI_API_KEY` | OpenAI key (RFC-014A). Blank ⇒ falls back to Gemini | — |
+| `OPENAI_MODEL_TEXT` | OpenAI text/reasoning model | `gpt-5.5` |
+| `OPENAI_MODEL_STRUCTURED` | OpenAI structured-output model | `gpt-5.4-mini` |
+| `AI_POLICY_<CAPABILITY>` | AI Runtime routing override `primary[,fallback]` | OpenAI→Gemini (text) |
 | `APP_ACCESS_CODE` | Shared access code for the [Access Guard](SECURITY.md) (server-side only). Blank ⇒ guard disabled. | — |
 | `APP_COOKIE_SECRET` | HMAC secret signing the access cookie (required when `APP_ACCESS_CODE` is set) | — |
 

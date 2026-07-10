@@ -287,6 +287,14 @@ The intent is durable independence from any single vendor, with observable cost
 and quality — so provider choice is an operational decision, never an
 architectural one.
 
+**Status (RFC-014 / RFC-014A):** capability routing, provider routing, fallback
+providers, prompt versioning/benchmarking, latency + cost metrics, and structured
+outputs are **shipped** in the AI Runtime (`src/runtime/ai`). Two real providers
+are wired — **OpenAI** (primary for text/reasoning) and **Gemini** (fallback, and
+primary for vision); Claude remains a stub. The runtime falls back to Gemini
+automatically when the OpenAI key is absent, proving the "provider is an
+operational decision" intent end-to-end.
+
 ---
 
 ## Product Definition

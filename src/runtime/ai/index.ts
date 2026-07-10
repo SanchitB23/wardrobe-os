@@ -12,7 +12,7 @@ export { AIRuntime, type AIRuntimeConfig } from "@/runtime/ai/AIRuntime";
 export { mechanicalFor, resolveProvider } from "@/runtime/ai/CapabilityRouter";
 export {
   DEFAULT_POLICIES,
-  TARGET_POLICIES,
+  GEMINI_ONLY_POLICIES,
   loadPolicies,
   isKnownProvider,
 } from "@/runtime/ai/ProviderPolicy";
