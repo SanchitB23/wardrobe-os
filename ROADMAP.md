@@ -41,7 +41,7 @@ resilience improvements, no new features.
 | v1.0 | Lifestyle Engine + Today Experience | ✅ | Trip planning, and the assistant-style Today home that unifies every surface |
 | **v1.0.1** | **Stabilization (RFC-009)** | **✅** | **Quality only: performance, accessibility, DX, resilience — no new features** |
 | **v1.1** | **Intelligence Refinement + Runtime** | **✅** | **Weather Runtime, Recommendation v2, Personalization v2, AI Runtime v2, Intelligence Center (RFC-011…015)** |
-| v2.0 | Lifestyle Intelligence Platform | 🔜 | Travel Intelligence (RFC-017, first), Shopping Intelligence (RFC-018), Vision Intelligence v2 (RFC-019) — see [FUTURE.md](docs/product/FUTURE.md) |
+| v2.0 | Lifestyle Intelligence Platform | 🚧 | Trip Planner (RFC-017 — ✅ shipped, first), Shopping Intelligence (RFC-018), Vision Intelligence v2 (RFC-019) — see [FUTURE.md](docs/product/FUTURE.md) |
 | ~~v1.2~~ | ~~Wardrobe Intelligence~~ | ⏸️ Parked | Cross-engine orchestration + higher-order reasoning — superseded / absorbed by RFC-005/013/014 (see [FUTURE.md](docs/product/FUTURE.md)) |
 
 ---
@@ -126,13 +126,17 @@ detail behind the engines.
 | Vision | Gemini | — |
 | Image Generation (future) | OpenAI | — |
 
-### v2.0 — Lifestyle Intelligence Platform 🔜 (next)
-Grow beyond the closet into the contexts a wardrobe serves. Planned features
-(full status + reasoning in [FUTURE.md](docs/product/FUTURE.md)):
+### v2.0 — Lifestyle Intelligence Platform 🚧 (in progress)
+Grow beyond the closet into the contexts a wardrobe serves. Full status +
+reasoning in [FUTURE.md](docs/product/FUTURE.md):
 
-- **Travel Intelligence (RFC-017) — the first v2.0 feature.** Trip-aware packing,
-  capsule wardrobes, business trips; builds on Lifestyle (RFC-006), Weather
-  Runtime (RFC-011), and Recommendation v2 (RFC-012) via the Orchestrator.
+- **Trip Planner (RFC-017) — ✅ implemented, the first v2.0 feature.** First-class,
+  persisted, reusable trips: CRUD, templates, history/clone, multi-city, an
+  interactive packing checklist + progress, a timeline / outfit calendar, weather
+  refresh, and trip-anchored shopping. Trip is *data*; the Lifestyle Engine
+  (RFC-006) still derives the plan (Recommendation/Acquisition via the
+  Orchestrator; Weather Runtime for forecasts) — no planning logic duplicated.
+  Surfaced at `/trips`. Additive schema documented (not applied).
 - **Shopping Intelligence (RFC-018).** Wishlist · Shopping Strategy · Wardrobe
   ROI · Duplicate Detection · Purchase Prioritization. (Budget Planning dropped.)
 - **Vision Intelligence v2 (RFC-019).** Closet Scan · Duplicate Detection ·

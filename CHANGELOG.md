@@ -7,6 +7,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Trip Planner (RFC-017)
+
+The first **v2.0** feature. Promotes the one-shot trip *wizard* into a
+first-class, persisted, reusable **Trip Planner**. Trip is *data*; the Lifestyle
+Engine (RFC-006) still derives the plan — no planning logic is duplicated
+(engines decide, AI explains; ADR-005).
+
+- **Domain** (`src/domain/trips`, pure): trip templates (`expandTemplate`),
+  cloning (`cloneTripSpec`), multi-city day resolution (`cityForDate`), the
+  packing-checklist projection (`buildPackingChecklist`), and the timeline /
+  outfit-calendar projection (`buildTimeline`). Deterministic; no I/O, no scoring.
+- **Feature** (`src/features/trips`): repository (Supabase CRUD over the new
+  tables), a service that reuses `planTrip` (Lifestyle Engine → Recommendation /
+  Acquisition through the Orchestrator) and merges per-leg forecasts for
+  multi-city trips via the Weather Runtime (RFC-011), TanStack Query hooks, and
+  the views.
+- **Features:** Trip CRUD, Trip Templates (weekend city / week beach /
+  business 3-day), Trip History (upcoming + past, clone), multi-city itineraries,
+  an interactive **Packing Checklist** with persisted **progress** (`N / M`), a
+  **Timeline / outfit calendar**, **Weather Refresh** (re-plan), and
+  trip-anchored **Shopping / Missing Items** from the plan.
+- **Surfaces:** `/trips` (list), `/trips/new`, `/trips/templates`, `/trips/[id]`
+  (plan: timeline · packing · laundry · shopping, + AI explanation), and
+  `/trips/[id]/edit`. The Lifestyle nav item is now **Trips** (→ `/trips`); the
+  Today "Plan a trip" quick action and the Intelligence Center trip actions point
+  here too. The old `/lifestyle/trip` wizard route remains for now.
+- **Schema (documented, not applied):** additive `trips`, `trip_cities`,
+  `trip_events`, `trip_packing_progress` tables with anon RLS —
+  [`docs/migrations/RFC-017-trip-planner.sql`](docs/migrations/RFC-017-trip-planner.sql).
+  The derived `LifestylePlan` is never stored (recomputed on demand); only trip
+  inputs + packing progress persist. 489 unit tests green (9 new for
+  `src/domain/trips`).
+
 ## [1.1.0] — 2026-07-10
 
 **Intelligence Refinement + Runtime.** Sharpens the deterministic engine stack

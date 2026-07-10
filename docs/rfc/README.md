@@ -98,6 +98,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [013](RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 | Intelligence Refinement | Implemented |
 | [014](RFC-014-AI-Runtime-v2.md) | AI Runtime v2 | Runtime | Implemented |
 | [015](RFC-015-Intelligence-Center.md) | Intelligence Center | Product Intelligence | Implemented |
+| [017](RFC-017-Trip-Planner.md) | Trip Planner | Travel | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
-reserved RFC numbers (RFC-001 … RFC-015).
+reserved RFC numbers (RFC-001 … RFC-017; RFC-016 parked, RFC-018/019 planned).

@@ -109,6 +109,14 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   `/intelligence`. Aggregates every engine's output into one deduplicated,
   impact-ranked list of typed actions ("what to do next"). It consumes engine
   conclusions and ranks them; it decides nothing new; AI explains.
+- **Trip Planner (RFC-017)** — `src/features/trips` (+ pure `src/domain/trips`
+  helpers), `/trips`. A *feature* layer, **not a new engine**: it persists trips
+  as data and reuses the Lifestyle Engine (`planTrip`) to derive the plan, so
+  Recommendation + Acquisition are still reached through the orchestrator and no
+  planning logic is duplicated. `src/domain/trips` adds only pure projections
+  (templates, clone, multi-city day resolution, packing checklist, timeline);
+  multi-city merges per-leg forecasts from the Weather Runtime (RFC-011) into one
+  forecast the engine plans over. Engines decide; AI explains.
 - **Future (RFC per feature):** Calendar, Shopping, and more — each registers
   capabilities and is *requested*, reusing all wiring. The existing
   Recommendation / Acquisition / Screenshot flows can migrate to request

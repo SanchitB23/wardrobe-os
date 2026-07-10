@@ -90,7 +90,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     heading: "Lifestyle",
     items: [
-      { label: "Trip Planner", href: "/lifestyle/trip", icon: LuggageIcon, matchNested: true },
+      { label: "Trips", href: "/trips", icon: LuggageIcon, matchNested: true },
     ],
   },
   {

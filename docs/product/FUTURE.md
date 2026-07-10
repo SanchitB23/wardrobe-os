@@ -19,13 +19,17 @@ Every item lists a **Status**, a **Reason**, and a **Potential Version**.
 Will be built. **v2.0 — Lifestyle Intelligence Platform** grows Wardrobe OS beyond
 the closet into the contexts a wardrobe serves. Engines decide; AI explains.
 
-### RFC-017 — Travel Intelligence
-- **Status:** Planned — **the first v2.0 feature.**
-- **Scope:** trip-aware packing, capsule wardrobes, business-trip planning; builds
-  on the Lifestyle Engine (RFC-006), Weather Runtime (RFC-011), and Recommendation
-  Engine v2 (RFC-012) through the Intelligence Orchestrator.
-- **Reason:** highest-value v2 direction — turns the existing trip planner into a
-  first-class travel experience with real day-by-day intelligence.
+### RFC-017 — Trip Planner
+- **Status:** RFC drafted ([Draft](../rfc/RFC-017-Trip-Planner.md)) — **the first
+  v2.0 feature.**
+- **Scope:** promote the one-shot trip wizard into a first-class, persisted Trip
+  Planner — reusable/editable trips, templates, history, multi-city itineraries, a
+  packing checklist with progress, a trip timeline / outfit calendar, trip-anchored
+  shopping, and weather refresh. Builds on the Lifestyle Engine (RFC-006), Weather
+  Runtime (RFC-011), and Recommendation Engine v2 (RFC-012) through the
+  Intelligence Orchestrator; the engine still plans, AI explains.
+- **Reason:** highest-value v2 direction — turns the ephemeral trip planner into a
+  first-class travel experience with real, reusable day-by-day intelligence.
 - **Potential Version:** v2.0.
 
 ### RFC-018 — Shopping Intelligence

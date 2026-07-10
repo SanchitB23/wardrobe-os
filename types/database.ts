@@ -239,6 +239,132 @@ export type Database = {
         };
         Relationships: [];
       };
+      trips: {
+        Row: {
+          id: string;
+          name: string | null;
+          destination: string | null;
+          start_date: string;
+          end_date: string;
+          travel_style: string;
+          planning_strategy: string;
+          laundry_available: boolean;
+          luggage_kind: string;
+          luggage_max_items: number | null;
+          notes: string | null;
+          is_template: boolean;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name?: string | null;
+          destination?: string | null;
+          start_date: string;
+          end_date: string;
+          travel_style?: string;
+          planning_strategy?: string;
+          laundry_available?: boolean;
+          luggage_kind?: string;
+          luggage_max_items?: number | null;
+          notes?: string | null;
+          is_template?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string | null;
+          destination?: string | null;
+          start_date?: string;
+          end_date?: string;
+          travel_style?: string;
+          planning_strategy?: string;
+          laundry_available?: boolean;
+          luggage_kind?: string;
+          luggage_max_items?: number | null;
+          notes?: string | null;
+          is_template?: boolean;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      trip_cities: {
+        Row: {
+          id: string;
+          trip_id: string;
+          city: string;
+          start_date: string;
+          end_date: string;
+          sort_order: number;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          city: string;
+          start_date: string;
+          end_date: string;
+          sort_order?: number;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          city?: string;
+          start_date?: string;
+          end_date?: string;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
+      trip_events: {
+        Row: {
+          id: string;
+          trip_id: string;
+          event_date: string;
+          occasion: string;
+          formality_hint: string | null;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          event_date: string;
+          occasion: string;
+          formality_hint?: string | null;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          event_date?: string;
+          occasion?: string;
+          formality_hint?: string | null;
+        };
+        Relationships: [];
+      };
+      trip_packing_progress: {
+        Row: {
+          id: string;
+          trip_id: string;
+          item_id: string;
+          packed: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          trip_id: string;
+          item_id: string;
+          packed?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          trip_id?: string;
+          item_id?: string;
+          packed?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       seasons: {
         Row: { id: string; name: string };
         Insert: { id?: string; name: string };

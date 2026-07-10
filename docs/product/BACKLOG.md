@@ -166,7 +166,7 @@ explains. Full status + reasoning in [FUTURE.md](FUTURE.md) (Planned).
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| [RFC-017](FUTURE.md) | Travel Intelligence — packing, capsule wardrobes, business trips (**first v2.0 feature**) | 📋 Planned |
+| [RFC-017](../rfc/RFC-017-Trip-Planner.md) | Trip Planner — reusable/editable trips, templates, history, multi-city, packing checklist + progress, timeline / outfit calendar (**first v2.0 feature**) | ✅ Implemented |
 | [RFC-018](FUTURE.md) | Shopping Intelligence — wishlist · strategy · wardrobe ROI · duplicate detection · purchase prioritization (no budget planning) | 📋 Planned |
 | [RFC-019](FUTURE.md) | Vision Intelligence v2 — closet scan · duplicate detection · assisted outfit recognition (laundry detection deferred) | 📋 Planned |
 | [RFC-016](FUTURE.md) | Calendar Intelligence | ⏸️ Parked (low ROI, single-user) |

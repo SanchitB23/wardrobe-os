@@ -261,7 +261,7 @@ function WardrobeHealthWidget() {
 const QUICK_ACTIONS = [
   { label: "Add item", href: "/inventory", icon: PlusIcon },
   { label: "Create outfit", href: "/outfits/new", icon: LayersIcon },
-  { label: "Plan a trip", href: "/lifestyle/trip", icon: LuggageIcon },
+  { label: "Plan a trip", href: "/trips", icon: LuggageIcon },
   { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
 ];
 

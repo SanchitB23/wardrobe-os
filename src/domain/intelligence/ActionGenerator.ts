@@ -152,7 +152,7 @@ export function fromLifestyle(input: LifestyleSourceInput | undefined): ActionCa
       confidence: 0.8,
       reason: `Clean ${wash.label} before you need it.`,
       reasonCodes: ["laundry_due"],
-      href: "/lifestyle/trip",
+      href: "/trips",
     });
   }
   if (input.packing) {
@@ -164,7 +164,7 @@ export function fromLifestyle(input: LifestyleSourceInput | undefined): ActionCa
       confidence: 0.85,
       reason: `Pack ${input.packing.itemCount} pieces for ${input.packing.tripLabel}.`,
       reasonCodes: ["trip_packing"],
-      href: "/lifestyle/trip",
+      href: "/trips",
     });
   }
   return out;

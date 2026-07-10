@@ -34,8 +34,16 @@ import { toError } from "@/shared/utils/data-result";
 export interface PlanTripRequest {
   trip: Trip;
   strategy?: PlanningStrategy;
-  /** Weather: fetched automatically (default) or entered manually. */
-  weather?: { mode: "auto" } | { mode: "manual"; days: WeatherForecastDay[] };
+  /**
+   * Weather: fetched automatically (default), entered manually, or supplied
+   * pre-resolved. The `forecast` mode lets a caller (e.g. the Trip Planner's
+   * multi-city merge, RFC-017) inject an already-built forecast — preserving its
+   * real `source` — without re-fetching here.
+   */
+  weather?:
+    | { mode: "auto" }
+    | { mode: "manual"; days: WeatherForecastDay[] }
+    | { mode: "forecast"; forecast: WeatherForecast };
 }
 
 export interface LifestyleResult {
@@ -106,6 +114,7 @@ async function resolveForecast(request: PlanTripRequest): Promise<WeatherForecas
   // RFC-011: weather comes from the shared Weather Runtime — never a direct
   // provider call. The runtime never throws (returns { data, error }); on failure
   // we degrade to a neutral seasonal forecast.
+  if (request.weather?.mode === "forecast") return request.weather.forecast;
   if (request.weather?.mode === "manual") return manualForecast(request.weather.days);
   const { data } = await weatherRuntime.getForecast({
     location: request.trip.destination,

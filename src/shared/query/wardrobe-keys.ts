@@ -51,4 +51,7 @@ export const wardrobeKeys = {
   personalization: () => [...wardrobeKeys.all, "personalization"] as const,
   intelligenceCenter: (filters: unknown) =>
     [...wardrobeKeys.all, "intelligence-center", filters] as const,
+  trips: () => [...wardrobeKeys.all, "trips"] as const,
+  trip: (id: string) => [...wardrobeKeys.all, "trip", id] as const,
+  tripPlan: (id: string) => [...wardrobeKeys.all, "trip-plan", id] as const,
 };
