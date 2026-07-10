@@ -146,6 +146,16 @@ accessibility / performance / release-readiness sweep.
 | [RFC-009](../rfc/RFC-009-v1-0-1-Stabilization.md) | v1.0.1 Stabilization Release (quality only, no features) | ✅ Implemented (v1.0.1) |
 | [RFC-010](../rfc/RFC-010-Application-Access-Guard.md) | Application Access Guard (single access code; not auth) | ✅ Implemented (v1.0.2) |
 
+## Epic 8 — Product Intelligence (v1.1)
+
+Lead with **prioritised actions**, not analytics. One Intelligence Center
+aggregates every deterministic engine into a single, deduplicated, impact-ranked
+list of typed actions. Engines decide the actions; the Center ranks; AI explains.
+
+| RFC | Title | Status |
+| --- | --- | --- |
+| [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
+
 ## Removed from scope
 
 Permanently removed — **low ROI for a single-user product**:

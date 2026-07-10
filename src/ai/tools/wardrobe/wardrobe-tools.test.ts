@@ -96,6 +96,7 @@ describe("createWardrobeToolRegistry", () => {
         "getOutfit",
         "getRecommendations",
         "getShoppingAdvice",
+        "getTopActions",
         "getUsageAnalytics",
         "getWardrobeHealth",
         "runIntelligence",
@@ -111,7 +112,7 @@ describe("createWardrobeToolRegistry", () => {
 
   it("advertises Gemini + OpenAI shapes for every tool", () => {
     const registry = createWardrobeToolRegistry(deps());
-    expect(registry.toGeminiFunctionDeclarations()).toHaveLength(9);
+    expect(registry.toGeminiFunctionDeclarations()).toHaveLength(10);
     expect(registry.toOpenAITools().every((t) => t.type === "function")).toBe(true);
   });
 });

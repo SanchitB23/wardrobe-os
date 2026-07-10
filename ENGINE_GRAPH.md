@@ -105,6 +105,10 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   `recommendation` capability per trip-day and the `acquisition` capability for
   missing items **through the orchestrator**, never calling those engines
   directly — composing them across a time horizon into a `LifestylePlan`.
+- **Intelligence Center (RFC-015)** — `src/domain/intelligence`,
+  `/intelligence`. Aggregates every engine's output into one deduplicated,
+  impact-ranked list of typed actions ("what to do next"). It consumes engine
+  conclusions and ranks them; it decides nothing new; AI explains.
 - **Future (RFC per feature):** Calendar, Shopping, and more — each registers
   capabilities and is *requested*, reusing all wiring. The existing
   Recommendation / Acquisition / Screenshot flows can migrate to request

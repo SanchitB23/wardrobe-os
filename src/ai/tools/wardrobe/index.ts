@@ -28,6 +28,7 @@ import {
   type RecommendationFilters,
 } from "@/features/recommendations/services/recommendations.service";
 import { runOrchestration } from "@/features/orchestrator/services/orchestrator.service";
+import { getIntelligenceCenter } from "@/features/intelligence/services/intelligence-center.service";
 import type { CapabilityId } from "@/domain/orchestrator";
 import type { InventoryFilters } from "@/types/wardrobe";
 
@@ -50,6 +51,7 @@ export interface WardrobeToolDeps {
   fetchWardrobeItems: typeof fetchWardrobeItems;
   fetchPurchaseAnalytics: typeof fetchPurchaseAnalytics;
   runOrchestration: typeof runOrchestration;
+  getIntelligenceCenter: typeof getIntelligenceCenter;
 }
 
 const DEFAULT_DEPS: WardrobeToolDeps = {
@@ -62,6 +64,7 @@ const DEFAULT_DEPS: WardrobeToolDeps = {
   fetchWardrobeItems,
   fetchPurchaseAnalytics,
   runOrchestration,
+  getIntelligenceCenter,
 };
 
 const SEASON: JSONSchema = {
@@ -345,6 +348,38 @@ function runIntelligenceTool(deps: WardrobeToolDeps): AITool {
   };
 }
 
+/**
+ * getTopActions (RFC-015) — the Intelligence Center's prioritised, deduped,
+ * impact-ranked action list aggregated across every deterministic engine.
+ * Returns already-decided actions; the model explains them, never re-ranks.
+ */
+function getTopActionsTool(deps: WardrobeToolDeps): AITool {
+  return {
+    name: "getTopActions",
+    description:
+      "Get the Intelligence Center's prioritised list of what to do next — typed actions (wear/buy/skip/clean/rotate/pack/replace/explore) aggregated and impact-ranked across every deterministic engine. Returns already-decided actions; does not decide anything new.",
+    parameters: objectParams({
+      limit: { type: "integer", description: "max actions to return (default 7)" },
+    }),
+    async execute(args) {
+      const limit = typeof args.limit === "number" ? args.limit : 7;
+      const data = required(await deps.getIntelligenceCenter({ topN: limit }));
+      return {
+        count: data.topActions.length,
+        actions: data.topActions.map((a) => ({
+          type: a.type,
+          subject: a.subject.label,
+          priority: a.priority,
+          impact: a.impact,
+          confidence: a.confidence,
+          reason: a.reason,
+          sources: a.sources,
+        })),
+      };
+    },
+  };
+}
+
 export function createWardrobeToolRegistry(
   deps: Partial<WardrobeToolDeps> = {},
 ): ToolRegistry {
@@ -358,6 +393,7 @@ export function createWardrobeToolRegistry(
     getItemTool(resolved),
     searchInventoryTool(resolved),
     getShoppingAdviceTool(resolved),
+    getTopActionsTool(resolved),
     runIntelligenceTool(resolved),
   ]);
 }

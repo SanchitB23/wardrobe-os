@@ -40,7 +40,7 @@ resilience improvements, no new features.
 | v0.9 | Personalization Engine | ✅ | Learn preferences from behaviour |
 | v1.0 | Lifestyle Engine + Today Experience | ✅ | Trip planning, and the assistant-style Today home that unifies every surface |
 | **v1.0.1** | **Stabilization (RFC-009)** | **✅** | **Quality only: performance, accessibility, DX, resilience — no new features** |
-| v1.1 | AI Runtime | 🔜 | Capability/provider routing, benchmarking, cost/latency analytics, prompt versioning |
+| **v1.1** | **Intelligence Refinement + Runtime** | **✅** | **Weather Runtime, Recommendation v2, Personalization v2, AI Runtime v2, Intelligence Center (RFC-011…015)** |
 | v1.2 | Wardrobe Intelligence | 🔜 | Cross-engine orchestration, long-horizon planning, multi-step reasoning |
 
 ---
@@ -89,7 +89,7 @@ turns every module into one assistant.
   Mode). Real Settings + About (`/about`) surfaces, a gated Developer hub
   (`/developer`), and an accessibility / performance / release-readiness sweep.
 
-### v1.1 — AI Runtime 🔜
+### v1.1 — Intelligence Refinement + Runtime ✅ Shipped
 Turn the AI layer into a configurable runtime — the provider is an interchangeable
 detail behind the engines.
 - **Weather Runtime — shipped** (RFC-011: `src/runtime/weather` + `src/domain/weather`).
@@ -112,6 +112,10 @@ detail behind the engines.
   inspector at `/developer/ai-runtime`. Routes and measures; never decides
   (ADR-005). Delivers: Capability Routing, Provider Routing, Primary/Fallback,
   Benchmarking, Cost + Latency Analytics, Prompt Versioning.
+- **Intelligence Center — shipped** (RFC-015: `src/domain/intelligence`). Product
+  Intelligence: aggregates every deterministic engine into one deduplicated,
+  impact-ranked list of typed actions (`/intelligence`, "Do this next" on Today,
+  `getTopActions` stylist tool). Engines decide; the Center ranks; AI explains.
 
 **Target AI Runtime configuration** (future):
 

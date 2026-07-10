@@ -170,6 +170,24 @@ The Recommendation context consumes the snapshot; the orchestrator exposes a
 
 ---
 
+## IntelligenceCenter
+**`src/domain/intelligence/`** → `buildIntelligenceCenter(sources, options)`
+(RFC-015).
+
+Aggregates every deterministic engine's output (as normalized sources) into one
+deduplicated, impact-ranked list of **typed actions** — `wear` / `buy` / `skip` /
+`clean` / `rotate` / `pack` / `replace` / `explore` — the product's "what to do
+next". Per source it maps the engine's conclusion to candidate actions
+(`ActionGenerator`), scores a deterministic **impact** (provisional signal ×
+source reliability × confidence, `ImpactScoring`), dedupes by (type, subject) and
+ranks (`ActionRanking` / `PriorityEngine`), and returns `TopActions` with
+priority, impact, confidence, reason + reason codes, and the source engine(s).
+It **invents no verdict** — it aggregates + ranks what engines already decided;
+AI only explains (ADR-005). Surfaced at `/intelligence`, as "Do this next" on the
+Today home, and via the `getTopActions` stylist tool. Pure and deterministic.
+
+---
+
 ## AI Tool Router
 **`src/ai/tools/`** — not a domain engine, but the bridge that lets the AI stylist
 use the engines above **through services** rather than querying data.

@@ -16,6 +16,7 @@ import {
   ScanSearchIcon,
   SettingsIcon,
   ShirtIcon,
+  SparklesIcon,
   SlidersHorizontalIcon,
   TerminalIcon,
   UploadIcon,
@@ -69,6 +70,7 @@ export const NAV_SECTIONS: NavSection[] = [
     // folds in here so the top level stays five focused groups (RFC-007 IA).
     heading: "Stylist",
     items: [
+      { label: "Intelligence Center", href: "/intelligence", icon: SparklesIcon },
       { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
       { label: "Chat", href: "/chat", icon: MessagesSquareIcon },
       { label: "Buy vs Skip", href: "/acquisition/advisor", icon: CompassIcon, matchNested: true },

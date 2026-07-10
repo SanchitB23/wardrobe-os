@@ -180,6 +180,13 @@ cookie-aware).
 multi-objective, weather- & preference-aware, diverse, explainable) → ranked list
 + quality metrics.
 
+**Intelligence Center (deterministic):**
+`IntelligenceCenter` (`/intelligence`) → `useIntelligenceCenter` →
+`getIntelligenceCenter` → recommendation + health + usage (+ contextual acquisition/
+lifestyle/weather/vision) → `buildIntelligenceCenter` (RFC-015: generate → dedupe
+→ impact-rank) → prioritised typed action cards. Also led as "Do this next" on
+Today and exposed to the stylist via `getTopActions`.
+
 **Stylist chat (AI + tools):**
 `/chat` → `POST /api/chat` → `streamChat` → `GeminiChatModel` (function calling)
 → on tool calls, `ToolRouter` → wardrobe tools → services → repositories →

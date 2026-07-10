@@ -7,6 +7,42 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.1.0] — 2026-07-10
+
+**Intelligence Refinement + Runtime.** Sharpens the deterministic engine stack
+and turns the AI layer into a runtime — engines decide, AI explains (ADR-005).
+Five RFCs (011–015): the Weather Runtime, Recommendation Engine v2,
+Personalization Engine v2, AI Runtime v2, and the Intelligence Center. No schema
+changes; 480 unit tests green.
+
+### Added — Intelligence Center (RFC-015)
+
+Lead with **prioritised actions**, not analytics. One Intelligence Center
+aggregates every deterministic engine into a single, deduplicated, impact-ranked
+list of typed actions — **what to do next**. Engines decide the actions; the
+Center ranks; AI explains (ADR-005). No new verdicts, no schema changes.
+
+- **Domain** (`src/domain/intelligence`, pure): `buildIntelligenceCenter(sources)`
+  → generate (per-source mappers over normalized inputs) → dedupe by
+  (type, subject) → impact score → rank → `TopActions`. Modules: `ActionTypes`,
+  `ActionGenerator`, `ImpactScoring`, `ActionRanking`, `PriorityEngine`,
+  `IntelligenceCenter`.
+- **Typed actions:** `wear`, `buy`, `skip`, `clean`, `rotate`, `pack`,
+  `replace`, `explore` — mapped from recommendation, health, usage, acquisition,
+  personalization, lifestyle, weather, and vision. Each card carries priority,
+  **impact** (0–1, drives ranking), confidence, reason + reason codes, and its
+  source engine(s).
+- **Impact** = provisional signal × source reliability × confidence; priority
+  buckets from impact; deterministic ranking + dedup.
+- **Surfaces:** an Intelligence Center at `/intelligence` (with a Developer debug
+  view showing source, impact calculation, and priority per card), a "Do this
+  next" lead section on the Today home, and a `getTopActions` AI stylist tool.
+  Existing analytics surfaces remain as supporting detail.
+- Live sources today: recommendation (Wear), health (Buy/Replace), usage
+  (Rotate); acquisition/lifestyle/weather/vision are contextual and feed in as
+  their context is present (the domain supports all eight). Deterministic; **no
+  schema changes**. 480 tests green (+17).
+
 ### Added — AI Runtime v2 (RFC-014)
 
 Evolve the AI layer into a **capability-centric runtime**: callers request a

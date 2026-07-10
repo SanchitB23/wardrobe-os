@@ -16,8 +16,13 @@ import {
   WandSparklesIcon,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import { useInsightReport, useWardrobeHealth } from "@/features/analytics/hooks";
 import { useOutfitRecommendations } from "@/features/recommendations/hooks";
+import { useIntelligenceCenter } from "@/features/intelligence/hooks/useIntelligenceCenter";
+import { ActionCardRow } from "@/features/intelligence/components/intelligence-center-view";
+import { useExploreExploit } from "@/features/personalization/hooks/useExploreExploit";
 import { useWearLogs } from "@/features/wear-logs/hooks";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
@@ -315,6 +320,39 @@ function RecentActivityWidget() {
 // Page
 // ---------------------------------------------------------------------------
 
+/** RFC-015: the Intelligence Center's top actions, led on the Today home. */
+function DoThisNextSection() {
+  const { mode } = useExploreExploit();
+  const query = useIntelligenceCenter({ exploreExploit: mode, topN: 3 });
+  const actions = query.data?.topActions ?? [];
+
+  if (query.isError) return null;
+
+  return (
+    <Card>
+      <CardHeader className="pb-3">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <SparklesIcon className="size-4 text-muted-foreground" />
+            <CardTitle className="text-base">Do this next</CardTitle>
+          </div>
+          <Button variant="ghost" size="sm" render={<Link href="/intelligence">All</Link>} />
+        </div>
+        <CardDescription>Prioritised actions from every engine (RFC-015).</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {query.isPending ? (
+          <Loading lines={3} />
+        ) : actions.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nothing urgent — your wardrobe looks healthy.</p>
+        ) : (
+          actions.map((card) => <ActionCardRow key={card.id} card={card} />)
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function TodayView() {
   const now = useNow();
   const greeting = now ? greetingFor(now.getHours()) : "Welcome back";
@@ -329,6 +367,8 @@ export function TodayView() {
         badge={<Badge variant="secondary">Today</Badge>}
         description={dateLabel || "Your wardrobe at a glance — today's outfit, insights, and what to do next."}
       />
+
+      <DoThisNextSection />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <TodaysOutfitWidget />
