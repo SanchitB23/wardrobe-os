@@ -101,6 +101,10 @@ detail behind the engines.
   Multi-objective, weather- & personalization-aware scoring; hard-constraint
   eligibility; diversity reranking; full explainability (score breakdown, reason
   codes, trace) and per-run quality metrics. Deterministic; no AI ranking, no ML.
+- **Personalization Engine v2 — shipped** (RFC-013: `src/domain/personalization/v2`).
+  Preference lifecycle (core/emerging/declining/avoided), re-derivable timeline +
+  evolution, sharper stability, and an explore/exploit control that feeds
+  Recommendation Engine v2. Deterministic; no ML, no AI-derived preferences.
 - Capability Routing
 - Provider Routing
 - Primary / Fallback Providers

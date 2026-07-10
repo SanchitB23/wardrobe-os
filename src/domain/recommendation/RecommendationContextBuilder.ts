@@ -28,6 +28,7 @@ import {
   type PreferenceSnapshot,
   type PurchaseSnapshot,
   type RecommendationContext,
+  type RecommendationPersonalization,
   type SavedOutfit,
   type SavedOutfitSnapshot,
   type UsageSnapshot,
@@ -93,6 +94,8 @@ export interface RecommendationContextInput {
   protectedItemIds?: readonly string[];
   /** RFC-004: owner-avoided items (excluded from recommendations). */
   avoidedItemIds?: readonly string[];
+  /** RFC-013: personalization directives (lifecycle + explore/exploit). */
+  personalization?: RecommendationPersonalization;
 }
 
 export interface BuildOptions {
@@ -325,6 +328,7 @@ export function buildRecommendationContext(
     savedOutfits: buildSavedOutfits(input.savedOutfits ?? []),
     protectedItemIds: [...(input.protectedItemIds ?? [])],
     avoidedItemIds: [...(input.avoidedItemIds ?? [])],
+    personalization: input.personalization,
   };
 }
 

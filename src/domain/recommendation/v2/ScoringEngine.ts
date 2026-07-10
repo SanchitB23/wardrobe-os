@@ -143,7 +143,42 @@ function preferenceRaw(candidate: OutfitCandidate, context: RecommendationContex
 
   const matchFraction = matches / core.length;
   const avoidedFraction = avoided / core.length;
-  return clamp0To10(3 + 7 * matchFraction - 5 * avoidedFraction);
+  const base = 3 + 7 * matchFraction - 5 * avoidedFraction;
+  return clamp0To10(base + personalizationAdjust(core, context));
+}
+
+/**
+ * RFC-013: adjust preference fit from the personalization directives on the
+ * context — penalize items whose color/style/formality is an owner-avoided
+ * value, nudge up `core` and down `declining` lifecycle matches (anti-overfit).
+ * Bounded so it never dominates the dimension.
+ */
+function personalizationAdjust(
+  core: readonly WardrobeItemSnapshot[],
+  context: RecommendationContext,
+): number {
+  const p = context.personalization;
+  if (!p) return 0;
+  const avoided = new Set((p.avoidedValues ?? []).map((a) => `${a.dimension}:${normalize(a.value)}`));
+  const lifecycle = p.lifecycleByValue ?? {};
+
+  let adj = 0;
+  for (const item of core) {
+    const facets: [string, string][] = [
+      ["color", normalize(item.colorFamily)],
+      ["style", normalize(item.styleDNA.primaryStyle)],
+      ["formality", normalize(item.formality)],
+    ];
+    for (const [dim, value] of facets) {
+      if (!value) continue;
+      const key = `${dim}:${value}`;
+      if (avoided.has(key)) adj -= 1.5;
+      const lc = lifecycle[key];
+      if (lc === "core") adj += 0.3;
+      else if (lc === "declining") adj -= 0.3;
+    }
+  }
+  return Math.max(-3, Math.min(1.5, adj));
 }
 
 function commuteRaw(candidate: OutfitCandidate, context: RecommendationContext): number {

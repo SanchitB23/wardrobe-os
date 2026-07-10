@@ -97,12 +97,18 @@ export interface RerankResult {
 export function rerankForDiversity(
   sorted: readonly ScoredCandidate[],
   limit: number,
+  opts: { minDistinctAxes?: number } = {},
 ): RerankResult {
   const remaining = sorted.map((scored) => ({ scored, axes: axesOf(scored) }));
   const admitted: { scored: ScoredCandidate; axes: Axes }[] = [];
   const decisions = new Map<string, DiversityDecision>();
 
-  let threshold = DIVERSITY.minDistinctAxes;
+  // RFC-013: explore/exploit can nudge the diversity threshold (clamped 0–3).
+  const baseThreshold = Math.max(
+    0,
+    Math.min(3, opts.minDistinctAxes ?? DIVERSITY.minDistinctAxes),
+  );
+  let threshold = baseThreshold;
   let everRelaxed = false;
 
   while (admitted.length < limit && remaining.length > 0) {
@@ -118,7 +124,7 @@ export function rerankForDiversity(
       }
       idx = 0; // threshold 0 admits anything — take the best remaining.
     }
-    if (threshold < DIVERSITY.minDistinctAxes) relaxedHere = true;
+    if (threshold < baseThreshold) relaxedHere = true;
 
     const [chosen] = remaining.splice(idx, 1);
     const distinctFrom = admitted

@@ -24,7 +24,7 @@ Each capability is a thin adapter over an existing engine (`src/domain/orchestra
 | --- | --- | --- |
 | `health` | WardrobeHealthEngine (`analyzeWardrobeHealth`) | wardrobe health snapshot |
 | `usage` | UsageAnalyticsEngine | usage analytics |
-| `personalization` | PersonalizationEngine (`derivePreferenceProfile`, RFC-004) | preference snapshot |
+| `personalization` | PersonalizationEngine v2 (`derivePreferenceProfileV2`, RFC-004/013) | preference snapshot (+ lifecycle / explore-exploit) |
 | `analytics` | InsightEngine (`generateInsights`) | insight report |
 | `weather` | Weather Runtime (`WeatherSnapshot`, RFC-011) | current weather snapshot |
 | `outfit` | OutfitGenerationEngine (`generateOutfits`) | generated outfits |

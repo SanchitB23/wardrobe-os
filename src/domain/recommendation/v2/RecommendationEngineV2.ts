@@ -25,7 +25,10 @@ import { buildRecommendation } from "@/domain/recommendation/v2/RecommendationTr
 import { computeQuality } from "@/domain/recommendation/v2/RecommendationQualityMetrics";
 import {
   DEFAULT_LIMIT,
+  DIMENSION_WEIGHTS,
+  DIVERSITY,
   RECOMMENDATION_V2_ENGINE_VERSION,
+  type RecommendationWeights,
 } from "@/domain/recommendation/v2/RecommendationWeights";
 
 const MAX_REJECTION_REASONS = 12;
@@ -68,11 +71,25 @@ export function recommendV2(
     }
   }
 
-  // 3. Score + 4. sort deterministically.
-  const ranked = scoreCandidates(eligible, context, occasion).sort(compareScored);
+  // RFC-013: explore/exploit re-weights the preference-fit + rotation dimensions
+  // and nudges the diversity threshold. Balanced / absent = RFC-012 defaults.
+  const ee = context.personalization?.weights;
+  const weights: RecommendationWeights = ee
+    ? {
+        ...DIMENSION_WEIGHTS,
+        personalPreferenceFit: DIMENSION_WEIGHTS.personalPreferenceFit * ee.preferenceFit,
+        wardrobeHealthContribution: DIMENSION_WEIGHTS.wardrobeHealthContribution * ee.wardrobeHealthContribution,
+      }
+    : DIMENSION_WEIGHTS;
 
-  // 5. Diversity rerank → top-K.
-  const { reranked, decisions, diversityScore } = rerankForDiversity(ranked, limit);
+  // 3. Score + 4. sort deterministically.
+  const ranked = scoreCandidates(eligible, context, occasion, weights).sort(compareScored);
+
+  // 5. Diversity rerank → top-K (explore/exploit can widen/tighten diversity).
+  const minDistinctAxes = DIVERSITY.minDistinctAxes + (ee?.diversityBias ?? 0);
+  const { reranked, decisions, diversityScore } = rerankForDiversity(ranked, limit, {
+    minDistinctAxes,
+  });
 
   // 6. Trace → RecommendationV2[]. Attach the aggregate rejection reasons to the
   //    first card (debug convenience, matching v1).

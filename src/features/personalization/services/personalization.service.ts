@@ -8,13 +8,17 @@
 
 import { DEFAULT_PREFERENCES } from "@/domain/recommendation";
 import {
-  derivePreferenceProfile,
   deriveSignals,
   type PreferenceOverride,
   type PreferenceDimension,
   type PreferencePrior,
   type UserPreferenceProfile,
 } from "@/domain/personalization";
+import {
+  derivePreferenceProfileV2,
+  type PreferenceEvolution,
+  type PreferenceTimeline,
+} from "@/domain/personalization/v2";
 import {
   deletePreferenceOverride,
   selectPersonalizationData,
@@ -26,6 +30,12 @@ export interface PreferenceProfileResult {
   profile: UserPreferenceProfile;
   protectedItems: { id: string; name: string }[];
   avoidedItems: { id: string; name: string }[];
+  /** RFC-013: per-preference timelines for the top preferences. */
+  timelines: PreferenceTimeline[];
+  /** RFC-013: what changed since the previous window. */
+  evolution: PreferenceEvolution[];
+  /** RFC-013: net-negative preference values (lifecycle "avoided"). */
+  avoidedPreferences: { dimension: string; value: string }[];
 }
 
 /** Today's static defaults become the cold-start prior. */
@@ -45,7 +55,8 @@ export async function getPreferenceProfile(
   const generatedAt = options.generatedAt ?? new Date().toISOString();
   const signals = deriveSignals(data.source, generatedAt);
 
-  const profile = derivePreferenceProfile(
+  // RFC-013: v2 derivation — lifecycle + since + timelines + evolution.
+  const { profile, timelines, evolution, avoidedPreferences } = derivePreferenceProfileV2(
     {
       signals,
       overrides: data.overrides,
@@ -53,7 +64,7 @@ export async function getPreferenceProfile(
       avoidedItemIds: data.avoidedItemIds,
       prior: PRIOR,
     },
-    { generatedAt },
+    { generatedAt, withTimeline: true },
   );
 
   const nameOf = (id: string) => ({ id, name: data.itemNames[id] ?? id });
@@ -63,6 +74,9 @@ export async function getPreferenceProfile(
       profile,
       protectedItems: profile.protectedItemIds.map(nameOf),
       avoidedItems: profile.avoidedItemIds.map(nameOf),
+      timelines,
+      evolution,
+      avoidedPreferences,
     },
     error: null,
   };

@@ -12,6 +12,13 @@ import {
 } from "@/domain/recommendation";
 import { generateInsights } from "@/domain/analytics/InsightEngine";
 import { toPreferenceSnapshot } from "@/domain/personalization";
+import type { UserPreferenceProfile } from "@/domain/personalization";
+import {
+  resolveExploreExploit,
+  EXPLORE_EXPLOIT_DEFAULT,
+  type ExploreExploitMode,
+} from "@/domain/personalization/v2";
+import type { RecommendationPersonalization } from "@/domain/recommendation";
 import { weatherRuntime } from "@/runtime/weather";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import {
@@ -37,7 +44,48 @@ export type RecommendationFilters = {
   weather?: WeatherCondition | null;
   commute?: CommuteMode | null;
   favoritesOnly?: boolean;
+  /** RFC-013: how strongly to lean on known taste vs surface neglected items. */
+  exploreExploit?: ExploreExploitMode | null;
 };
+
+/**
+ * RFC-013: build the recommendation personalization directives from the derived
+ * profile + the owner's explore/exploit mode. Lifecycle + avoided values let
+ * Recommendation Engine v2 avoid overfitting; the mode re-weights preference fit
+ * vs rotation. Pure mapping.
+ */
+function buildPersonalization(
+  profile: UserPreferenceProfile | undefined,
+  avoidedPreferences: { dimension: string; value: string }[],
+  mode: ExploreExploitMode,
+): RecommendationPersonalization {
+  const lifecycleByValue: NonNullable<RecommendationPersonalization["lifecycleByValue"]> = {};
+  if (profile) {
+    const groups = [
+      profile.preferredColors,
+      profile.preferredBrands,
+      profile.preferredFormality,
+      profile.preferredFootwear,
+      profile.preferredStyles,
+      profile.preferredSeasons,
+      profile.preferredOccasions,
+      profile.preferredSilhouettes,
+      profile.carePreference,
+      profile.commutePreference,
+    ];
+    for (const group of groups) {
+      for (const pref of group) {
+        if (pref.lifecycle) lifecycleByValue[`${pref.dimension}:${pref.value.toLowerCase()}`] = pref.lifecycle;
+      }
+    }
+  }
+  return {
+    exploreExploit: mode,
+    weights: resolveExploreExploit(mode),
+    lifecycleByValue,
+    avoidedValues: avoidedPreferences,
+  };
+}
 
 /** Lightweight per-item view data for rendering outfit previews. */
 export type ItemPreview = {
@@ -217,6 +265,14 @@ export async function fetchOutfitRecommendations(
   const protectedItemIds = preferenceResult.data?.profile.protectedItemIds ?? [];
   const avoidedItemIds = preferenceResult.data?.profile.avoidedItemIds ?? [];
 
+  // RFC-013: personalization directives (lifecycle + explore/exploit) for v2.
+  const exploreExploit = filters.exploreExploit ?? EXPLORE_EXPLOIT_DEFAULT;
+  const personalization = buildPersonalization(
+    preferenceResult.data?.profile,
+    preferenceResult.data?.avoidedPreferences ?? [],
+    exploreExploit,
+  );
+
   const generatedAt = new Date().toISOString();
 
   // RFC-011: weather comes from the Weather Runtime as a WeatherSnapshot. A manual
@@ -240,6 +296,7 @@ export async function fetchOutfitRecommendations(
       commute: filters.commute ? { mode: filters.commute } : undefined,
       protectedItemIds,
       avoidedItemIds,
+      personalization,
     },
     { generatedAt },
   );

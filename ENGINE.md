@@ -109,6 +109,25 @@ derives; AI only explains ([ADR-005](docs/adr/ADR-005-ai-does-not-decide.md)).
 
 ---
 
+## PersonalizationEngine v2
+**`src/domain/personalization/v2/`** → `derivePreferenceProfileV2(input, options)`
+(RFC-013).
+
+Refines the v1 point-in-time profile by **re-running the pure v1 derivation over
+rolling historical windows** — adding no new signal model. Per preference it
+produces a **lifecycle** (`core` / `emerging` / `declining` / `avoided`), a
+**timeline** (weight series + trend), sharper **stability** (cross-window spread +
+persistence), and a **`since`** date; plus a `PreferenceEvolution` audit
+(before → after / signal / reason / timestamp) and the net-negative **avoided
+preferences**. `resolveExploreExploit(mode)` maps the owner's `explore` /
+`balanced` / `exploit` setting to deterministic weight adjustments consumed by
+Recommendation Engine v2 (re-weighting preference fit vs rotation and nudging
+diversity — never bypassing hard constraints). Overrides still win. Deterministic
+(same signals + overrides + mode + `generatedAt` + window ⇒ identical output); no
+ML, no AI-derived preferences. Surfaced on the Taste Profile (`/settings/preferences`).
+
+---
+
 ## IntelligenceOrchestrator
 **`src/domain/orchestrator/`** → `orchestrate(request, context, options)` (RFC-005).
 

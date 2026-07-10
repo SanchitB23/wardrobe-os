@@ -176,6 +176,28 @@ export interface SavedOutfitSnapshot {
 }
 
 // ---------------------------------------------------------------------------
+// Personalization (RFC-013) — how recommendation should consume the profile.
+// Kept structural (no cross-domain import) so RecommendationContext stays stable.
+// ---------------------------------------------------------------------------
+
+export type ExploreExploitMode = "explore" | "balanced" | "exploit";
+
+export interface RecommendationPersonalization {
+  /** The owner's explore/exploit setting (default "balanced"). */
+  exploreExploit: ExploreExploitMode;
+  /** Deterministic weight adjustments derived from the mode (RFC-013). */
+  weights?: {
+    preferenceFit: number;
+    wardrobeHealthContribution: number;
+    diversityBias: number;
+  };
+  /** `dimension:value` (lowercased) → lifecycle, for anti-overfitting nudges. */
+  lifecycleByValue?: Record<string, "core" | "emerging" | "declining" | "avoided">;
+  /** Net-negative preference values the owner steers away from. */
+  avoidedValues?: { dimension: string; value: string }[];
+}
+
+// ---------------------------------------------------------------------------
 // The context
 // ---------------------------------------------------------------------------
 
@@ -194,6 +216,8 @@ export interface RecommendationContext {
   protectedItemIds: string[];
   /** RFC-004: items the owner wants to avoid. Excluded from recommendations. */
   avoidedItemIds: string[];
+  /** RFC-013: optional personalization directives (lifecycle + explore/exploit). */
+  personalization?: RecommendationPersonalization;
 }
 
 // ---------------------------------------------------------------------------

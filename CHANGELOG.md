@@ -7,6 +7,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Personalization Engine v2 (RFC-013)
+
+Refine the deterministic preference profile with **lifecycle, timeline,
+evolution, sharper stability, and an explore/exploit control** — promoting the
+RFC-004 reserved shapes from *declared* to *produced*. Behaviour is the source of
+truth; the engine derives; AI only explains. **No ML, no AI-derived preferences,
+no chat memory.**
+
+- **Domain** (`src/domain/personalization/v2`, pure) — `derivePreferenceProfileV2`
+  re-runs the pure v1 derivation over rolling historical windows to compute, per
+  preference, a **lifecycle** (`core` / `emerging` / `declining` / `avoided`), a
+  **timeline** (weight series + trend), sharper **stability** (cross-window spread
+  + persistence), and a **`since`** date; plus a **`PreferenceEvolution`** audit
+  (before → after / signal / reason / timestamp) and the net-negative **avoided
+  preferences**. Overrides still win (a pin keeps its stability and source).
+- **Explore/exploit** — `resolveExploreExploit(mode)` maps `explore` / `balanced`
+  / `exploit` to deterministic weight adjustments; the default is `balanced`.
+- **Recommendation integration** — `RecommendationContext.personalization` carries
+  the mode weights, per-value lifecycle, and avoided values; Recommendation Engine
+  v2 (RFC-012) re-weights preference fit + rotation and nudges diversity
+  accordingly, penalises owner-avoided values, and applies small core/declining
+  lifecycle nudges (anti-overfitting) — hard constraints and diversity are never
+  bypassed. `balanced` reproduces the prior v2 ranking exactly.
+- **Taste Profile UI** (`/settings/preferences`) — lifecycle badges, a "Taste over
+  time" timeline with trend arrows, confidence/stability + `since`, an
+  explore/exploit selector (persisted), and a Debug preference-evolution section.
+- Deterministic (same signals + overrides + mode + `generatedAt` + window ⇒
+  identical output). **No schema changes** (timelines/evolution re-derived; the
+  explore/exploit mode is a localStorage setting). 447 tests green (+21).
+
 ### Changed — Recommendation Engine v2 (RFC-012)
 
 Replace the v1 two-term unified ranking with a **multi-objective, weather- and

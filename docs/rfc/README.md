@@ -95,6 +95,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [010](RFC-010-Application-Access-Guard.md) | Application Access Guard | Product Experience | Implemented |
 | [011](RFC-011-Weather-Runtime.md) | Weather Runtime | Runtime | Implemented |
 | [012](RFC-012-Recommendation-Engine-v2.md) | Recommendation Engine v2 | Intelligence Refinement | Implemented |
+| [013](RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 | Intelligence Refinement | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
 reserved RFC numbers (RFC-001 … RFC-014).

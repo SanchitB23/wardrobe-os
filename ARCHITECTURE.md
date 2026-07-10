@@ -57,8 +57,9 @@ reproducible and unit-testable. See [ENGINE.md](ENGINE.md).
 ### Recommendation context
 `buildRecommendationContext(...)` assembles a single immutable snapshot
 (wardrobe, usage, purchase, health, preferences, weather, commute, saved
-outfits) that the recommendation/generation engines score against. Services do
-the I/O; engines receive the context, never raw rows. See
+outfits, and RFC-013 `personalization` directives — preference lifecycle +
+explore/exploit weights) that the recommendation/generation engines score
+against. Services do the I/O; engines receive the context, never raw rows. See
 [ADR-002](docs/adr/ADR-002-recommendation-context.md).
 
 ### Intelligence Orchestrator

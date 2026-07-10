@@ -3,19 +3,25 @@
 import { useState } from "react";
 import {
   AlertTriangleIcon,
+  ArrowDownRightIcon,
+  ArrowRightIcon,
+  ArrowUpRightIcon,
   Loader2Icon,
   PinIcon,
   SparklesIcon,
   XIcon,
 } from "lucide-react";
 
-import type { DerivedPreference, PreferenceDimension } from "@/domain/personalization";
+import type { DerivedPreference, PreferenceDimension, PreferenceLifecycle } from "@/domain/personalization";
+import type { PreferenceTimeline } from "@/domain/personalization/v2";
+import { EXPLORE_EXPLOIT_MODES, type ExploreExploitMode } from "@/domain/personalization/v2";
 import {
   useClearPreferenceOverride,
   usePreferenceProfile,
   useSavePreferenceOverride,
   useSetItemFlags,
 } from "@/features/personalization/hooks/usePreferenceProfile";
+import { useExploreExploit } from "@/features/personalization/hooks/useExploreExploit";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -33,6 +39,95 @@ import { cn } from "@/lib/utils";
 const pct = (n: number) => `${Math.round(n * 100)}%`;
 
 type Section = { title: string; dimension: PreferenceDimension; items: DerivedPreference[] };
+
+const LIFECYCLE_STYLE: Record<PreferenceLifecycle, string> = {
+  core: "border-emerald-500/40 text-emerald-600 dark:text-emerald-400",
+  emerging: "border-blue-500/40 text-blue-600 dark:text-blue-400",
+  declining: "border-amber-500/40 text-amber-600 dark:text-amber-400",
+  avoided: "border-destructive/40 text-destructive",
+};
+
+/** RFC-013: colour-coded lifecycle badge (core / emerging / declining / avoided). */
+function LifecycleBadge({ lifecycle }: { lifecycle: PreferenceLifecycle }) {
+  return (
+    <Badge variant="outline" className={cn("text-[10px] capitalize", LIFECYCLE_STYLE[lifecycle])}>
+      {lifecycle}
+    </Badge>
+  );
+}
+
+const TREND_ICON = {
+  rising: ArrowUpRightIcon,
+  steady: ArrowRightIcon,
+  falling: ArrowDownRightIcon,
+} as const;
+
+/** RFC-013: a compact sparkline of a preference's weight across time windows. */
+function TimelineRow({ timeline }: { timeline: PreferenceTimeline }) {
+  const TrendIcon = TREND_ICON[timeline.trend];
+  return (
+    <div className="flex items-center gap-3 rounded-lg border p-2.5">
+      <div className="min-w-24 flex-1">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium capitalize">{timeline.value}</span>
+          <Badge variant="secondary" className="text-[10px] capitalize">{timeline.dimension}</Badge>
+        </div>
+      </div>
+      <div className="flex h-8 items-end gap-0.5" aria-hidden>
+        {timeline.points.map((p, i) => (
+          <div
+            key={i}
+            className="w-1.5 rounded-sm bg-primary/60"
+            style={{ height: `${Math.max(4, Math.round(p.weight * 100))}%` }}
+          />
+        ))}
+      </div>
+      <span
+        className={cn(
+          "flex items-center gap-1 text-xs",
+          timeline.trend === "rising" && "text-emerald-600 dark:text-emerald-400",
+          timeline.trend === "falling" && "text-amber-600 dark:text-amber-400",
+          timeline.trend === "steady" && "text-muted-foreground",
+        )}
+        title={`Trend: ${timeline.trend}`}
+      >
+        <TrendIcon className="size-3.5" /> {timeline.trend}
+      </span>
+    </div>
+  );
+}
+
+const EXPLORE_EXPLOIT_LABEL: Record<ExploreExploitMode, { label: string; hint: string }> = {
+  exploit: { label: "Exploit", hint: "Lean into proven favourites" },
+  balanced: { label: "Balanced", hint: "Default mix" },
+  explore: { label: "Explore", hint: "Surface underused, compatible items" },
+};
+
+/** RFC-013: explore/exploit selector — persisted; feeds Recommendation Engine v2. */
+function ExploreExploitSelector() {
+  const { mode, setMode } = useExploreExploit();
+  return (
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm">Explore vs Exploit</CardTitle>
+        <CardDescription>{EXPLORE_EXPLOIT_LABEL[mode].hint}. Applies to your recommendations.</CardDescription>
+      </CardHeader>
+      <CardContent className="flex flex-wrap gap-2">
+        {EXPLORE_EXPLOIT_MODES.map((value) => (
+          <Button
+            key={value}
+            size="sm"
+            variant={mode === value ? "default" : "outline"}
+            aria-pressed={mode === value}
+            onClick={() => setMode(value)}
+          >
+            {EXPLORE_EXPLOIT_LABEL[value].label}
+          </Button>
+        ))}
+      </CardContent>
+    </Card>
+  );
+}
 
 function PreferenceRow({
   pref,
@@ -61,6 +156,7 @@ function PreferenceRow({
               <PinIcon className="mr-1 size-2.5" /> pinned
             </Badge>
           ) : null}
+          {pref.lifecycle ? <LifecycleBadge lifecycle={pref.lifecycle} /> : null}
         </div>
         <div className="flex items-center gap-1">
           {isOverride ? (
@@ -84,6 +180,12 @@ function PreferenceRow({
         <span title="How sure we are now">confidence {pct(pref.confidence)}</span>
         <span aria-hidden>·</span>
         <span title="How consistently this has held over time">stability {pct(pref.stability)}</span>
+        {pref.since ? (
+          <>
+            <span aria-hidden>·</span>
+            <span title="Since this preference became dominant">since {pref.since}</span>
+          </>
+        ) : null}
       </div>
       <p className="text-xs text-muted-foreground">{pref.reason}</p>
     </div>
@@ -173,7 +275,7 @@ function PreferencesContent({
   onUnprotect: (itemId: string) => void;
   onUnavoid: (itemId: string) => void;
 }) {
-  const { profile, protectedItems, avoidedItems } = data;
+  const { profile, protectedItems, avoidedItems, timelines, evolution } = data;
 
   const sections: Section[] = [
     { title: "Preferred Colors", dimension: "color", items: profile.preferredColors },
@@ -211,6 +313,24 @@ function PreferencesContent({
           </div>
         </CardContent>
       </Card>
+
+      <ExploreExploitSelector />
+
+      {timelines.length > 0 ? (
+        <Card>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Taste over time</CardTitle>
+            <CardDescription>
+              How your top preferences have moved across recent windows (re-derived, not stored).
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {timelines.map((timeline) => (
+              <TimelineRow key={`${timeline.dimension}:${timeline.value}`} timeline={timeline} />
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="grid gap-4 md:grid-cols-2">
         {sections.map((section) => (
@@ -260,8 +380,31 @@ function PreferencesContent({
       {debug ? (
         <Card>
           <CardHeader className="pb-2">
+            <CardTitle className="text-sm">Preference evolution</CardTitle>
+            <CardDescription>What changed since the previous window (before → after).</CardDescription>
+          </CardHeader>
+          <CardContent>
+            {evolution.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No changes since the previous window.</p>
+            ) : (
+              <ul className="space-y-1 text-xs">
+                {evolution.map((entry, index) => (
+                  <li key={`${entry.dimension}:${entry.value}:${index}`} className="font-mono">
+                    <span className="capitalize">{entry.dimension}</span>:{entry.value} —{" "}
+                    {entry.changes[0].before ?? "∅"} → {entry.changes[0].after ?? "∅"} ({entry.changes[0].reason})
+                  </li>
+                ))}
+              </ul>
+            )}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {debug ? (
+        <Card>
+          <CardHeader className="pb-2">
             <CardTitle className="text-sm">Debug — raw UserPreferenceProfile</CardTitle>
-            <CardDescription>Deterministic output of derivePreferenceProfile().</CardDescription>
+            <CardDescription>Deterministic output of derivePreferenceProfileV2().</CardDescription>
           </CardHeader>
           <CardContent>
             <pre className="max-h-[32rem] overflow-auto rounded-lg border bg-muted/30 p-3 text-xs whitespace-pre-wrap break-words">

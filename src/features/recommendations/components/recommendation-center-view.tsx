@@ -21,6 +21,7 @@ import {
 } from "lucide-react";
 
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
+import { useExploreExploit } from "@/features/personalization/hooks/useExploreExploit";
 import { PageHeader } from "@/features/layout";
 import {
   useOutfitRecommendations,
@@ -559,7 +560,10 @@ function RecommendationsSkeleton() {
 export function RecommendationCenterView() {
   const [filters, setFilters] = useState<RecommendationFilters>({});
   const [showDebug, setShowDebug] = useState(false);
-  const query = useOutfitRecommendations(filters);
+  // RFC-013: the owner's explore/exploit setting (set on the Taste Profile) feeds
+  // the ranking. Included in the query key so a change re-fetches.
+  const { mode: exploreExploit } = useExploreExploit();
+  const query = useOutfitRecommendations({ ...filters, exploreExploit });
   const saveMutation = useSaveGeneratedOutfit();
   const wearMutation = useWearOutfit();
   const data = query.data;
