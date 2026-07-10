@@ -105,13 +105,13 @@ detail behind the engines.
   Preference lifecycle (core/emerging/declining/avoided), re-derivable timeline +
   evolution, sharper stability, and an explore/exploit control that feeds
   Recommendation Engine v2. Deterministic; no ML, no AI-derived preferences.
-- Capability Routing
-- Provider Routing
-- Primary / Fallback Providers
-- Provider Benchmarking
-- Cost Analytics
-- Latency Analytics
-- Prompt Versioning
+- **AI Runtime v2 — shipped** (RFC-014: `src/runtime/ai`). Capability-centric
+  routing behind declarative provider policies (primary → fallback + retry),
+  provider benchmarking, prompt versioning + deterministic experiments, and
+  latency / cost / token metrics per capability × provider × prompt version;
+  inspector at `/developer/ai-runtime`. Routes and measures; never decides
+  (ADR-005). Delivers: Capability Routing, Provider Routing, Primary/Fallback,
+  Benchmarking, Cost + Latency Analytics, Prompt Versioning.
 
 **Target AI Runtime configuration** (future):
 

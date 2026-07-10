@@ -48,6 +48,13 @@ const TOOLS: DevTool[] = [
     status: "available",
   },
   {
+    title: "AI Runtime",
+    description: "Capability routing, provider policies, latency + cost metrics, benchmarking (RFC-014).",
+    icon: GaugeIcon,
+    href: "/developer/ai-runtime",
+    status: "available",
+  },
+  {
     title: "AI Test endpoint",
     description: "Raw /api/ai/test route for quick provider checks.",
     icon: TerminalIcon,

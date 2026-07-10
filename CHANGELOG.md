@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — AI Runtime v2 (RFC-014)
+
+Evolve the AI layer into a **capability-centric runtime**: callers request a
+*capability*, declarative **provider policies** choose the provider (primary →
+fallback), and the runtime benchmarks, versions prompts, and records latency /
+cost / token metrics. It **routes and measures; it never decides** (ADR-005).
+Additive — no AI feature, recommendation, or business-logic changes.
+
+- **Runtime** (`src/runtime/ai`, wraps `src/ai`): `AIRuntime.run({ capability })`
+  resolves a `ProviderPolicy`, routes via `ProviderRouter` (primary → fallback +
+  retry), validates structured output, reads/writes the AI cache, and records
+  metrics. Modules: `CapabilityRouter`, `ProviderPolicy`, `ProviderRouter`,
+  `PromptRegistry` + `PromptVersion` (versioning + deterministic experiments),
+  `CostTracker`, `LatencyTracker`, `RuntimeMetrics`, `ProviderBenchmark`.
+- **Capabilities:** explanation, vision, image generation, conversation,
+  summarization, and a reserved embeddings slot. Vision routes to `vision()`,
+  the rest to `generate()`.
+- **Policies:** capability → `{ primary, fallback }`, overridable via
+  `AI_POLICY_<CAPABILITY>=primary,fallback`. Default keeps Gemini primary
+  everywhere (the only fully-wired provider); `TARGET_POLICIES` documents the
+  PRODUCT_VISION target (Text → OpenAI/Gemini, Vision → Gemini/OpenAI). Gemini,
+  OpenAI, and Claude providers are all registered so fallback works the moment
+  OpenAI/Claude become real.
+- **Metrics + dashboard:** latency, cost (from a price table), tokens, cache-hit,
+  and failure per capability × provider × prompt version; surfaced at
+  `/developer/ai-runtime` (Developer Mode), with provider policies and a metrics
+  table.
+- Deterministic routing (same request + policy ⇒ same decision); prompt
+  experiments bucket deterministically by a stable key. **No schema changes**
+  (reuses `ai_cache`; metrics in-memory). 463 tests green (+16). Existing AI
+  features keep using `getServerAIService()` unchanged.
+
 ### Added — Personalization Engine v2 (RFC-013)
 
 Refine the deterministic preference profile with **lifecycle, timeline,

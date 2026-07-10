@@ -20,7 +20,7 @@ Alongside, two cross-cutting pillars:
 
 ```
 domain engines         src/domain/**   (pure, deterministic — the source of truth)
-runtime layer          src/runtime/**  (deterministic I/O adapters; e.g. weather)
+runtime layer          src/runtime/**  (I/O adapters: weather + capability-routed AI runtime)
 AI layer               src/ai/**       (vendor-neutral; explains + converses)
 ```
 
@@ -140,6 +140,13 @@ surfaces sourcing static release/architecture metadata.
 - **Prompt builders / schemas / parsers** — structured, validated output.
 - **Cache** — `src/ai/cache` (Supabase-backed with in-memory fallback);
   [ADR-006](docs/adr/ADR-006-ai-cache.md).
+- **AI Runtime v2** (RFC-014, `src/runtime/ai`) — a **capability-centric**
+  runtime wrapping the layer above: callers request a *capability* (explanation /
+  vision / conversation / summarization / …), declarative **provider policies**
+  choose the provider (primary → fallback + retry), and the runtime versions
+  prompts, benchmarks providers, and records latency / cost / token metrics per
+  capability × provider × prompt version. Inspector at `/developer/ai-runtime`.
+  It routes and measures; it never decides (ADR-005).
 
 AI **explains and converses only** — it is never the source of truth for
 scoring, eligibility, ranking, health, or cost.

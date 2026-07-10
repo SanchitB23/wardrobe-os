@@ -118,13 +118,7 @@ detail behind the deterministic engines.
 | [RFC-011](../rfc/RFC-011-Weather-Runtime.md) | Weather Runtime (provider-agnostic; weather as a first-class capability) | ✅ Implemented |
 | [RFC-012](../rfc/RFC-012-Recommendation-Engine-v2.md) | Recommendation Engine v2 (multi-objective, weather- & preference-aware, diverse, explainable) | ✅ Implemented |
 | [RFC-013](../rfc/RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 (lifecycle, timeline, evolution, explore/exploit) | ✅ Implemented |
-| _(TBD)_ | Capability Routing | Not started |
-| _(TBD)_ | Provider Routing | Not started |
-| _(TBD)_ | Primary / Fallback Providers | Not started |
-| _(TBD)_ | Provider Benchmarking | Not started |
-| _(TBD)_ | Cost Analytics | Not started |
-| _(TBD)_ | Latency Analytics | Not started |
-| _(TBD)_ | Prompt Versioning | Not started |
+| [RFC-014](../rfc/RFC-014-AI-Runtime-v2.md) | AI Runtime v2 — capability routing, provider policies (primary/fallback), benchmarking, prompt versioning, latency + cost metrics | ✅ Implemented |
 
 Target configuration (future): **Text** → OpenAI (fallback Gemini); **Vision** →
 Gemini; **Image Generation** (future) → OpenAI.

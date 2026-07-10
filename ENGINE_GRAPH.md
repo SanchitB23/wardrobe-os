@@ -75,7 +75,7 @@ Execution Plan (order + graph)
 Execution Result (per-capability outcomes)
    ↓  buildExecutionReport
 ExecutionReport
-   ↓  (optional) AI narration — consumes the report, never decides
+   ↓  (optional) AI narration — routed by AI Runtime v2 (RFC-014); consumes the report, never decides
 ```
 
 ## ExecutionReport
