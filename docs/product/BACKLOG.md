@@ -123,15 +123,18 @@ detail behind the deterministic engines.
 Target configuration (future): **Text** → OpenAI (fallback Gemini); **Vision** →
 Gemini; **Image Generation** (future) → OpenAI.
 
-## Epic 6 — Wardrobe Intelligence (v1.2)
+## Epic 6 — Wardrobe Intelligence (v1.2) ⏸️ Parked
 
-Compose the engines into higher-order reasoning.
+Higher-order reasoning — **parked**. Cross-engine orchestration is already
+delivered by the Intelligence Orchestrator (RFC-005); long-horizon planning /
+multi-step reasoning are absorbed into AI Runtime v2 (RFC-014), Personalization v2
+(RFC-013), and the Orchestrator. Full reasoning in
+[FUTURE.md](FUTURE.md) (Parking Lot).
 
 | RFC | Title | Status |
 | --- | --- | --- |
-| _(TBD)_ | Cross-engine orchestration | Not started |
-| _(TBD)_ | Long-horizon planning | Not started |
-| _(TBD)_ | Multi-step reasoning | Not started |
+| [RFC-020](FUTURE.md) | Cross-Engine Orchestration | ⏸️ Parked (architecture sufficient — RFC-005) |
+| [RFC-021](FUTURE.md) | Long-Horizon Planning & Multi-Step Reasoning | ⏸️ Parked (absorbed — RFC-013/014/005) |
 
 ## Epic 7 — Product Experience & v1.0 Polish (v1.0)
 
@@ -156,12 +159,30 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 | --- | --- | --- |
 | [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
 
-## Removed from scope
+## Epic 9 — Lifestyle Intelligence Platform (v2.0)
 
-Permanently removed — **low ROI for a single-user product**:
+Grow beyond the closet into the contexts a wardrobe serves. Engines decide; AI
+explains. Full status + reasoning in [FUTURE.md](FUTURE.md) (Planned).
+
+| RFC | Title | Status |
+| --- | --- | --- |
+| [RFC-017](FUTURE.md) | Travel Intelligence — packing, capsule wardrobes, business trips (**first v2.0 feature**) | 📋 Planned |
+| [RFC-018](FUTURE.md) | Shopping Intelligence — wishlist · strategy · wardrobe ROI · duplicate detection · purchase prioritization (no budget planning) | 📋 Planned |
+| [RFC-019](FUTURE.md) | Vision Intelligence v2 — closet scan · duplicate detection · assisted outfit recognition (laundry detection deferred) | 📋 Planned |
+| [RFC-016](FUTURE.md) | Calendar Intelligence | ⏸️ Parked (low ROI, single-user) |
+
+## Removed / parked from scope
+
+**Rejected** — low ROI for a single-user product ([FUTURE.md](FUTURE.md) → Rejected):
 
 - **Chrome / Browser Extension** — upload flows cover the shopping use case.
 - **Notification Engine** — no recurring push/notification surface.
+- **Budget Planning** — dropped from Shopping Intelligence; cost-per-wear +
+  Wardrobe ROI already give the money signal.
+
+**Parked** — deferred, revisit later ([FUTURE.md](FUTURE.md) → Parking Lot):
+Calendar Intelligence (RFC-016), Cross-Engine Orchestration (RFC-020),
+Long-Horizon Planning & Multi-Step Reasoning (RFC-021), Laundry Detection.
 
 ---
 

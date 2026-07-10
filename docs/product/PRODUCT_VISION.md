@@ -141,16 +141,25 @@ Sharpen, don't sprawl. This horizon refines the engines that already exist:
 
 ### v2.0 — Lifestyle Intelligence Platform
 
-Wardrobe OS grows beyond the closet into the contexts a wardrobe serves:
+Wardrobe OS grows beyond the closet into the contexts a wardrobe serves. Planned
+scope and the full "will / might / won't" reasoning live in
+[FUTURE.md](FUTURE.md):
 
-- **Travel** — packing, weather, capsule wardrobes, business trips
-- **Shopping Intelligence** — wishlist, price tracking, wardrobe ROI, a shopping
-  planner
-- **Calendar Intelligence** — meeting, vacation, and wedding planning
-- **Vision v2** — closet scan, outfit recognition, auto wear-logging, laundry
-  detection
-- **AI Stylist Pro** — conversation memory, cross-engine planning, long-horizon
-  planning
+- **Travel Intelligence (RFC-017) — the first v2.0 feature.** Packing, capsule
+  wardrobes, business trips.
+- **Shopping Intelligence (RFC-018)** — wishlist, shopping strategy, wardrobe ROI,
+  duplicate detection, purchase prioritization. _(Budget planning dropped — a
+  single owner doesn't need a budgeting tool.)_
+- **Vision Intelligence v2 (RFC-019)** — closet scan, duplicate detection,
+  assisted outfit recognition. _(Laundry detection deferred.)_
+
+**Parked / absorbed** (see [FUTURE.md](FUTURE.md)):
+
+- **Calendar Intelligence (RFC-016)** — parked; low ROI for a single-user app.
+- **Higher-order reasoning** (cross-engine orchestration, long-horizon planning,
+  multi-step reasoning; RFC-020/021) — already delivered or absorbed by the
+  Intelligence Orchestrator (RFC-005), AI Runtime v2 (RFC-014), and Personalization
+  v2 (RFC-013).
 
 ### v3.0 — Wardrobe Intelligence Graph
 
@@ -352,10 +361,13 @@ Candidate directions that fit the vision and may earn a place on the roadmap:
 ## Rejected Ideas
 
 Directions deliberately declined, because they conflict with the product's
-principles:
+principles or offer low ROI for a single-user product (full status in
+[FUTURE.md](FUTURE.md)):
 
 - Browser Extension
 - Notifications
+- Budget Planning _(dropped from Shopping Intelligence — cost-per-wear + Wardrobe
+  ROI already give the money signal)_
 - Social Features
 - Community
 - Fashion Feed

@@ -41,7 +41,8 @@ resilience improvements, no new features.
 | v1.0 | Lifestyle Engine + Today Experience | ✅ | Trip planning, and the assistant-style Today home that unifies every surface |
 | **v1.0.1** | **Stabilization (RFC-009)** | **✅** | **Quality only: performance, accessibility, DX, resilience — no new features** |
 | **v1.1** | **Intelligence Refinement + Runtime** | **✅** | **Weather Runtime, Recommendation v2, Personalization v2, AI Runtime v2, Intelligence Center (RFC-011…015)** |
-| v1.2 | Wardrobe Intelligence | 🔜 | Cross-engine orchestration, long-horizon planning, multi-step reasoning |
+| v2.0 | Lifestyle Intelligence Platform | 🔜 | Travel Intelligence (RFC-017, first), Shopping Intelligence (RFC-018), Vision Intelligence v2 (RFC-019) — see [FUTURE.md](docs/product/FUTURE.md) |
+| ~~v1.2~~ | ~~Wardrobe Intelligence~~ | ⏸️ Parked | Cross-engine orchestration + higher-order reasoning — superseded / absorbed by RFC-005/013/014 (see [FUTURE.md](docs/product/FUTURE.md)) |
 
 ---
 
@@ -125,14 +126,28 @@ detail behind the engines.
 | Vision | Gemini | — |
 | Image Generation (future) | OpenAI | — |
 
-### v1.2 — Wardrobe Intelligence 🔜
-Compose the engines into higher-order reasoning.
-- **Cross-engine orchestration — foundation shipped** (RFC-005 Intelligence
-  Orchestrator: `src/domain/orchestrator`; deterministic capability planning +
-  execution + reporting; AI reaches it via `runIntelligence`). Consumers
-  (Travel/Packing/Weather/Calendar/Shopping/Chat) build on it.
-- Long-horizon planning
-- Multi-step reasoning
+### v2.0 — Lifestyle Intelligence Platform 🔜 (next)
+Grow beyond the closet into the contexts a wardrobe serves. Planned features
+(full status + reasoning in [FUTURE.md](docs/product/FUTURE.md)):
+
+- **Travel Intelligence (RFC-017) — the first v2.0 feature.** Trip-aware packing,
+  capsule wardrobes, business trips; builds on Lifestyle (RFC-006), Weather
+  Runtime (RFC-011), and Recommendation v2 (RFC-012) via the Orchestrator.
+- **Shopping Intelligence (RFC-018).** Wishlist · Shopping Strategy · Wardrobe
+  ROI · Duplicate Detection · Purchase Prioritization. (Budget Planning dropped.)
+- **Vision Intelligence v2 (RFC-019).** Closet Scan · Duplicate Detection ·
+  Assisted Outfit Recognition. (Laundry Detection deferred.)
+
+### ~~v1.2 — Wardrobe Intelligence~~ ⏸️ Parked
+The former "higher-order reasoning" epic is parked: **cross-engine orchestration**
+is already delivered by the Intelligence Orchestrator (RFC-005), and
+**long-horizon planning / multi-step reasoning** are absorbed into AI Runtime v2
+(RFC-014), Personalization v2 (RFC-013), and the Orchestrator. See
+[FUTURE.md](docs/product/FUTURE.md) (RFC-020 / RFC-021).
+
+### Parked / cancelled
+- **Calendar Intelligence (RFC-016)** — parked: low ROI for a single-user app.
+- See [FUTURE.md](docs/product/FUTURE.md) for the full Parking Lot + Rejected list.
 
 See [ENGINE_GRAPH.md](ENGINE_GRAPH.md) for the engine dependency graph and the
 orchestrator capabilities.
@@ -142,7 +157,13 @@ orchestrator capabilities.
 ## Explicitly out of scope (removed)
 
 These were considered and **permanently removed** — low ROI for a single-user
-product:
+product (see [FUTURE.md](docs/product/FUTURE.md) → Rejected):
 
 - **Chrome / Browser Extension** — upload flows cover the shopping use case.
 - **Notification Engine** — no recurring push/notification surface.
+- **Budget Planning** — dropped from Shopping Intelligence (RFC-018); cost-per-wear
+  + Wardrobe ROI already give the useful money signal.
+
+**Parked** (deferred, not rejected — [FUTURE.md](docs/product/FUTURE.md) → Parking
+Lot): Calendar Intelligence (RFC-016), Cross-Engine Orchestration (RFC-020),
+Long-Horizon Planning & Multi-Step Reasoning (RFC-021), Laundry Detection.
