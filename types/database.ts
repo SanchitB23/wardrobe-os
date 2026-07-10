@@ -239,6 +239,72 @@ export type Database = {
         };
         Relationships: [];
       };
+      wishlist_items: {
+        Row: {
+          id: string;
+          name: string;
+          category: string | null;
+          subcategory: string | null;
+          brand: string | null;
+          color: string | null;
+          formality: string | null;
+          material: string | null;
+          price: number | null;
+          style_tags: string[] | null;
+          occasions: string[] | null;
+          image_url: string | null;
+          source: string;
+          source_url: string | null;
+          notes: string | null;
+          status: string;
+          purchased_id: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          name: string;
+          category?: string | null;
+          subcategory?: string | null;
+          brand?: string | null;
+          color?: string | null;
+          formality?: string | null;
+          material?: string | null;
+          price?: number | null;
+          style_tags?: string[] | null;
+          occasions?: string[] | null;
+          image_url?: string | null;
+          source?: string;
+          source_url?: string | null;
+          notes?: string | null;
+          status?: string;
+          purchased_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          name?: string;
+          category?: string | null;
+          subcategory?: string | null;
+          brand?: string | null;
+          color?: string | null;
+          formality?: string | null;
+          material?: string | null;
+          price?: number | null;
+          style_tags?: string[] | null;
+          occasions?: string[] | null;
+          image_url?: string | null;
+          source?: string;
+          source_url?: string | null;
+          notes?: string | null;
+          status?: string;
+          purchased_id?: string | null;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       trips: {
         Row: {
           id: string;

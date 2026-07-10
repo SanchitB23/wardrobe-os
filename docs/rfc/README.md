@@ -99,6 +99,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [014](RFC-014-AI-Runtime-v2.md) | AI Runtime v2 | Runtime | Implemented |
 | [015](RFC-015-Intelligence-Center.md) | Intelligence Center | Product Intelligence | Implemented |
 | [017](RFC-017-Trip-Planner.md) | Trip Planner | Travel | Implemented |
+| [018](RFC-018-Shopping-Intelligence.md) | Shopping Intelligence | Shopping | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and the
-reserved RFC numbers (RFC-001 … RFC-017; RFC-016 parked, RFC-018/019 planned).
+reserved RFC numbers (RFC-001 … RFC-018; RFC-016 parked, RFC-019 planned).

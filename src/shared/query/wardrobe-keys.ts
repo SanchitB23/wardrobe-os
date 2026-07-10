@@ -54,4 +54,6 @@ export const wardrobeKeys = {
   trips: () => [...wardrobeKeys.all, "trips"] as const,
   trip: (id: string) => [...wardrobeKeys.all, "trip", id] as const,
   tripPlan: (id: string) => [...wardrobeKeys.all, "trip-plan", id] as const,
+  wishlist: () => [...wardrobeKeys.all, "wishlist"] as const,
+  shoppingDashboard: () => [...wardrobeKeys.all, "shopping-dashboard"] as const,
 };

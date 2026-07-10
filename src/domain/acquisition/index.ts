@@ -17,6 +17,7 @@ export type {
   ProspectiveItem,
   ProspectiveItemCandidate,
   ProspectiveFieldConfidence,
+  PreferenceHints,
   BuyVsSkipInput,
   BuyVsSkipInputSource,
   BuyVsSkipOptions,

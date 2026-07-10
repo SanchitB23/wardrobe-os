@@ -6,7 +6,14 @@
  */
 
 import { evaluateBuyVsSkip } from "@/domain/acquisition";
-import type { BuyVsSkipAnalysis, ProspectiveItem } from "@/domain/acquisition";
+import type {
+  BuyVsSkipAnalysis,
+  BuyVsSkipInputSource,
+  PreferenceHints,
+  ProspectiveItem,
+} from "@/domain/acquisition";
+import type { WardrobeHealth } from "@/domain/analytics/WardrobeHealthEngine";
+import type { UsageAnalytics } from "@/domain/analytics/UsageAnalyticsEngine";
 import type { StyleDNAItem } from "@/domain/style-dna";
 import {
   fetchUsageAnalytics,
@@ -14,10 +21,26 @@ import {
 } from "@/features/analytics/services/analytics.service";
 import {
   selectRecommendationData,
+  type RecommendationData,
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import { toError } from "@/shared/utils/data-result";
+
+/**
+ * The shared, deterministic input snapshot the Buy vs Skip engine needs. Loaded
+ * once and reusable across many prospective items (e.g. Shopping Intelligence
+ * ranking a wishlist — RFC-018) so the wardrobe/analytics aren't re-fetched per
+ * item. `raw` is the underlying recommendation data (items, wears, purchases),
+ * exposed so downstream features can derive ROI / duplicates without re-querying.
+ */
+export interface AcquisitionContext {
+  wardrobe: StyleDNAItem[];
+  health: WardrobeHealth | null;
+  usage: UsageAnalytics | null;
+  preferences: PreferenceHints | null;
+  raw: RecommendationData;
+}
 
 function relatedNames<K extends string>(
   rows: { [key in K]: { name: string } | null }[] | null | undefined,
@@ -50,9 +73,15 @@ function isActive(row: RecoItemRow): boolean {
   return row.status === "active" || row.status === null;
 }
 
-export async function analyzeBuyVsSkip(
-  item: ProspectiveItem,
-): Promise<{ data: BuyVsSkipAnalysis | null; error: Error | null }> {
+/**
+ * Load the shared Buy vs Skip snapshot once. Callers that evaluate many items
+ * (Shopping Intelligence, RFC-018) load this a single time and reuse it, instead
+ * of re-fetching the wardrobe per item.
+ */
+export async function loadAcquisitionContext(): Promise<{
+  data: AcquisitionContext | null;
+  error: Error | null;
+}> {
   const [dataResult, healthResult, usageResult, preferenceResult] = await Promise.all([
     selectRecommendationData(),
     fetchWardrobeHealth(),
@@ -66,23 +95,44 @@ export async function analyzeBuyVsSkip(
     return { data: null, error: toError("Wardrobe data unavailable.") };
   }
 
-  const wardrobe = dataResult.data.items.filter(isActive).map(toStyleItem);
   const profile = preferenceResult.data?.profile;
-  const preferences = profile
-    ? {
-        preferredStyles: profile.preferredStyles.map((p) => p.value),
-        preferredFormality: profile.preferredFormality.map((p) => p.value),
-      }
-    : null;
+  return {
+    data: {
+      wardrobe: dataResult.data.items.filter(isActive).map(toStyleItem),
+      health: healthResult.error ? null : (healthResult.data?.health ?? null),
+      usage: usageResult.error ? null : (usageResult.data ?? null),
+      preferences: profile
+        ? {
+            preferredStyles: profile.preferredStyles.map((p) => p.value),
+            preferredFormality: profile.preferredFormality.map((p) => p.value),
+          }
+        : null,
+      raw: dataResult.data,
+    },
+    error: null,
+  };
+}
 
-  const analysis = evaluateBuyVsSkip({
+/** Run the pure engine against a preloaded context — no I/O, deterministic. */
+export function evaluateWithContext(
+  item: ProspectiveItem,
+  context: AcquisitionContext,
+  inputSource: BuyVsSkipInputSource = "manual",
+): BuyVsSkipAnalysis {
+  return evaluateBuyVsSkip({
     item,
-    wardrobe,
-    health: healthResult.error ? null : (healthResult.data?.health ?? null),
-    usage: usageResult.error ? null : (usageResult.data ?? null),
-    preferences,
-    inputSource: "manual",
+    wardrobe: context.wardrobe,
+    health: context.health,
+    usage: context.usage,
+    preferences: context.preferences,
+    inputSource,
   });
+}
 
-  return { data: analysis, error: null };
+export async function analyzeBuyVsSkip(
+  item: ProspectiveItem,
+): Promise<{ data: BuyVsSkipAnalysis | null; error: Error | null }> {
+  const { data: context, error } = await loadAcquisitionContext();
+  if (error || !context) return { data: null, error: error ?? toError("Wardrobe data unavailable.") };
+  return { data: evaluateWithContext(item, context), error: null };
 }

@@ -137,8 +137,12 @@ reasoning in [FUTURE.md](docs/product/FUTURE.md):
   (RFC-006) still derives the plan (Recommendation/Acquisition via the
   Orchestrator; Weather Runtime for forecasts) — no planning logic duplicated.
   Surfaced at `/trips`. Additive schema documented (not applied).
-- **Shopping Intelligence (RFC-018).** Wishlist · Shopping Strategy · Wardrobe
-  ROI · Duplicate Detection · Purchase Prioritization. (Budget Planning dropped.)
+- **Shopping Intelligence (RFC-018) — ✅ implemented.** A continuous shopping
+  system over Buy vs Skip (RFC-001): persisted wishlist, deterministic priority
+  queue (Need × Impact × Buy), wardrobe ROI, duplicate intelligence, timeline, and
+  strategy. Acquisition decides each item; Shopping Intelligence ranks; AI
+  explains. Surfaced at `/shopping`. Additive schema documented. (Budget Planning
+  dropped.)
 - **Vision Intelligence v2 (RFC-019).** Closet Scan · Duplicate Detection ·
   Assisted Outfit Recognition. (Laundry Detection deferred.)
 

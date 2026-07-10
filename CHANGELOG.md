@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Shopping Intelligence (RFC-018)
+
+Turns the single-purchase evaluator (RFC-001) into a continuous shopping system:
+a persisted wishlist, a deterministic priority queue, wardrobe ROI, duplicate
+intelligence, a shopping timeline, and a strategy. **Acquisition decides each
+item; Shopping Intelligence ranks + aggregates; AI explains** (ADR-005) — no
+buy/skip verdict is re-computed here.
+
+- **Domain** (`src/domain/shopping`, pure, 10 Vitest cases): `PriorityEngine`
+  (`computeNeedScore` from wardrobe gaps, `priorityScore` blending Need × Impact ×
+  Buy, `rankWishlist`), `ROIEngine` (`computeShoppingROI` — realized + projected
+  cost-per-wear, utilization signal; reuses `@/domain/wardrobe` money helpers),
+  `DuplicateEngine` (`analyzeDuplicates` — reuses acquisition `similarExistingItems`
+  for wishlist↔wardrobe + a field overlap for wishlist↔wishlist), `WishlistEngine`,
+  `ShoppingInsights`, and `ShoppingEngine` (`buildShoppingDashboard` composer).
+- **Reuse, no duplication:** the Acquisition service was refactored to split
+  `loadAcquisitionContext()` (one shared snapshot) from `evaluateWithContext()`;
+  Shopping Intelligence loads the context once and runs Buy vs Skip per active
+  wishlist item — Recommendation + Personalization flow through it as before.
+- **Feature** (`src/features/shopping`): `wishlist_items` repository, a service
+  producing the `ShoppingDashboard`, TanStack Query hooks, and a tabbed
+  `/shopping` view (Priority · Wishlist · ROI · History · Duplicates · Strategy),
+  with a "From screenshot" hook into the RFC-003 Vision capture flow. Nav gains a
+  **Shopping** entry under Stylist.
+- **Outputs:** `ShoppingDashboard`, `ShoppingRecommendation`, `ShoppingPriority`,
+  `ShoppingROI`, `DuplicateAnalysis`, `WishlistInsights`.
+- **Schema (documented, not applied):** additive `wishlist_items` table + anon RLS
+  — [`docs/migrations/RFC-018-shopping-intelligence.sql`](docs/migrations/RFC-018-shopping-intelligence.sql).
+  The derived dashboard is never stored (recomputed on demand). 499 unit tests
+  green (10 new for `src/domain/shopping`).
+
 ### Added — Trip Planner (RFC-017)
 
 The first **v2.0** feature. Promotes the one-shot trip *wizard* into a

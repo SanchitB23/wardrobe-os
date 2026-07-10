@@ -33,10 +33,14 @@ the closet into the contexts a wardrobe serves. Engines decide; AI explains.
 - **Potential Version:** v2.0.
 
 ### RFC-018 — Shopping Intelligence
-- **Status:** Planned.
-- **Scope (keep):** Wishlist · Shopping Strategy · Wardrobe ROI · Duplicate
-  Detection · Purchase Prioritization.
-- **Removed:** **Budget Planning** (see Rejected).
+- **Status:** RFC drafted ([Draft](../rfc/RFC-018-Shopping-Intelligence.md)) —
+  targeting **v2.1**.
+- **Scope (keep):** Wishlist Intelligence · Purchase Prioritization (priority
+  queue) · Wardrobe ROI · Duplicate Intelligence · Shopping Strategy · Shopping
+  Timeline. Acquisition (RFC-001) decides each item; Shopping Intelligence ranks +
+  aggregates; AI explains.
+- **Removed:** **Budget Planning** (see Rejected). Also non-goals: price tracking,
+  browser extension, OCR, coupons, marketplace integrations.
 - **Reason:** sharpens acquisition (RFC-001 Buy vs Skip) into a full shopping
   workflow without turning the app into a budgeting tool.
 - **Potential Version:** v2.0.
