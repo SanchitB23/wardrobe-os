@@ -71,7 +71,7 @@ describe("OpenAIProvider.generate", () => {
     const res = await provider.generate(req);
 
     expect(calls).toHaveLength(1);
-    expect(calls[0].model).toBe("gpt-5.5"); // default text model
+    expect(calls[0].model).toBe("gpt-5.4-mini"); // default text model (cost-first)
     expect(calls[0].messages).toEqual([
       { role: "system", content: "be brief" },
       { role: "user", content: "hi" },
@@ -152,9 +152,12 @@ describe("OpenAIProvider.generate", () => {
 // ---------------------------------------------------------------------------
 
 const policies = (p: Partial<AIRuntimePolicies>): AIRuntimePolicies => ({
+  // Force OpenAI-first here so these tests exercise the OpenAI path directly.
   explanation: { primary: "openai", fallback: "gemini" },
   summarization: { primary: "openai", fallback: "gemini" },
   conversation: { primary: "openai", fallback: "gemini" },
+  structured: { primary: "openai", fallback: "gemini" },
+  classification: { primary: "openai", fallback: "gemini" },
   vision: { primary: "gemini" },
   image_generation: { primary: "gemini" },
   embeddings: { primary: "gemini" },

@@ -25,6 +25,8 @@ export type AICapability =
   | "image_generation"
   | "conversation"
   | "summarization"
+  | "structured" // JSON/schema-shaped output (RFC-014A)
+  | "classification" // short label/routing output (RFC-014A)
   | "embeddings"; // reserved — future, not wired
 
 export const AI_CAPABILITIES: readonly AICapability[] = [
@@ -33,6 +35,8 @@ export const AI_CAPABILITIES: readonly AICapability[] = [
   "image_generation",
   "conversation",
   "summarization",
+  "structured",
+  "classification",
   "embeddings",
 ] as const;
 

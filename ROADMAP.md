@@ -113,6 +113,14 @@ detail behind the engines.
   inspector at `/developer/ai-runtime`. Routes and measures; never decides
   (ADR-005). Delivers: Capability Routing, Provider Routing, Primary/Fallback,
   Benchmarking, Cost + Latency Analytics, Prompt Versioning.
+  - **RFC-014A — shipped.** Real OpenAI provider + cost-first defaults (Gemini
+    for text/vision; OpenAI for structured/classification), model policy, OpenAI
+    budget guard.
+  - **RFC-014B — shipped.** Cost-aware decision layer: `RuntimePolicyResolver`
+    over `CapabilityPolicy` + `ModelPolicy` + `ProviderPreferenceResolver` +
+    `RuntimeCostEstimator` + `RuntimeBudgetMonitor`; dashboard shows selected
+    provider/model + active provider + budget. Gemini-first; OpenAI as an
+    optimization layer.
 - **Intelligence Center — shipped** (RFC-015: `src/domain/intelligence`). Product
   Intelligence: aggregates every deterministic engine into one deduplicated,
   impact-ranked list of typed actions (`/intelligence`, "Do this next" on Today,

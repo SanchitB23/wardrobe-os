@@ -118,10 +118,12 @@ detail behind the deterministic engines.
 | [RFC-011](../rfc/RFC-011-Weather-Runtime.md) | Weather Runtime (provider-agnostic; weather as a first-class capability) | ✅ Implemented |
 | [RFC-012](../rfc/RFC-012-Recommendation-Engine-v2.md) | Recommendation Engine v2 (multi-objective, weather- & preference-aware, diverse, explainable) | ✅ Implemented |
 | [RFC-013](../rfc/RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 (lifecycle, timeline, evolution, explore/exploit) | ✅ Implemented |
-| [RFC-014](../rfc/RFC-014-AI-Runtime-v2.md) | AI Runtime v2 — capability routing, provider policies (primary/fallback), benchmarking, prompt versioning, latency + cost metrics | ✅ Implemented (with OpenAI provider, RFC-014A) |
+| [RFC-014](../rfc/RFC-014-AI-Runtime-v2.md) | AI Runtime v2 — capability routing, provider policies (primary/fallback), benchmarking, prompt versioning, latency + cost metrics | ✅ Implemented · **RFC-014A complete** (real OpenAI provider, cost-first Gemini default, model policy, OpenAI budget guard) |
+| [RFC-014B](../rfc/RFC-014B-Cost-Aware-AI-Runtime.md) | Cost-Aware AI Runtime — capability/model routing, cost awareness, OpenAI budget guard; Gemini-first, OpenAI as an optimization layer | ✅ Implemented (RuntimePolicyResolver decision layer + dashboard) |
 
-Target configuration (future): **Text** → OpenAI (fallback Gemini); **Vision** →
-Gemini; **Image Generation** (future) → OpenAI.
+Cost-first configuration (RFC-014B): **Gemini** default for conversation /
+explanation / summarization / vision; **OpenAI** (Gemini fallback) for structured
++ classification (GPT-5.4 mini/nano). GPT-5.5 is premium, never auto-selected.
 
 ## Epic 6 — Wardrobe Intelligence (v1.2) ⏸️ Parked
 

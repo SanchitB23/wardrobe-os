@@ -19,8 +19,11 @@ import {
   type AIRequest,
   type AIResponse,
 } from "@/ai/types";
-import { mechanicalFor, resolveProvider } from "@/runtime/ai/CapabilityRouter";
-import { estimateCost } from "@/runtime/ai/CostTracker";
+import { mechanicalFor } from "@/runtime/ai/CapabilityRouter";
+import { DEFAULT_BUDGET, type BudgetConfig, type BudgetStatus } from "@/runtime/ai/BudgetGuard";
+import { RuntimeCostEstimator } from "@/runtime/ai/RuntimeCostEstimator";
+import { RuntimeBudgetMonitor } from "@/runtime/ai/RuntimeBudgetMonitor";
+import { RuntimePolicyResolver } from "@/runtime/ai/RuntimePolicyResolver";
 import { benchmarkCapability } from "@/runtime/ai/ProviderBenchmark";
 import { ProviderRouter } from "@/runtime/ai/ProviderRouter";
 import { PromptRegistry } from "@/runtime/ai/PromptRegistry";
@@ -35,6 +38,7 @@ import type {
 } from "@/runtime/ai/types";
 
 const ADHOC_VERSION = "adhoc";
+type Env = Record<string, string | undefined>;
 
 export interface AIRuntimeConfig {
   providers: AIProvider[];
@@ -47,6 +51,10 @@ export interface AIRuntimeConfig {
   backoffFactor?: number;
   sleep?: (ms: number) => Promise<void>;
   now?: () => number;
+  /** OpenAI spend guard (RFC-014A). Defaults to the $5 config. */
+  budget?: BudgetConfig;
+  /** Env for model-policy resolution (tests inject; defaults to process.env). */
+  env?: Env;
 }
 
 export class AIRuntime {
@@ -57,6 +65,9 @@ export class AIRuntime {
   private readonly providerIds: AIProviderId[];
   private readonly cache?: AICache;
   private readonly now: () => number;
+  private readonly costEstimator: RuntimeCostEstimator;
+  private readonly budgetMonitor: RuntimeBudgetMonitor;
+  private readonly policyResolver: RuntimePolicyResolver;
 
   constructor(config: AIRuntimeConfig) {
     this.policies = config.policies;
@@ -72,11 +83,39 @@ export class AIRuntime {
       backoffFactor: config.backoffFactor,
       sleep: config.sleep,
     });
+
+    // Decision layer (RFC-014B): cost estimator → budget monitor → policy resolver.
+    const env = config.env ?? process.env;
+    this.costEstimator = new RuntimeCostEstimator();
+    this.budgetMonitor = new RuntimeBudgetMonitor(config.budget ?? DEFAULT_BUDGET, () =>
+      this.costEstimator.monthToDate(this.metrics.snapshot(), "openai"),
+    );
+    this.policyResolver = new RuntimePolicyResolver(this.policies, this.budgetMonitor, env);
+  }
+
+  /** Current OpenAI budget status (drives the hard stop + the dashboard). */
+  budgetStatus(): BudgetStatus {
+    return this.budgetMonitor.status();
+  }
+
+  /** The model that would be selected for a (capability, provider) pair. */
+  modelFor(capability: AICapability, provider: AIProviderId): string | undefined {
+    return this.policyResolver.modelFor(capability, provider);
+  }
+
+  /** The runtime's policy resolver — used by the developer dashboard. */
+  getPolicyResolver(): RuntimePolicyResolver {
+    return this.policyResolver;
   }
 
   /** Resolve the request + prompt version for a capability call. */
   private resolveRequest<T>(req: AIRuntimeRequest<T>): { request: AIRequest; promptVersion: string } {
     const policy = this.policies[req.capability];
+    // Model policy: the model for the PRIMARY provider (keys the cache; the router
+    // re-resolves per provider on fallback). Explicit request.model wins.
+    const primaryModel = policy
+      ? this.policyResolver.modelFor(req.capability, policy.primary)
+      : undefined;
     if (req.builderId && req.promptContext) {
       const selected = this.registry.select(req.builderId, req.bucketKey);
       const built = selected.build(req.promptContext);
@@ -84,7 +123,7 @@ export class AIRuntime {
         request: {
           prompt: built.prompt,
           system: built.system,
-          model: policy?.model,
+          model: primaryModel ?? policy?.model,
         },
         promptVersion: selected.versionId,
       };
@@ -93,14 +132,15 @@ export class AIRuntime {
       throw new AIError("no_provider", "AIRuntimeRequest needs `request` or `builderId`+`promptContext`.");
     }
     return {
-      request: { ...req.request, model: req.request.model ?? policy?.model },
+      request: { ...req.request, model: req.request.model ?? primaryModel ?? policy?.model },
       promptVersion: ADHOC_VERSION,
     };
   }
 
   async run<T = unknown>(req: AIRuntimeRequest<T>): Promise<AIRuntimeResult<T>> {
-    const policy = resolveProvider(req.capability, this.policies);
-    const mechanical = mechanicalFor(req.capability);
+    // Decide once (RFC-014B): capability → provider policy + per-provider model +
+    // availability. The resolver decides; the router executes.
+    const route = this.policyResolver.resolve(req.capability);
     const { request, promptVersion } = this.resolveRequest(req);
 
     // Cache read (opt-in; keyed incl. capability + prompt version).
@@ -125,11 +165,18 @@ export class AIRuntime {
 
     let outcome;
     try {
-      outcome = await this.router.route(policy, mechanical, request, req.signal);
+      // Budget guard (RFC-014A/B): the resolver already marked OpenAI unavailable
+      // if the hard stop tripped, so the router falls back to Gemini. Gemini is
+      // never disabled.
+      outcome = await this.router.route(route.policy, route.mechanical, request, {
+        signal: req.signal,
+        resolveModel: route.resolveModel,
+        isAvailable: route.isAvailable,
+      });
     } catch (error) {
       this.metrics.record({
         capability: req.capability,
-        provider: policy.primary,
+        provider: route.policy.primary,
         promptVersion,
         latencyMs: null,
         costUsd: 0,
@@ -172,7 +219,7 @@ export class AIRuntime {
       parsed = { ...response, parsed: outcome.data };
     }
 
-    const costUsd = estimateCost(response.usage, servedBy, response.model);
+    const costUsd = this.costEstimator.perCall(response.usage, servedBy, response.model);
     this.metrics.record({
       capability,
       provider: servedBy,

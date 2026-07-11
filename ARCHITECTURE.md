@@ -148,10 +148,20 @@ surfaces sourcing static release/architecture metadata.
   vision / conversation / summarization / …), declarative **provider policies**
   choose the provider (primary → fallback + retry), and the runtime versions
   prompts, benchmarks providers, and records latency / cost / token metrics per
-  capability × provider × prompt version. The shipped default (RFC-014A) is
-  **OpenAI-primary + Gemini-fallback** for text; vision + image generation stay
-  Gemini. Inspector at `/developer/ai-runtime`. It routes and measures; it never
-  decides (ADR-005).
+  capability × provider × prompt version. Decision-making lives in a resolver
+  stack (RFC-014B): a **`RuntimePolicyResolver`** turns a capability into a full
+  route by composing `CapabilityPolicy` (provider), `ModelPolicy` (model),
+  `ProviderPreferenceResolver` (order + availability), `RuntimeCostEstimator`, and
+  `RuntimeBudgetMonitor` — the resolver *decides*, `ProviderRouter` *executes*. A
+  separate **model policy** resolves the model per (capability, provider) —
+  capability → provider → model.
+  The shipped default is **cost-first**: Gemini is primary for conversation /
+  explanation / summarization / vision; OpenAI serves only **structured** +
+  **classification** (cheap gpt-5.4 mini/nano), always with a Gemini fallback. An
+  **OpenAI budget guard** tracks estimated spend and, at the hard stop, marks
+  OpenAI unavailable so routing falls back to Gemini (Gemini is never blocked).
+  Inspector at `/developer/ai-runtime`. It routes and measures; it never decides
+  (ADR-005).
 
 AI **explains and converses only** — it is never the source of truth for
 scoring, eligibility, ranking, health, or cost.

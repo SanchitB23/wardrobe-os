@@ -1,11 +1,12 @@
 /**
  * AI Runtime v2 (RFC-014) — provider policies.
  *
- * Declarative capability → { primary, fallback } map. Since RFC-014A wired a real
- * OpenAI provider, the shipped default makes **OpenAI the primary text/reasoning
- * provider with Gemini as fallback**; vision + image generation stay Gemini-only.
- * If `OPENAI_API_KEY` is absent the OpenAI provider is unavailable and the router
- * transparently falls back to Gemini. Override per capability via
+ * Declarative capability → { primary, fallback } map. **Cost-first (RFC-014A):**
+ * Gemini is primary for conversation / explanation / summarization / vision;
+ * OpenAI is used selectively for cheap, high-value **structured** and
+ * **classification** tasks (with Gemini as fallback). If `OPENAI_API_KEY` is
+ * absent — or the OpenAI budget guard trips — the OpenAI provider is unavailable
+ * and the router transparently falls back to Gemini. Override per capability via
  * `AI_POLICY_<CAPABILITY>=primary,fallback`. Pure.
  */
 
@@ -15,24 +16,29 @@ import { AI_CAPABILITIES, type AIRuntimePolicies, type ProviderPolicy } from "@/
 const KNOWN_PROVIDERS: ReadonlySet<string> = new Set(["gemini", "openai", "claude"]);
 
 /**
- * Shipped default (RFC-014A) — OpenAI primary for text/reasoning with a Gemini
- * fallback; Gemini owns vision + image generation. Falls back to Gemini
- * automatically when OPENAI_API_KEY is unset.
+ * Shipped default (RFC-014A) — **cost-first, Gemini-first**. Gemini owns text +
+ * vision; OpenAI is primary only for structured JSON + classification (cheap
+ * gpt-5.4 mini/nano), always with a Gemini fallback. Never routes to OpenAI's
+ * premium model by default.
  */
 export const DEFAULT_POLICIES: AIRuntimePolicies = {
-  explanation: { primary: "openai", fallback: "gemini" },
-  summarization: { primary: "openai", fallback: "gemini" },
-  conversation: { primary: "openai", fallback: "gemini" },
+  conversation: { primary: "gemini", fallback: "openai" },
+  explanation: { primary: "gemini", fallback: "openai" },
+  summarization: { primary: "gemini", fallback: "openai" },
+  structured: { primary: "openai", fallback: "gemini" },
+  classification: { primary: "openai", fallback: "gemini" },
   vision: { primary: "gemini" },
-  image_generation: { primary: "gemini" },
+  image_generation: { primary: "openai", fallback: "gemini" },
   embeddings: { primary: "gemini" },
 };
 
-/** Legacy Gemini-everywhere policy, kept for reference / easy rollback. */
+/** Gemini-everywhere policy, kept for reference / easy rollback (zero OpenAI spend). */
 export const GEMINI_ONLY_POLICIES: AIRuntimePolicies = {
+  conversation: { primary: "gemini" },
   explanation: { primary: "gemini" },
   summarization: { primary: "gemini" },
-  conversation: { primary: "gemini" },
+  structured: { primary: "gemini" },
+  classification: { primary: "gemini" },
   vision: { primary: "gemini" },
   image_generation: { primary: "gemini" },
   embeddings: { primary: "gemini" },

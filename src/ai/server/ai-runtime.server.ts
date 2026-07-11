@@ -12,7 +12,7 @@ import { createServerAICache } from "@/ai/server/ai-service.server";
 import { ClaudeProvider } from "@/ai/providers/claude-provider";
 import { GeminiProvider } from "@/ai/providers/gemini-provider";
 import { OpenAIProvider } from "@/ai/providers/openai-provider";
-import { AIRuntime, aiRuntimeMetrics, loadPolicies } from "@/runtime/ai";
+import { AIRuntime, aiRuntimeMetrics, loadBudgetConfig, loadPolicies } from "@/runtime/ai";
 
 function assertServerSide(): void {
   if (typeof window !== "undefined") {
@@ -24,10 +24,11 @@ let cached: AIRuntime | undefined;
 
 /**
  * The app-wide {@link AIRuntime}. Gemini and OpenAI are real providers (RFC-014A);
- * Claude is still a stub. The default policy is OpenAI-primary + Gemini-fallback
- * for text (Gemini-only for vision/image-gen); when `OPENAI_API_KEY` is unset the
- * OpenAI provider is unavailable and routing falls back to Gemini. Policies come
- * from `AI_POLICY_<CAP>` env overrides on top of that default.
+ * Claude is still a stub. **Cost-first default:** Gemini is primary for text +
+ * vision; OpenAI is primary only for structured + classification (with Gemini
+ * fallback). When `OPENAI_API_KEY` is unset — or the OpenAI budget hard stop is
+ * reached — OpenAI is unavailable and routing falls back to Gemini. Policies come
+ * from `AI_POLICY_<CAP>` env overrides; the budget from `OPENAI_*_USD` env.
  */
 export function getServerAIRuntime(): AIRuntime {
   assertServerSide();
@@ -36,6 +37,8 @@ export function getServerAIRuntime(): AIRuntime {
   cached = new AIRuntime({
     providers: [new GeminiProvider(), new OpenAIProvider(), new ClaudeProvider()],
     policies: loadPolicies(process.env),
+    budget: loadBudgetConfig(process.env),
+    env: process.env,
     metrics: aiRuntimeMetrics,
     cache: createServerAICache(),
     // Gemini already retries once internally; keep runtime retry at 1 to bound cost.

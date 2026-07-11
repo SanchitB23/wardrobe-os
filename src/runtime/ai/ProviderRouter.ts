@@ -23,6 +23,14 @@ export interface RouteOutcome {
   usedFallback: boolean;
 }
 
+export interface RouteOptions {
+  signal?: AbortSignal;
+  /** Per-provider model resolution (RFC-014A model policy). */
+  resolveModel?: (providerId: AIProviderId) => string | undefined;
+  /** Skip a provider that is temporarily unavailable (e.g. budget hard stop). */
+  isAvailable?: (providerId: AIProviderId) => boolean;
+}
+
 export interface ProviderRouterConfig {
   providers: AIProvider[];
   /** Attempts per provider (>=1). */
@@ -58,7 +66,7 @@ export class ProviderRouter {
     policy: ProviderPolicy,
     mechanical: MechanicalCapability,
     request: AIRequest,
-    signal?: AbortSignal,
+    opts: RouteOptions = {},
   ): Promise<RouteOutcome> {
     const chain: { id: AIProviderId; isFallback: boolean }[] = [
       { id: policy.primary, isFallback: false },
@@ -74,12 +82,20 @@ export class ProviderRouter {
         errors.push(`${link.id}: not registered`);
         continue;
       }
+      if (opts.isAvailable && !opts.isAvailable(link.id)) {
+        errors.push(`${link.id}: unavailable (budget)`);
+        continue;
+      }
       if (!provider.capabilities[mechanical]) {
         errors.push(`${link.id}: cannot ${mechanical}`);
         continue;
       }
+      // Model policy (RFC-014A): resolve the model for THIS provider.
+      const providerRequest = opts.resolveModel
+        ? { ...request, model: opts.resolveModel(link.id) ?? request.model }
+        : request;
       try {
-        const response = await this.withRetry(provider, mechanical, request, signal);
+        const response = await this.withRetry(provider, mechanical, providerRequest, opts.signal);
         return { response, servedBy: provider.id, usedFallback: link.isFallback };
       } catch (error) {
         errors.push(`${link.id}: ${error instanceof Error ? error.message : String(error)}`);

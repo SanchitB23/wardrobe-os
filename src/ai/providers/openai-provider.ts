@@ -11,8 +11,9 @@
  *   `generate()` throws a non-retryable {@link ProviderError} so the AI Runtime's
  *   router falls straight through to the Gemini fallback (no crash, no wasted
  *   retries). RFC-014A req 7.
- * - Models: text uses `OPENAI_MODEL_TEXT` (default gpt-5.5); structured/JSON
- *   requests use `OPENAI_MODEL_STRUCTURED` (default gpt-5.4-mini). RFC-014A req 3.
+ * - Models: the runtime's model policy (RFC-014A) supplies the model per
+ *   capability; the provider's own fallbacks are `OPENAI_MODEL_TEXT` and
+ *   `OPENAI_MODEL_STRUCTURED` (both default gpt-5.4-mini). Never gpt-5.5 by default.
  * - Capabilities: generate (explanation / summarization / conversation) +
  *   structuredOutput. Vision and image generation stay with Gemini (req 5).
  * - The SDK client is created lazily and injectable, so unit tests run with a
@@ -34,7 +35,10 @@ import {
   type FinishReason,
 } from "@/ai/types";
 
-const DEFAULT_TEXT_MODEL = "gpt-5.5";
+// Cost-first defaults (RFC-014A). The runtime's model policy normally supplies the
+// model per capability; these are the provider's own fallbacks for direct use.
+// The premium model (gpt-5.5) is never a default.
+const DEFAULT_TEXT_MODEL = "gpt-5.4-mini";
 const DEFAULT_STRUCTURED_MODEL = "gpt-5.4-mini";
 const PROVIDER_ID: AIProviderId = "openai";
 

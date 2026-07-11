@@ -7,34 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Added — OpenAI provider (RFC-014A)
+### Changed — Cost-Aware AI Runtime decision layer (RFC-014B)
 
-Wires a **real OpenAI provider** into the AI Runtime v2 (RFC-014), which
-previously had OpenAI as a stub. OpenAI is now the **primary text/reasoning
-provider with Gemini as fallback**; vision + image generation stay Gemini.
+Refactors the AI Runtime's **decision-making** into named, testable modules —
+no provider implementations changed, no deterministic engines touched. The
+routing behaviour (Gemini-first; OpenAI for structured/classification; budget
+hard-stop → Gemini) is unchanged; it's now owned by a clean resolver stack.
+
+- **`RuntimePolicyResolver`** (`src/runtime/ai`) — the single place that turns a
+  *capability* into a full routing decision (provider policy + per-provider model
+  + availability). The resolver **decides**; `ProviderRouter` **executes**.
+  `AIRuntime.run` now delegates to it instead of inlining the logic.
+- Composed from focused modules: **`CapabilityPolicy`** (capability → provider
+  policy), **`ModelPolicy`** (capability × provider → model), **`ProviderPreferenceResolver`**
+  (ordered primary → fallback with availability + `activeProvider`),
+  **`RuntimeCostEstimator`** (per-call + month-to-date estimated cost), and
+  **`RuntimeBudgetMonitor`** (wraps the budget guard; gates only OpenAI).
+- **Dashboard** (`/developer/ai-runtime`) now renders `resolver.describe(capability)`:
+  capability → provider → **model** → fallback → **active-provider** (flagged when
+  the budget hard-stop degrades to the fallback), alongside the budget card and
+  metrics. Model / selected-provider / selected-model / budget all visible.
+- No OpenAI billing APIs; deterministic engines untouched. 531 unit tests green
+  (+10 for the resolver stack). **RFC-014B implemented.**
+
+### Added — OpenAI provider + cost-aware AI Runtime policy (RFC-014A)
+
+Wires a **real OpenAI provider** into the AI Runtime v2 (RFC-014) and makes the
+runtime **cost-first** (this is a single-user personal project with a $5 OpenAI
+budget). Gemini stays the default; OpenAI is used selectively.
 
 - **Provider** (`src/ai/providers/openai-provider.ts`): real `generate()` on the
-  official `openai` SDK (chat completions), lazy + injectable client. Reads
-  `OPENAI_API_KEY`, `OPENAI_MODEL_TEXT` (default `gpt-5.5`), and
-  `OPENAI_MODEL_STRUCTURED` (default `gpt-5.4-mini`) — structured/JSON requests
-  use the structured model + `response_format: json_object`. Capabilities:
-  generate (explanation / summarization / conversation) + structured output;
-  vision/image-gen intentionally not implemented.
-- **Availability + fallback:** if `OPENAI_API_KEY` is missing the provider is
-  unavailable and throws a non-retryable error, so the router **falls straight
-  through to Gemini** — no crash, no wasted retries. Errors are normalized to
-  `ProviderError`; one retry on transient failures.
-- **Routing default (`DEFAULT_POLICIES`):** OpenAI→Gemini for
-  EXPLANATION/SUMMARIZATION/CONVERSATION; Gemini-only for VISION/IMAGE_GENERATION.
-  Override per capability with `AI_POLICY_<CAPABILITY>=primary,fallback`.
-- **Tests:** provider contract (request mapping, structured model + response
-  format, empty/error normalization, transient retry, missing-key unavailability)
-  + AI-Runtime integration with a **mocked** OpenAI client (served-by-OpenAI,
-  missing-key fallback to Gemini with recorded metrics, schema-respected
-  structured output, vision stays Gemini). No real OpenAI calls in tests.
+  official `openai` SDK (chat completions), lazy + injectable client. Server-side
+  key only; missing `OPENAI_API_KEY` ⇒ provider unavailable ⇒ non-retryable error
+  ⇒ router falls straight through to Gemini (no crash). Errors normalized to
+  `ProviderError`; one transient retry. Capabilities: generate + structured
+  output; no vision/image-gen/embeddings.
+- **Cost-first provider policy (`DEFAULT_POLICIES`):** Gemini primary for
+  conversation / explanation / summarization / vision; **OpenAI** primary (Gemini
+  fallback) only for the new **structured** + **classification** capabilities.
+  `GEMINI_ONLY_POLICIES` kept for zero-spend rollback. Override via
+  `AI_POLICY_<CAPABILITY>=primary,fallback`.
+- **Model policy layer** (`ModelPolicy.ts`): capability → provider → **model**,
+  resolved separately from the provider policy. Classification → gpt-5.4-nano,
+  structured/text → gpt-5.4-mini. `GPT-5.5` is defined as premium but **never a
+  default**. Models are read from env, never hard-coded in feature code.
+- **OpenAI budget guard** (`BudgetGuard.ts`): tracks estimated month-to-date
+  OpenAI spend (tokens × price table; best-effort, process-local). At the hard
+  stop OpenAI is marked unavailable and routing falls back to Gemini — **Gemini is
+  never blocked**. Env: `OPENAI_MONTHLY_BUDGET_USD` / `OPENAI_SOFT_ALERT_USD` /
+  `OPENAI_HARD_STOP_USD` (default 5 / 2 / 5).
+- **Dashboard** (`/developer/ai-runtime`): capability → provider → model (+ fallback)
+  table, an OpenAI budget card (est. spend, thresholds, available/unavailable), and
+  the per-capability metrics (latency / cache / tokens / est. cost).
+- **New capabilities** `structured` + `classification` added to the runtime enum.
+- **Tests:** provider contract (mapping, structured/nano model selection, error
+  normalization, transient retry, missing-key unavailability), model-policy +
+  provider-policy resolution, Gemini-default for conversation/explanation, OpenAI
+  for structured/classification, **budget hard stop → Gemini fallback**, and
+  metrics recording — all with a **mocked** OpenAI client (no real calls).
 - Installed the `openai` SDK; updated `.env.example`, README, `src/ai/README.md`,
-  ARCHITECTURE, PRODUCT_VISION. **RFC-014 is now Implemented with OpenAI provider
-  support.** 515 unit tests green.
+  ARCHITECTURE, PRODUCT_VISION, ENGINE_GRAPH. **RFC-014A complete.** 521 unit tests
+  green.
 
 ### Added — Shopping Intelligence (RFC-018)
 

@@ -16,7 +16,44 @@ export {
   loadPolicies,
   isKnownProvider,
 } from "@/runtime/ai/ProviderPolicy";
-export { ProviderRouter, type ProviderRouterConfig, type RouteOutcome } from "@/runtime/ai/ProviderRouter";
+export {
+  ProviderRouter,
+  type ProviderRouterConfig,
+  type RouteOutcome,
+  type RouteOptions,
+} from "@/runtime/ai/ProviderRouter";
+export {
+  resolveModel,
+  premiumModel,
+  OPENAI_DEFAULT_TEXT_MODEL,
+  OPENAI_DEFAULT_STRUCTURED_MODEL,
+  OPENAI_DEFAULT_CLASSIFIER_MODEL,
+  OPENAI_PREMIUM_MODEL,
+} from "@/runtime/ai/ModelPolicy";
+export {
+  loadBudgetConfig,
+  evaluateBudget,
+  DEFAULT_BUDGET,
+  type BudgetConfig,
+  type BudgetStatus,
+} from "@/runtime/ai/BudgetGuard";
+export {
+  resolveCapabilityPolicy,
+  mechanicalForCapability,
+} from "@/runtime/ai/CapabilityPolicy";
+export {
+  resolveProviderPreference,
+  activeProvider,
+  type ProviderPreference,
+  type PreferenceOptions,
+} from "@/runtime/ai/ProviderPreferenceResolver";
+export { RuntimeCostEstimator } from "@/runtime/ai/RuntimeCostEstimator";
+export { RuntimeBudgetMonitor } from "@/runtime/ai/RuntimeBudgetMonitor";
+export {
+  RuntimePolicyResolver,
+  type ResolvedRoute,
+  type RouteDescription,
+} from "@/runtime/ai/RuntimePolicyResolver";
 export { PromptRegistry, type SelectedPrompt } from "@/runtime/ai/PromptRegistry";
 export { versionId, bucketFraction, inCandidateArm } from "@/runtime/ai/PromptVersion";
 export { estimateCost, CostTracker, PRICE_TABLE, type Price } from "@/runtime/ai/CostTracker";

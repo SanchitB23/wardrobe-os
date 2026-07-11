@@ -49,7 +49,7 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
 | Styling | Tailwind CSS + shadcn/ui (Base UI) |
 | Data | Supabase (Postgres + Storage) |
 | Client data | TanStack Query |
-| AI | OpenAI + Gemini, behind a vendor-neutral AI abstraction (capability routing, primary → fallback) |
+| AI | Gemini + OpenAI, behind a vendor-neutral abstraction (cost-first capability routing, primary → fallback, OpenAI budget guard) |
 | Tests | Vitest (pure domain + AI layer) |
 
 ## Local setup
@@ -78,10 +78,13 @@ are server-side).
 | `AI_PROVIDER` | Legacy single-provider backend | `gemini` |
 | `GEMINI_API_KEY` | Gemini API key (server-side only) | — |
 | `GEMINI_MODEL` | Gemini model id | `gemini-2.5-flash` |
-| `OPENAI_API_KEY` | OpenAI key (RFC-014A). Blank ⇒ falls back to Gemini | — |
-| `OPENAI_MODEL_TEXT` | OpenAI text/reasoning model | `gpt-5.5` |
+| `OPENAI_API_KEY` | OpenAI key (RFC-014A, optional). Blank ⇒ falls back to Gemini | — |
+| `OPENAI_MODEL_TEXT` | OpenAI text model | `gpt-5.4-mini` |
 | `OPENAI_MODEL_STRUCTURED` | OpenAI structured-output model | `gpt-5.4-mini` |
-| `AI_POLICY_<CAPABILITY>` | AI Runtime routing override `primary[,fallback]` | OpenAI→Gemini (text) |
+| `OPENAI_MODEL_CLASSIFIER` | OpenAI classification model | `gpt-5.4-nano` |
+| `OPENAI_MODEL_PREMIUM` | Premium model (future/manual only; never default) | `gpt-5.5` |
+| `OPENAI_MONTHLY_BUDGET_USD` / `OPENAI_SOFT_ALERT_USD` / `OPENAI_HARD_STOP_USD` | OpenAI spend guard | `5` / `2` / `5` |
+| `AI_POLICY_<CAPABILITY>` | AI Runtime routing override `primary[,fallback]` | Gemini-first; OpenAI for structured/classification |
 | `APP_ACCESS_CODE` | Shared access code for the [Access Guard](SECURITY.md) (server-side only). Blank ⇒ guard disabled. | — |
 | `APP_COOKIE_SECRET` | HMAC secret signing the access cookie (required when `APP_ACCESS_CODE` is set) | — |
 

@@ -15,6 +15,12 @@ hand-wired that composition; the **Intelligence Orchestrator**
 - **The Orchestrator composes.** It owns *which* engines run and *in what order*.
   It has no business logic, never calls AI, and never lets engines call each other.
 - **AI explains.** It consumes an `ExecutionReport`; it never plans or executes.
+  AI runs through the **AI Runtime** (`src/runtime/ai`, RFC-014/014A), which routes
+  each capability to a provider + model by policy — **cost-first**: Gemini for
+  conversation/explanation/summarization/vision, OpenAI only for structured +
+  classification (cheap gpt-5.4 mini/nano), with a Gemini fallback and an OpenAI
+  budget guard. This is orthogonal to the deterministic graph below — it changes
+  *who narrates*, never *what is decided*.
 
 ## Capabilities → engines
 

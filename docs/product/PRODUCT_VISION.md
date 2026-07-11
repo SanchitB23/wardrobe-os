@@ -287,13 +287,20 @@ The intent is durable independence from any single vendor, with observable cost
 and quality — so provider choice is an operational decision, never an
 architectural one.
 
-**Status (RFC-014 / RFC-014A):** capability routing, provider routing, fallback
-providers, prompt versioning/benchmarking, latency + cost metrics, and structured
-outputs are **shipped** in the AI Runtime (`src/runtime/ai`). Two real providers
-are wired — **OpenAI** (primary for text/reasoning) and **Gemini** (fallback, and
-primary for vision); Claude remains a stub. The runtime falls back to Gemini
-automatically when the OpenAI key is absent, proving the "provider is an
-operational decision" intent end-to-end.
+**Status (RFC-014 / RFC-014A):** capability routing, provider + **model** policy,
+fallback providers, prompt versioning/benchmarking, latency + cost metrics, and
+structured outputs are **shipped** in the AI Runtime (`src/runtime/ai`). Two real
+providers are wired — **Gemini** and **OpenAI**; Claude remains a stub. The
+default is **cost-first** (this is a single-user personal project): Gemini is
+primary for conversation / explanation / summarization / vision, and OpenAI is
+used selectively for cheap, high-value structured + classification tasks
+(gpt-5.4 mini/nano; the premium model is never a default). An OpenAI budget guard
+enforces a small monthly cap and, at the hard stop, falls back to Gemini —
+proving "provider is an operational decision, not architectural" end-to-end.
+Routing decisions live in a small, testable resolver layer (RFC-014B:
+`RuntimePolicyResolver` over capability/model policies, a cost estimator, and a
+budget monitor), so *how the runtime chooses* is one place, separate from *how it
+calls* a provider.
 
 ---
 
