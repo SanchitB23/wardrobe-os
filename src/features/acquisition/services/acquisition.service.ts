@@ -25,6 +25,7 @@ import {
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
+import { recordDecisionSilent } from "@/features/shopping/services/decision.service";
 import { toError } from "@/shared/utils/data-result";
 
 /**
@@ -82,13 +83,14 @@ export async function loadAcquisitionContext(): Promise<{
   data: AcquisitionContext | null;
   error: Error | null;
 }> {
-  const [dataResult, healthResult, usageResult, preferenceResult] = await Promise.all([
-    selectRecommendationData(),
-    fetchWardrobeHealth(),
-    fetchUsageAnalytics(),
-    // Best-effort (RFC-004): learned preferences refine the preferenceFit dimension.
-    getPreferenceProfile().catch(() => ({ data: null, error: null })),
-  ]);
+  const [dataResult, healthResult, usageResult, preferenceResult] =
+    await Promise.all([
+      selectRecommendationData(),
+      fetchWardrobeHealth(),
+      fetchUsageAnalytics(),
+      // Best-effort (RFC-004): learned preferences refine the preferenceFit dimension.
+      getPreferenceProfile().catch(() => ({ data: null, error: null })),
+    ]);
 
   if (dataResult.error) return { data: null, error: dataResult.error };
   if (!dataResult.data) {
@@ -133,6 +135,13 @@ export async function analyzeBuyVsSkip(
   item: ProspectiveItem,
 ): Promise<{ data: BuyVsSkipAnalysis | null; error: Error | null }> {
   const { data: context, error } = await loadAcquisitionContext();
-  if (error || !context) return { data: null, error: error ?? toError("Wardrobe data unavailable.") };
-  return { data: evaluateWithContext(item, context), error: null };
+  if (error || !context)
+    return {
+      data: null,
+      error: error ?? toError("Wardrobe data unavailable."),
+    };
+  const analysis = evaluateWithContext(item, context);
+  // Best-effort Decision History (Acquisitions hub). Never fail the advisor path.
+  void recordDecisionSilent({ item, analysis });
+  return { data: analysis, error: null };
 }

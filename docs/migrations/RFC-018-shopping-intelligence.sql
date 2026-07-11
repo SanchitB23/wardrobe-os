@@ -12,7 +12,9 @@
 --
 -- Reversible: DROP TABLE wishlist_items;
 --
--- NOT YET APPLIED — awaiting authorization to modify the shared Wardrobe project.
+-- APPLIED 2026-07-12 to Wardrobe project xleqmmpxlpuawzsnaftz via Supabase MCP.
+-- After this file, apply acquisitions-product-experience.sql (priority column +
+-- acquisition_decisions table for the Acquisitions product hub).
 
 create table if not exists public.wishlist_items (
   id            uuid primary key default gen_random_uuid(),

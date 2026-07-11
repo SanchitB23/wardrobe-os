@@ -257,6 +257,7 @@ export type Database = {
           source_url: string | null;
           notes: string | null;
           status: string;
+          priority: string;
           purchased_id: string | null;
           created_at: string;
           updated_at: string;
@@ -278,6 +279,7 @@ export type Database = {
           source_url?: string | null;
           notes?: string | null;
           status?: string;
+          priority?: string;
           purchased_id?: string | null;
           created_at?: string;
           updated_at?: string;
@@ -299,9 +301,55 @@ export type Database = {
           source_url?: string | null;
           notes?: string | null;
           status?: string;
+          priority?: string;
           purchased_id?: string | null;
           created_at?: string;
           updated_at?: string;
+        };
+        Relationships: [];
+      };
+      acquisition_decisions: {
+        Row: {
+          id: string;
+          item_name: string;
+          item_category: string | null;
+          item_snapshot: Json;
+          decision: string;
+          score: number | null;
+          confidence: number | null;
+          summary: string | null;
+          analysis: Json;
+          source: string;
+          wishlist_item_id: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          item_name: string;
+          item_category?: string | null;
+          item_snapshot?: Json;
+          decision: string;
+          score?: number | null;
+          confidence?: number | null;
+          summary?: string | null;
+          analysis: Json;
+          source?: string;
+          wishlist_item_id?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          item_name?: string;
+          item_category?: string | null;
+          item_snapshot?: Json;
+          decision?: string;
+          score?: number | null;
+          confidence?: number | null;
+          summary?: string | null;
+          analysis?: Json;
+          source?: string;
+          wishlist_item_id?: string | null;
+          created_at?: string;
         };
         Relationships: [];
       };

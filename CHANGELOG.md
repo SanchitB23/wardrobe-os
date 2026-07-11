@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Acquisitions product experience (pre-intelligence shell)
+
+Renames the **Shopping** product surface to **Acquisitions** and ships the
+flagship hub UX without new Shopping Intelligence. Buy vs Skip (engine +
+advisor/screenshot UI) is unchanged aside from a silent Decision History write.
+
+- **Routes:** `/acquisitions` landing (KPIs + cards), `/wishlist`, `/decisions`,
+  `/timeline`, `/roi`, `/history`, `/quick-analyze` → advisor, and secondary
+  `/acquisitions/intelligence` (existing RFC-018 tabs). `/shopping` redirects to
+  `/acquisitions`. Nav label: Acquisitions.
+- **Wishlist CRUD:** notes, user priority (`low|medium|high`), status — no
+  Need/Impact/Buy scoring on the product pages.
+- **Decision History:** new `acquisition_decisions` table; analyses snapshot
+  after `analyzeBuyVsSkip` (best-effort). List with filters + search.
+- **Timeline / ROI / Shopping History:** lifecycle stages, dedicated ROI page,
+  purchased + realized CPW + recommendation accuracy helper.
+- **Schema (applied 2026-07-12 to Wardrobe `xleqmmpxlpuawzsnaftz`):**
+  `docs/migrations/RFC-018-shopping-intelligence.sql` then
+  `docs/migrations/acquisitions-product-experience.sql` (wishlist `priority` +
+  `acquisition_decisions`).
+- Shopping Intelligence engines untouched; intelligence UI moved to the
+  secondary route.
+
 ### Changed — Cost-Aware AI Runtime decision layer (RFC-014B)
 
 Refactors the AI Runtime's **decision-making** into named, testable modules —
@@ -15,9 +38,9 @@ routing behaviour (Gemini-first; OpenAI for structured/classification; budget
 hard-stop → Gemini) is unchanged; it's now owned by a clean resolver stack.
 
 - **`RuntimePolicyResolver`** (`src/runtime/ai`) — the single place that turns a
-  *capability* into a full routing decision (provider policy + per-provider model
-  + availability). The resolver **decides**; `ProviderRouter` **executes**.
-  `AIRuntime.run` now delegates to it instead of inlining the logic.
+  _capability_ into a full routing decision (provider policy + per-provider model
+  - availability). The resolver **decides**; `ProviderRouter` **executes**.
+    `AIRuntime.run` now delegates to it instead of inlining the logic.
 - Composed from focused modules: **`CapabilityPolicy`** (capability → provider
   policy), **`ModelPolicy`** (capability × provider → model), **`ProviderPreferenceResolver`**
   (ordered primary → fallback with availability + `activeProvider`),
@@ -102,8 +125,8 @@ buy/skip verdict is re-computed here.
 
 ### Added — Trip Planner (RFC-017)
 
-The first **v2.0** feature. Promotes the one-shot trip *wizard* into a
-first-class, persisted, reusable **Trip Planner**. Trip is *data*; the Lifestyle
+The first **v2.0** feature. Promotes the one-shot trip _wizard_ into a
+first-class, persisted, reusable **Trip Planner**. Trip is _data_; the Lifestyle
 Engine (RFC-006) still derives the plan — no planning logic is duplicated
 (engines decide, AI explains; ADR-005).
 
@@ -172,7 +195,7 @@ Center ranks; AI explains (ADR-005). No new verdicts, no schema changes.
 ### Added — AI Runtime v2 (RFC-014)
 
 Evolve the AI layer into a **capability-centric runtime**: callers request a
-*capability*, declarative **provider policies** choose the provider (primary →
+_capability_, declarative **provider policies** choose the provider (primary →
 fallback), and the runtime benchmarks, versions prompts, and records latency /
 cost / token metrics. It **routes and measures; it never decides** (ADR-005).
 Additive — no AI feature, recommendation, or business-logic changes.
@@ -205,7 +228,7 @@ Additive — no AI feature, recommendation, or business-logic changes.
 
 Refine the deterministic preference profile with **lifecycle, timeline,
 evolution, sharper stability, and an explore/exploit control** — promoting the
-RFC-004 reserved shapes from *declared* to *produced*. Behaviour is the source of
+RFC-004 reserved shapes from _declared_ to _produced_. Behaviour is the source of
 truth; the engine derives; AI only explains. **No ML, no AI-derived preferences,
 no chat memory.**
 
@@ -213,9 +236,9 @@ no chat memory.**
   re-runs the pure v1 derivation over rolling historical windows to compute, per
   preference, a **lifecycle** (`core` / `emerging` / `declining` / `avoided`), a
   **timeline** (weight series + trend), sharper **stability** (cross-window spread
-  + persistence), and a **`since`** date; plus a **`PreferenceEvolution`** audit
-  (before → after / signal / reason / timestamp) and the net-negative **avoided
-  preferences**. Overrides still win (a pin keeps its stability and source).
+  - persistence), and a **`since`** date; plus a **`PreferenceEvolution`** audit
+    (before → after / signal / reason / timestamp) and the net-negative **avoided
+    preferences**. Overrides still win (a pin keeps its stability and source).
 - **Explore/exploit** — `resolveExploreExploit(mode)` maps `explore` / `balanced`
   / `exploit` to deterministic weight adjustments; the default is `balanced`.
 - **Recommendation integration** — `RecommendationContext.personalization` carries
@@ -337,6 +360,7 @@ the highest-value deferred audit debt across performance, accessibility,
 developer experience, and resilience.
 
 ### Performance
+
 - **CommandPalette no longer taxes every route (H11):** it is lazy-loaded
   (`next/dynamic`, `ssr:false`) and its wardrobe query is gated on open — the
   Supabase client and a full wardrobe fetch are no longer pulled into the shared
@@ -346,6 +370,7 @@ developer experience, and resilience.
   unchanged).
 
 ### Accessibility
+
 - **Labeled form controls (H10):** the shared `Field` helpers (Lifestyle wizard,
   Playground) associate their label with the control, and all Inventory filter /
   sort selects expose an accessible name.
@@ -358,12 +383,14 @@ developer experience, and resilience.
   tokens meet WCAG AA in light and dark.
 
 ### Developer Experience
+
 - **Single-source version (N10):** the About page reads the version from
   `package.json` instead of a hardcoded string.
 - **Modern TS target (N2a):** `tsconfig` `target` bumped ES2017 → ES2022.
 - **Docs (N9):** documented the "push branch + tag" release step in CLAUDE.md.
 
 ### Resilience
+
 - **Chat retries transient failures (H5):** the opening turn retries once on a
   429/503/timeout instead of surfacing a raw error.
 - **Vision retries transient failures (N17a):** `GeminiVisionProvider.analyze`
@@ -373,6 +400,7 @@ developer experience, and resilience.
   generic client-facing errors while logging detail server-side.
 
 ### Deferred to v1.0.2
+
 - **next/image migration (M4)** — needs verification of signed-URL/next-image
   cache interaction; kept out of a stabilization patch.
 - **`server-only` guards (N8)** — runtime guards already exist; adds a dependency.
@@ -412,7 +440,7 @@ engines decide.
   makes the existing engines feel like one daily assistant. **No new engines,
   no new AI.**
   - **Today** is now the default route (`/`) — an assistant-style home that
-    *composes* existing deterministic outputs into widgets: Today's Outfit
+    _composes_ existing deterministic outputs into widgets: Today's Outfit
     (top recommendation), Today's Insight, Ask Stylist (deep-links into `/chat`
     via `?q=`), Shopping Suggestions (health gaps), Wardrobe Health, Quick
     Actions, and Recent Activity. Each widget degrades independently
@@ -526,7 +554,7 @@ engines decide.
   item against the wardrobe across eight dimensions (gap fill, outfit
   compatibility, usage projection, duplicate risk, cost efficiency, wardrobe
   health impact, practicality, preference fit), returning a `buy | consider |
-  skip` decision with a 0–100 score, confidence, per-dimension breakdown,
+skip` decision with a 0–100 score, confidence, per-dimension breakdown,
   reasons, similar items, potential outfits, cost-per-wear, wardrobe-impact
   score, a decision trace, and explainability codes. Surfaced at
   **`/acquisition/advisor`** (Acquisition → Advisor). Engines decide; AI is not

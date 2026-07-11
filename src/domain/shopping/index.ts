@@ -18,13 +18,35 @@ export {
   rankWishlist,
 } from "@/domain/shopping/PriorityEngine";
 export { computeShoppingROI } from "@/domain/shopping/ROIEngine";
-export { analyzeDuplicates, itemOverlap, type DuplicateInput } from "@/domain/shopping/DuplicateEngine";
+export {
+  analyzeDuplicates,
+  itemOverlap,
+  type DuplicateInput,
+} from "@/domain/shopping/DuplicateEngine";
 export { buildWishlistInsights } from "@/domain/shopping/ShoppingInsights";
 export {
   normalizeProspectiveItem,
   isEvaluable,
   activeWishlist,
 } from "@/domain/shopping/WishlistEngine";
+export {
+  computeRecommendationAccuracy,
+  isAccuracyHit,
+  outcomeByName,
+  type DecisionOutcomePair,
+  type RecommendationAccuracy,
+} from "@/domain/shopping/recommendationAccuracy";
+export {
+  buildTimelineSubjects,
+  resolveTimelineStage,
+  sortByUserPriority,
+  stagesReachedUpTo,
+  TIMELINE_STAGE_LABELS,
+  TIMELINE_STAGE_ORDER,
+  type TimelineStage,
+  type TimelineSubject,
+  type TimelineSubjectInput,
+} from "@/domain/shopping/AcquisitionTimeline";
 export {
   SHOPPING_ENGINE_VERSION,
   DEFAULT_PRIORITY_WEIGHTS,
@@ -36,6 +58,7 @@ export {
 } from "@/domain/shopping/constants";
 export type {
   WishlistStatus,
+  WishlistPriority,
   WishlistSpec,
   WishlistEntry,
   PriorityWeights,

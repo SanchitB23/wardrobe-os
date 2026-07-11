@@ -11,6 +11,7 @@ tables below are the **plan**; titles are fixed but the numbers on not-yet-writt
 items are tentative and are claimed in authoring order.
 
 Authored so far:
+
 - **RFC-001 — Buy vs Skip** (Acquisition) — ✅ Completed.
 - **RFC-002 — Vision Engine** (Vision foundation) — ✅ Completed. The universal
   computer-vision capability that produces one standardized `VisionAnalysis`;
@@ -33,10 +34,10 @@ Authored so far:
 - **RFC-006 — Lifestyle Engine** (Lifestyle, v1.0) — ✅ Implemented. One
   deterministic engine (`src/domain/lifestyle`) that turns a trip into a
   `LifestylePlan` (TripPlan / PackingPlan / LaundryPlan / ShoppingPlan + planScore
-  + packingConfidence + trade-offs + warnings) by composing the existing engines
-  across time, requesting recommendations/acquisition through the Orchestrator
-  (never directly). Weather is a normalized provider input (Open-Meteo + manual).
-  Surfaced at `/lifestyle/trip`. The engine plans; AI only explains.
+  - packingConfidence + trade-offs + warnings) by composing the existing engines
+    across time, requesting recommendations/acquisition through the Orchestrator
+    (never directly). Weather is a normalized provider input (Open-Meteo + manual).
+    Surfaced at `/lifestyle/trip`. The engine plans; AI only explains.
 - **RFC-007 — Today Experience & v1.0 Product Polish** (Product Experience, v1.0)
   — ✅ Implemented. The v1.0 cohesion pass: an assistant-style Today home (the
   default route), finalized navigation IA, real Settings + About (`/about`), a
@@ -56,14 +57,14 @@ explanation/conversation only. See [DECISIONS.md](../../DECISIONS.md) and
 Turn wardrobe gaps, duplicates, and cost-per-wear into deterministic buy/skip
 guidance. AI explains the advice; the engine decides it.
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-001](../rfc/RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Buy vs Skip | ✅ Completed |
-| _(TBD)_ | Duplicate Detection | Not started |
-| _(TBD)_ | Gap Analysis | Not started |
-| _(TBD)_ | Wishlist | Not started |
-| _(TBD)_ | Price Tracking | Not started |
-| _(TBD)_ | Credit Card Optimization | Not started |
+| RFC                                                         | Title                    | Status       |
+| ----------------------------------------------------------- | ------------------------ | ------------ |
+| [RFC-001](../rfc/RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Buy vs Skip              | ✅ Completed |
+| _(TBD)_                                                     | Duplicate Detection      | Not started  |
+| _(TBD)_                                                     | Gap Analysis             | Not started  |
+| _(TBD)_                                                     | Wishlist                 | Not started  |
+| _(TBD)_                                                     | Price Tracking           | Not started  |
+| _(TBD)_                                                     | Credit Card Optimization | Not started  |
 
 ## Epic 2 — Vision + Shopping Screenshot (v0.8) ✅ Completed
 
@@ -72,13 +73,13 @@ universal capability: it turns any image into one standardized `VisionAnalysis`;
 every other Vision item consumes that output. Vision perceives/proposes; the
 deterministic engines still decide.
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-002](../rfc/RFC-002-Vision-Engine.md) | Vision Engine (foundation → `VisionAnalysis`) | ✅ Completed |
-| [RFC-003](../rfc/RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding | ✅ Completed |
-| _(TBD)_ | Closet Photo Recognition | Not started |
-| _(TBD)_ | Outfit Recognition | Not started |
-| _(TBD)_ | Auto Add Item | Not started |
+| RFC                                                            | Title                                         | Status       |
+| -------------------------------------------------------------- | --------------------------------------------- | ------------ |
+| [RFC-002](../rfc/RFC-002-Vision-Engine.md)                     | Vision Engine (foundation → `VisionAnalysis`) | ✅ Completed |
+| [RFC-003](../rfc/RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding             | ✅ Completed |
+| _(TBD)_                                                        | Closet Photo Recognition                      | Not started  |
+| _(TBD)_                                                        | Outfit Recognition                            | Not started  |
+| _(TBD)_                                                        | Auto Add Item                                 | Not started  |
 
 ## Epic 3 — Personalization Engine (v0.9) 🚧 Current
 
@@ -87,10 +88,10 @@ engine. Deterministic derivation with **confidence** and **stability** (two
 distinct concepts) plus user overrides; preferences are re-derived from behaviour
 every run, never incrementally mutated. AI explains the profile, never derives it.
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-004](../rfc/RFC-004-Personalization-Engine.md) | Personalization Engine (behaviour → `UserPreferenceProfile`) | ✅ Implemented |
-| [RFC-005](../rfc/RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator (composition layer, v1.0) | ✅ Implemented |
+| RFC                                                    | Title                                                        | Status         |
+| ------------------------------------------------------ | ------------------------------------------------------------ | -------------- |
+| [RFC-004](../rfc/RFC-004-Personalization-Engine.md)    | Personalization Engine (behaviour → `UserPreferenceProfile`) | ✅ Implemented |
+| [RFC-005](../rfc/RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator (composition layer, v1.0)          | ✅ Implemented |
 
 Documented future concepts (not built in RFC-004): Preference Timeline,
 Preference Lifecycle (core / emerging / declining / avoided), `since` metadata,
@@ -103,27 +104,28 @@ personalization engines, and delivered as Intelligence Orchestrator (RFC-005)
 capabilities. One deterministic Lifestyle Engine plans across time; AI only
 explains the plan.
 
-| RFC | Title | Status |
-| --- | --- | --- |
+| RFC                                           | Title                                                                               | Status         |
+| --------------------------------------------- | ----------------------------------------------------------------------------------- | -------------- |
 | [RFC-006](../rfc/RFC-006-Lifestyle-Engine.md) | Lifestyle Engine (trip → `LifestylePlan`: packing, capsule, laundry, missing items) | ✅ Implemented |
-| _(TBD)_ | Calendar integration | Not started |
+| _(TBD)_                                       | Calendar integration                                                                | Not started    |
 
 ## Epic 5 — AI Runtime (v1.1)
 
 Turn the AI layer into a configurable runtime — the provider is an interchangeable
 detail behind the deterministic engines.
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-011](../rfc/RFC-011-Weather-Runtime.md) | Weather Runtime (provider-agnostic; weather as a first-class capability) | ✅ Implemented |
-| [RFC-012](../rfc/RFC-012-Recommendation-Engine-v2.md) | Recommendation Engine v2 (multi-objective, weather- & preference-aware, diverse, explainable) | ✅ Implemented |
-| [RFC-013](../rfc/RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 (lifecycle, timeline, evolution, explore/exploit) | ✅ Implemented |
-| [RFC-014](../rfc/RFC-014-AI-Runtime-v2.md) | AI Runtime v2 — capability routing, provider policies (primary/fallback), benchmarking, prompt versioning, latency + cost metrics | ✅ Implemented · **RFC-014A complete** (real OpenAI provider, cost-first Gemini default, model policy, OpenAI budget guard) |
-| [RFC-014B](../rfc/RFC-014B-Cost-Aware-AI-Runtime.md) | Cost-Aware AI Runtime — capability/model routing, cost awareness, OpenAI budget guard; Gemini-first, OpenAI as an optimization layer | ✅ Implemented (RuntimePolicyResolver decision layer + dashboard) |
+| RFC                                                    | Title                                                                                                                                | Status                                                                                                                      |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------- |
+| [RFC-011](../rfc/RFC-011-Weather-Runtime.md)           | Weather Runtime (provider-agnostic; weather as a first-class capability)                                                             | ✅ Implemented                                                                                                              |
+| [RFC-012](../rfc/RFC-012-Recommendation-Engine-v2.md)  | Recommendation Engine v2 (multi-objective, weather- & preference-aware, diverse, explainable)                                        | ✅ Implemented                                                                                                              |
+| [RFC-013](../rfc/RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 (lifecycle, timeline, evolution, explore/exploit)                                                          | ✅ Implemented                                                                                                              |
+| [RFC-014](../rfc/RFC-014-AI-Runtime-v2.md)             | AI Runtime v2 — capability routing, provider policies (primary/fallback), benchmarking, prompt versioning, latency + cost metrics    | ✅ Implemented · **RFC-014A complete** (real OpenAI provider, cost-first Gemini default, model policy, OpenAI budget guard) |
+| [RFC-014B](../rfc/RFC-014B-Cost-Aware-AI-Runtime.md)   | Cost-Aware AI Runtime — capability/model routing, cost awareness, OpenAI budget guard; Gemini-first, OpenAI as an optimization layer | ✅ Implemented (RuntimePolicyResolver decision layer + dashboard)                                                           |
 
 Cost-first configuration (RFC-014B): **Gemini** default for conversation /
 explanation / summarization / vision; **OpenAI** (Gemini fallback) for structured
-+ classification (GPT-5.4 mini/nano). GPT-5.5 is premium, never auto-selected.
+
+- classification (GPT-5.4 mini/nano). GPT-5.5 is premium, never auto-selected.
 
 ## Epic 6 — Wardrobe Intelligence (v1.2) ⏸️ Parked
 
@@ -133,10 +135,10 @@ multi-step reasoning are absorbed into AI Runtime v2 (RFC-014), Personalization 
 (RFC-013), and the Orchestrator. Full reasoning in
 [FUTURE.md](FUTURE.md) (Parking Lot).
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-020](FUTURE.md) | Cross-Engine Orchestration | ⏸️ Parked (architecture sufficient — RFC-005) |
-| [RFC-021](FUTURE.md) | Long-Horizon Planning & Multi-Step Reasoning | ⏸️ Parked (absorbed — RFC-013/014/005) |
+| RFC                  | Title                                        | Status                                        |
+| -------------------- | -------------------------------------------- | --------------------------------------------- |
+| [RFC-020](FUTURE.md) | Cross-Engine Orchestration                   | ⏸️ Parked (architecture sufficient — RFC-005) |
+| [RFC-021](FUTURE.md) | Long-Horizon Planning & Multi-Step Reasoning | ⏸️ Parked (absorbed — RFC-013/014/005)        |
 
 ## Epic 7 — Product Experience & v1.0 Polish (v1.0)
 
@@ -144,12 +146,12 @@ The cohesion pass that turns the modules into one assistant — no new engines.
 Today home, finalized IA, Settings/About, gated Developer Mode, and the
 accessibility / performance / release-readiness sweep.
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-007](../rfc/RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | ✅ Implemented |
-| [RFC-008](../rfc/RFC-008-Release-Candidate.md) | v1.0 Release Candidate — Audit Triage & Remediation | ✅ Implemented (v1.0.0) |
-| [RFC-009](../rfc/RFC-009-v1-0-1-Stabilization.md) | v1.0.1 Stabilization Release (quality only, no features) | ✅ Implemented (v1.0.1) |
-| [RFC-010](../rfc/RFC-010-Application-Access-Guard.md) | Application Access Guard (single access code; not auth) | ✅ Implemented (v1.0.2) |
+| RFC                                                         | Title                                                    | Status                  |
+| ----------------------------------------------------------- | -------------------------------------------------------- | ----------------------- |
+| [RFC-007](../rfc/RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish                   | ✅ Implemented          |
+| [RFC-008](../rfc/RFC-008-Release-Candidate.md)              | v1.0 Release Candidate — Audit Triage & Remediation      | ✅ Implemented (v1.0.0) |
+| [RFC-009](../rfc/RFC-009-v1-0-1-Stabilization.md)           | v1.0.1 Stabilization Release (quality only, no features) | ✅ Implemented (v1.0.1) |
+| [RFC-010](../rfc/RFC-010-Application-Access-Guard.md)       | Application Access Guard (single access code; not auth)  | ✅ Implemented (v1.0.2) |
 
 ## Epic 8 — Product Intelligence (v1.1)
 
@@ -157,8 +159,8 @@ Lead with **prioritised actions**, not analytics. One Intelligence Center
 aggregates every deterministic engine into a single, deduplicated, impact-ranked
 list of typed actions. Engines decide the actions; the Center ranks; AI explains.
 
-| RFC | Title | Status |
-| --- | --- | --- |
+| RFC                                              | Title                                                                                  | Status         |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------- |
 | [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
 
 ## Epic 9 — Lifestyle Intelligence Platform (v2.0)
@@ -166,12 +168,12 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 Grow beyond the closet into the contexts a wardrobe serves. Engines decide; AI
 explains. Full status + reasoning in [FUTURE.md](FUTURE.md) (Planned).
 
-| RFC | Title | Status |
-| --- | --- | --- |
-| [RFC-017](../rfc/RFC-017-Trip-Planner.md) | Trip Planner — reusable/editable trips, templates, history, multi-city, packing checklist + progress, timeline / outfit calendar (**first v2.0 feature**) | ✅ Implemented |
-| [RFC-018](../rfc/RFC-018-Shopping-Intelligence.md) | Shopping Intelligence — wishlist · priority queue · wardrobe ROI · duplicate intelligence · shopping timeline (no budget planning) | ✅ Implemented |
-| [RFC-019](FUTURE.md) | Vision Intelligence v2 — closet scan · duplicate detection · assisted outfit recognition (laundry detection deferred) | 📋 Planned |
-| [RFC-016](FUTURE.md) | Calendar Intelligence | ⏸️ Parked (low ROI, single-user) |
+| RFC                                                | Title                                                                                                                                                                                                           | Status                           |
+| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| [RFC-017](../rfc/RFC-017-Trip-Planner.md)          | Trip Planner — reusable/editable trips, templates, history, multi-city, packing checklist + progress, timeline / outfit calendar (**first v2.0 feature**)                                                       | ✅ Implemented                   |
+| [RFC-018](../rfc/RFC-018-Shopping-Intelligence.md) | Shopping Intelligence — wishlist · priority queue · wardrobe ROI · duplicate intelligence · shopping timeline (no budget planning). Product hub: `/acquisitions`; intelligence UI: `/acquisitions/intelligence` | ✅ Implemented                   |
+| [RFC-019](FUTURE.md)                               | Vision Intelligence v2 — closet scan · duplicate detection · assisted outfit recognition (laundry detection deferred)                                                                                           | 📋 Planned                       |
+| [RFC-016](FUTURE.md)                               | Calendar Intelligence                                                                                                                                                                                           | ⏸️ Parked (low ROI, single-user) |
 
 ## Removed / parked from scope
 

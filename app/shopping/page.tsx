@@ -1,11 +1,6 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
 
-import { ShoppingView } from "@/features/shopping/components";
-
-export const metadata: Metadata = {
-  title: "Shopping",
-};
-
-export default function ShoppingPage() {
-  return <ShoppingView />;
+/** Legacy Shopping route — Acquisitions is the product hub. */
+export default function ShoppingRedirectPage() {
+  redirect("/acquisitions");
 }

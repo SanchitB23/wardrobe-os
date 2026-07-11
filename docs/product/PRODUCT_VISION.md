@@ -1,13 +1,13 @@
 # Wardrobe OS — Product Vision
 
-|              |                                                   |
-| ------------ | ------------------------------------------------- |
-| **Document** | Long-term Product Vision & Philosophy             |
-| **Version**  | v1.0                                              |
-| **Status**   | Living document                                   |
-| **Author**   | Sanchit Bhatnagar                                 |
-| **Architecture Lead** | ChatGPT                                  |
-| **Last updated** | 2026-07-08                                    |
+|                       |                                       |
+| --------------------- | ------------------------------------- |
+| **Document**          | Long-term Product Vision & Philosophy |
+| **Version**           | v1.0                                  |
+| **Status**            | Living document                       |
+| **Author**            | Sanchit Bhatnagar                     |
+| **Architecture Lead** | ChatGPT                               |
+| **Last updated**      | 2026-07-08                            |
 
 > **This is not a roadmap.** It is the long-term vision and philosophy for
 > Wardrobe OS — the durable "why" behind the product. For the versioned,
@@ -129,7 +129,7 @@ like a single assistant rather than a set of separate tools.
 Sharpen, don't sprawl. This horizon refines the engines that already exist:
 
 - **Weather Runtime — shipped** (RFC-011): a provider-agnostic runtime that is the
-  single deterministic weather source. Weather is *data* (a normalized
+  single deterministic weather source. Weather is _data_ (a normalized
   `WeatherSnapshot`); the engines decide, and AI explains — including explaining
   the seasonal fallback when live weather is unavailable, never hallucinating it.
 - Recommendation Engine v2
@@ -148,6 +148,8 @@ scope and the full "will / might / won't" reasoning live in
 - **Travel Intelligence (RFC-017) — the first v2.0 feature.** Packing, capsule
   wardrobes, business trips.
 - **Shopping Intelligence (RFC-018)** — wishlist, shopping strategy, wardrobe ROI,
+  duplicate intelligence; product hub at `/acquisitions`, intelligence tabs at
+  `/acquisitions/intelligence`
   duplicate detection, purchase prioritization. _(Budget planning dropped — a
   single owner doesn't need a budgeting tool.)_
 - **Vision Intelligence v2 (RFC-019)** — closet scan, duplicate detection,
@@ -227,18 +229,18 @@ deterministic guidance.
 AI is a first-class capability with a **strictly bounded mandate**. It makes the
 system legible; it never makes the system's decisions.
 
-| AI **owns**            | AI **never** does |
-| ---------------------- | ----------------- |
-| Explanation            | Scoring           |
-| Conversation           | Ranking           |
-| Summarization          | Eligibility       |
-| Vision understanding   | Decision making   |
-| Natural language       | Planning          |
+| AI **owns**          | AI **never** does |
+| -------------------- | ----------------- |
+| Explanation          | Scoring           |
+| Conversation         | Ranking           |
+| Summarization        | Eligibility       |
+| Vision understanding | Decision making   |
+| Natural language     | Planning          |
 
 Everything in the right-hand column belongs to deterministic engines. This
 boundary is not a temporary limitation of today's models — it is a permanent
 architectural principle. When models get better, they get better at
-*explaining*; they do not get promoted to *deciding*.
+_explaining_; they do not get promoted to _deciding_.
 
 ---
 
@@ -299,8 +301,8 @@ enforces a small monthly cap and, at the hard stop, falls back to Gemini —
 proving "provider is an operational decision, not architectural" end-to-end.
 Routing decisions live in a small, testable resolver layer (RFC-014B:
 `RuntimePolicyResolver` over capability/model policies, a cost estimator, and a
-budget monitor), so *how the runtime chooses* is one place, separate from *how it
-calls* a provider.
+budget monitor), so _how the runtime chooses_ is one place, separate from _how it
+calls_ a provider.
 
 ---
 

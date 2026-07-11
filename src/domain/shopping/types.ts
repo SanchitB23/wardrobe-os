@@ -14,6 +14,9 @@ import type {
 
 export type WishlistStatus = "active" | "purchased" | "dismissed";
 
+/** User-set wishlist priority (product UX — not PriorityEngine scores). */
+export type WishlistPriority = "low" | "medium" | "high";
+
 /** The persistable core of a wishlist entry (the feature adds id/timestamps). */
 export interface WishlistSpec {
   item: ProspectiveItem;
@@ -22,6 +25,8 @@ export interface WishlistSpec {
   imageUrl: string | null;
   notes: string | null;
   status: WishlistStatus;
+  /** User-authored priority for the Acquisitions hub (not engine ranking). */
+  priority: WishlistPriority;
   purchasedId: string | null;
 }
 
@@ -74,7 +79,11 @@ export interface ShoppingROI {
     wears: number;
     costPerWear: number | null;
   }[];
-  projected: { id: string; name: string; estimatedCostPerWear: number | null }[];
+  projected: {
+    id: string;
+    name: string;
+    estimatedCostPerWear: number | null;
+  }[];
   totalSpend: number;
   averageCostPerWear: number | null;
   /** 0–100 "are you buying well?" signal — utilization of what you've bought. */
@@ -126,5 +135,9 @@ export interface ShoppingDashboard {
   timeline: ShoppingTimelineEntry[];
   strategy: ShoppingStrategyStep[];
   insights: WishlistInsights;
-  metadata: { engineVersion: string; generatedAt: string; wishlistCount: number };
+  metadata: {
+    engineVersion: string;
+    generatedAt: string;
+    wishlistCount: number;
+  };
 }

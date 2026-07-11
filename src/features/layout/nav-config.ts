@@ -61,22 +61,55 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     heading: "Wardrobe",
     items: [
-      { label: "Inventory", href: "/inventory", icon: ShirtIcon, matchNested: true },
-      { label: "Outfits", href: "/outfits", icon: LayersIcon, matchNested: true },
+      {
+        label: "Inventory",
+        href: "/inventory",
+        icon: ShirtIcon,
+        matchNested: true,
+      },
+      {
+        label: "Outfits",
+        href: "/outfits",
+        icon: LayersIcon,
+        matchNested: true,
+      },
       { label: "Wear Logs", href: "/wear-logs", icon: CalendarDaysIcon },
     ],
   },
   {
-    // Stylist = advice + shopping decisions. Acquisition (Advisor/Screenshot)
-    // folds in here so the top level stays five focused groups (RFC-007 IA).
+    // Stylist = advice + acquisition decisions. Buy vs Skip / Screenshot
+    // fold in here so the top level stays focused (RFC-007 IA).
     heading: "Stylist",
     items: [
-      { label: "Intelligence Center", href: "/intelligence", icon: SparklesIcon },
-      { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
+      {
+        label: "Intelligence Center",
+        href: "/intelligence",
+        icon: SparklesIcon,
+      },
+      {
+        label: "Recommendations",
+        href: "/recommendations",
+        icon: WandSparklesIcon,
+      },
       { label: "Chat", href: "/chat", icon: MessagesSquareIcon },
-      { label: "Shopping", href: "/shopping", icon: ShoppingBagIcon, matchNested: true },
-      { label: "Buy vs Skip", href: "/acquisition/advisor", icon: CompassIcon, matchNested: true },
-      { label: "Screenshot", href: "/acquisition/screenshot", icon: ScanSearchIcon, matchNested: true },
+      {
+        label: "Acquisitions",
+        href: "/acquisitions",
+        icon: ShoppingBagIcon,
+        matchNested: true,
+      },
+      {
+        label: "Buy vs Skip",
+        href: "/acquisition/advisor",
+        icon: CompassIcon,
+        matchNested: true,
+      },
+      {
+        label: "Screenshot",
+        href: "/acquisition/screenshot",
+        icon: ScanSearchIcon,
+        matchNested: true,
+      },
     ],
   },
   {
@@ -86,7 +119,11 @@ export const NAV_SECTIONS: NavSection[] = [
       { label: "Health", href: "/dashboard/health", icon: HeartPulseIcon },
       { label: "Usage", href: "/dashboard/usage", icon: ChartLineIcon },
       { label: "Purchases", href: "/purchases", icon: ReceiptIcon },
-      { label: "Insight Center", href: "/dashboard/insights", icon: LightbulbIcon },
+      {
+        label: "Insight Center",
+        href: "/dashboard/insights",
+        icon: LightbulbIcon,
+      },
     ],
   },
   {
@@ -99,7 +136,11 @@ export const NAV_SECTIONS: NavSection[] = [
     heading: "Settings",
     items: [
       { label: "Settings", href: "/settings", icon: SettingsIcon },
-      { label: "Preferences", href: "/settings/preferences", icon: SlidersHorizontalIcon },
+      {
+        label: "Preferences",
+        href: "/settings/preferences",
+        icon: SlidersHorizontalIcon,
+      },
       { label: "Import", href: "/inventory/import", icon: UploadIcon },
       { label: "Review", href: "/inventory/review", icon: ClipboardCheckIcon },
       { label: "About", href: "/about", icon: InfoIcon },
@@ -116,9 +157,19 @@ export const NAV_SECTIONS: NavSection[] = [
 export const DEVELOPER_SECTION: NavSection = {
   heading: "Developer",
   items: [
-    { label: "Developer", href: "/developer", icon: WrenchIcon, matchNested: true },
+    {
+      label: "Developer",
+      href: "/developer",
+      icon: WrenchIcon,
+      matchNested: true,
+    },
     { label: "AI Playground", href: "/ai/playground", icon: FlaskConicalIcon },
-    { label: "AI Test", href: "/api/ai/test", icon: TerminalIcon, external: true },
+    {
+      label: "AI Test",
+      href: "/api/ai/test",
+      icon: TerminalIcon,
+      external: true,
+    },
   ],
 };
 

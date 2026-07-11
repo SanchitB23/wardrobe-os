@@ -1,15 +1,17 @@
 /**
- * Shopping repository (RFC-018) — the only code touching `wishlist_items`. Reads/
- * writes via the Supabase anon client (anon RLS); maps rows ⇄ the persisted
- * `WishlistItem` shape. No domain logic. Purchases/wear-logs/wardrobe for ROI +
- * duplicates are read through the shared acquisition context, not here.
+ * Shopping repository (RFC-018 + Acquisitions UX) — the only code touching
+ * `wishlist_items`. Reads/writes via the Supabase anon client (anon RLS); maps
+ * rows ⇄ the persisted `WishlistItem` shape. No domain logic.
  */
 
 import { createClient } from "@/lib/supabase/client";
 import { toError } from "@/shared/utils/data-result";
 import type { BuyVsSkipInputSource } from "@/domain/acquisition";
-import type { WishlistStatus } from "@/domain/shopping";
-import type { SaveWishlistInput, WishlistItem } from "@/features/shopping/types";
+import type { WishlistPriority, WishlistStatus } from "@/domain/shopping";
+import type {
+  SaveWishlistInput,
+  WishlistItem,
+} from "@/features/shopping/types";
 
 type Result<T> = { data: T | null; error: Error | null };
 
@@ -30,10 +32,16 @@ type WishlistRow = {
   source_url: string | null;
   notes: string | null;
   status: string;
+  priority: string | null;
   purchased_id: string | null;
   created_at: string;
   updated_at: string;
 };
+
+function parsePriority(value: string | null | undefined): WishlistPriority {
+  if (value === "low" || value === "high" || value === "medium") return value;
+  return "medium";
+}
 
 function toItem(row: WishlistRow): WishlistItem {
   return {
@@ -57,6 +65,7 @@ function toItem(row: WishlistRow): WishlistItem {
     imageUrl: row.image_url,
     notes: row.notes,
     status: row.status as WishlistStatus,
+    priority: parsePriority(row.priority),
     purchasedId: row.purchased_id,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
@@ -74,13 +83,17 @@ function toRow(input: SaveWishlistInput) {
     formality: item.formality ?? null,
     material: item.material ?? null,
     price: item.estimatedPrice ?? null,
-    style_tags: item.styleTags && item.styleTags.length > 0 ? item.styleTags : null,
+    style_tags:
+      item.styleTags && item.styleTags.length > 0 ? item.styleTags : null,
     occasions:
-      item.intendedOccasions && item.intendedOccasions.length > 0 ? item.intendedOccasions : null,
+      item.intendedOccasions && item.intendedOccasions.length > 0
+        ? item.intendedOccasions
+        : null,
     image_url: input.imageUrl ?? null,
     source: input.source ?? "manual",
     source_url: input.sourceUrl ?? item.productUrl ?? null,
     notes: input.notes ?? item.notes ?? null,
+    priority: input.priority ?? "medium",
   };
 }
 
@@ -94,14 +107,20 @@ export async function selectWishlist(): Promise<Result<WishlistItem[]>> {
   return { data: ((data ?? []) as WishlistRow[]).map(toItem), error: null };
 }
 
-export async function insertWishlist(input: SaveWishlistInput): Promise<Result<WishlistItem>> {
+export async function insertWishlist(
+  input: SaveWishlistInput,
+): Promise<Result<WishlistItem>> {
   const supabase = createClient();
   const { data, error } = await supabase
     .from("wishlist_items")
-    .insert({ ...toRow(input), status: "active" })
+    .insert({
+      ...toRow(input),
+      status: input.status ?? "active",
+    })
     .select("*")
     .single();
-  if (error || !data) return { data: null, error: toError(error?.message ?? "Failed to save.") };
+  if (error || !data)
+    return { data: null, error: toError(error?.message ?? "Failed to save.") };
   return { data: toItem(data as WishlistRow), error: null };
 }
 
@@ -110,13 +129,22 @@ export async function updateWishlist(
   input: SaveWishlistInput,
 ): Promise<Result<WishlistItem>> {
   const supabase = createClient();
+  const patch = {
+    ...toRow(input),
+    updated_at: new Date().toISOString(),
+    ...(input.status ? { status: input.status } : {}),
+  };
   const { data, error } = await supabase
     .from("wishlist_items")
-    .update({ ...toRow(input), updated_at: new Date().toISOString() })
+    .update(patch)
     .eq("id", id)
     .select("*")
     .single();
-  if (error || !data) return { data: null, error: toError(error?.message ?? "Failed to update.") };
+  if (error || !data)
+    return {
+      data: null,
+      error: toError(error?.message ?? "Failed to update."),
+    };
   return { data: toItem(data as WishlistRow), error: null };
 }
 
@@ -133,9 +161,29 @@ export async function setWishlistStatus(
   return { data: undefined as unknown as void, error: null };
 }
 
+export async function setWishlistPriority(
+  id: string,
+  priority: WishlistPriority,
+): Promise<Result<void>> {
+  const supabase = createClient();
+  const { error } = await supabase
+    .from("wishlist_items")
+    .update({ priority, updated_at: new Date().toISOString() })
+    .eq("id", id);
+  if (error) return { data: null, error: toError(error.message) };
+  return { data: undefined as unknown as void, error: null };
+}
+
 export async function deleteWishlistRow(id: string): Promise<Result<void>> {
   const supabase = createClient();
   const { error } = await supabase.from("wishlist_items").delete().eq("id", id);
   if (error) return { data: null, error: toError(error.message) };
   return { data: undefined as unknown as void, error: null };
+}
+
+/** Exported for unit tests — priority column round-trip mapping. */
+export function mapWishlistPriorityForTest(row: {
+  priority: string | null;
+}): WishlistPriority {
+  return parsePriority(row.priority);
 }

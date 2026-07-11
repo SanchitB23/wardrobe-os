@@ -1,6 +1,13 @@
-import type { InventoryFilters, PurchaseFilters, WearLogFilters } from "@/types/wardrobe";
+import type {
+  InventoryFilters,
+  PurchaseFilters,
+  WearLogFilters,
+} from "@/types/wardrobe";
 
-export type CategoryCountFilters = Omit<InventoryFilters, "categoryId" | "sort">;
+export type CategoryCountFilters = Omit<
+  InventoryFilters,
+  "categoryId" | "sort"
+>;
 
 export const wardrobeKeys = {
   all: ["wardrobe"] as const,
@@ -56,4 +63,7 @@ export const wardrobeKeys = {
   tripPlan: (id: string) => [...wardrobeKeys.all, "trip-plan", id] as const,
   wishlist: () => [...wardrobeKeys.all, "wishlist"] as const,
   shoppingDashboard: () => [...wardrobeKeys.all, "shopping-dashboard"] as const,
+  acquisitionsHub: () => [...wardrobeKeys.all, "acquisitions-hub"] as const,
+  acquisitionDecisions: (filters: unknown) =>
+    [...wardrobeKeys.all, "acquisition-decisions", filters] as const,
 };

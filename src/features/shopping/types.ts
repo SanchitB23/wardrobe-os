@@ -1,11 +1,19 @@
 /**
- * Shopping Intelligence feature types (RFC-018). `WishlistItem` is the persisted
- * entry (the pure `WishlistSpec` + identity/timestamps); the dashboard shape is
- * re-exported from the domain.
+ * Shopping / Acquisitions feature types. Wishlist is the persisted prospective
+ * purchase; decision history snapshots Buy vs Skip analyses; KPIs feed the hub.
  */
 
-import type { BuyVsSkipInputSource, ProspectiveItem } from "@/domain/acquisition";
-import type { WishlistSpec } from "@/domain/shopping";
+import type {
+  BuyDecision,
+  BuyVsSkipAnalysis,
+  BuyVsSkipInputSource,
+  ProspectiveItem,
+} from "@/domain/acquisition";
+import type {
+  WishlistPriority,
+  WishlistSpec,
+  WishlistStatus,
+} from "@/domain/shopping";
 
 export interface WishlistItem extends WishlistSpec {
   id: string;
@@ -21,6 +29,46 @@ export interface SaveWishlistInput {
   sourceUrl?: string | null;
   imageUrl?: string | null;
   notes?: string | null;
+  priority?: WishlistPriority;
+  status?: WishlistStatus;
 }
 
-export type { ShoppingDashboard } from "@/domain/shopping";
+/** Persisted Buy vs Skip snapshot (Decision History). */
+export interface AcquisitionDecisionRecord {
+  id: string;
+  itemName: string;
+  itemCategory: string | null;
+  itemSnapshot: ProspectiveItem;
+  decision: BuyDecision;
+  score: number | null;
+  confidence: number | null;
+  summary: string | null;
+  analysis: BuyVsSkipAnalysis;
+  source: BuyVsSkipInputSource;
+  wishlistItemId: string | null;
+  createdAt: string;
+}
+
+export interface DecisionListFilters {
+  decision?: BuyDecision | "all";
+  search?: string;
+  /** Inclusive ISO date (YYYY-MM-DD) lower bound on createdAt. */
+  from?: string | null;
+  /** Inclusive ISO date (YYYY-MM-DD) upper bound on createdAt. */
+  to?: string | null;
+}
+
+export interface AcquisitionsKpis {
+  wishlistActive: number;
+  bought: number;
+  skipped: number;
+  roiScore: number | null;
+  /** Average wardrobeImpactScore from recent decisions, or null. */
+  impact: number | null;
+}
+
+export type {
+  ShoppingDashboard,
+  WishlistPriority,
+  WishlistStatus,
+} from "@/domain/shopping";

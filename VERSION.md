@@ -1,5 +1,13 @@
 # Version
 
+## Unreleased — Acquisitions product hub
+
+Product rename Shopping → **Acquisitions** (`/acquisitions` hub: wishlist,
+decision history, timeline, ROI, shopping history). Shopping Intelligence
+(RFC-018) remains at `/acquisitions/intelligence`. Schema documented in
+`docs/migrations/acquisitions-product-experience.sql` (applied 2026-07-12 to
+Wardrobe). Not a version bump.
+
 ## Current: v1.1.0 — Intelligence Refinement
 
 - **Version:** v1.1.0
@@ -59,6 +67,7 @@ time horizon. AI still only explains and converses; it never decides.
 ### Included modules
 
 **Foundation & Inventory**
+
 - Database schema (Supabase Postgres + Storage)
 - Inventory CRUD + advanced filters
 - Image upload (primary / thumbnails / delete)
@@ -66,6 +75,7 @@ time horizon. AI still only explains and converses; it never decides.
 - Item detail pages
 
 **Analytics**
+
 - Dashboard analytics
 - Wardrobe Health Engine
 - Usage Analytics Engine
@@ -73,6 +83,7 @@ time horizon. AI still only explains and converses; it never decides.
 - Insight Center
 
 **Outfits & Recommendations**
+
 - Outfit Builder
 - Outfit Scoring Engine
 - Outfit Generation Engine
@@ -80,6 +91,7 @@ time horizon. AI still only explains and converses; it never decides.
 - Recommendation Center
 
 **AI Stylist**
+
 - AI Infrastructure (vendor-neutral provider abstraction)
 - Gemini Provider (text + vision)
 - AI Recommendation Explanation
@@ -89,11 +101,13 @@ time horizon. AI still only explains and converses; it never decides.
 - AI Stylist Chat (`/chat`) — streaming, tool-calling, session-only memory
 
 **Acquisition & Vision**
+
 - Acquisition Engine — Buy vs Skip (RFC-001, `/acquisition/advisor`)
 - Vision Engine (RFC-002, `src/domain/vision` + `GeminiVisionProvider`)
 - Shopping Screenshot Understanding (RFC-003, `/acquisition/screenshot`)
 
 **Intelligence**
+
 - Personalization Engine (RFC-004) — derives `UserPreferenceProfile` from
   behaviour with per-preference confidence + stability.
 - Intelligence Orchestrator (RFC-005, `src/domain/orchestrator`) — deterministic
@@ -101,12 +115,14 @@ time horizon. AI still only explains and converses; it never decides.
   `ExecutionReport`.
 
 **Lifestyle**
+
 - Lifestyle Engine (RFC-006, `src/domain/lifestyle`) — deterministic trip
   planning (`TripPlan` / `PackingPlan` / `LaundryPlan` / `ShoppingPlan`) through
   the orchestrator, behind a vendor-neutral `WeatherProvider`. Surfaced at
   `/lifestyle/trip`.
 
 **Product Experience (new in v1.0.0 — RFC-007)**
+
 - **Today** (`/`) — the default assistant-style home; composes existing engine
   output into widgets (Today's Outfit, Insight, Ask Stylist, Shopping
   Suggestions, Wardrobe Health, Quick Actions, Recent Activity).

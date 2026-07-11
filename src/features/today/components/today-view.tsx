@@ -18,7 +18,10 @@ import {
 
 import Link from "next/link";
 
-import { useInsightReport, useWardrobeHealth } from "@/features/analytics/hooks";
+import {
+  useInsightReport,
+  useWardrobeHealth,
+} from "@/features/analytics/hooks";
 import { useOutfitRecommendations } from "@/features/recommendations/hooks";
 import { useIntelligenceCenter } from "@/features/intelligence/hooks/useIntelligenceCenter";
 import { ActionCardRow } from "@/features/intelligence/components/intelligence-center-view";
@@ -86,12 +89,18 @@ function TodaysOutfitWidget() {
           <CardTitle className="flex items-center gap-2 text-base">
             <ShirtIcon className="size-4" /> Today&apos;s outfit
           </CardTitle>
-          <Button variant="ghost" size="sm" render={<a href="/recommendations">All</a>} />
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<a href="/recommendations">All</a>}
+          />
         </div>
       </CardHeader>
       <CardContent>
         {query.isPending ? <Loading lines={3} /> : null}
-        {query.isError ? <ErrorLine message="Couldn't load recommendations." /> : null}
+        {query.isError ? (
+          <ErrorLine message="Couldn't load recommendations." />
+        ) : null}
         {!query.isPending && !query.isError && !top ? (
           <p className="text-sm text-muted-foreground">
             No recommendation yet — add items and outfits to get a daily pick.
@@ -101,12 +110,18 @@ function TodaysOutfitWidget() {
           <div className="space-y-2">
             <div className="flex items-center justify-between gap-2">
               <span className="font-medium">{top.name}</span>
-              <Badge variant="secondary" className="tabular-nums">{top.score.toFixed(1)}/10</Badge>
+              <Badge variant="secondary" className="tabular-nums">
+                {top.score.toFixed(1)}/10
+              </Badge>
             </div>
             <p className="text-sm text-muted-foreground">
-              {top.items.map((i) => previews[i.itemId]?.name ?? i.name).join(" · ")}
+              {top.items
+                .map((i) => previews[i.itemId]?.name ?? i.name)
+                .join(" · ")}
             </p>
-            {top.reason ? <p className="text-sm text-muted-foreground">{top.reason}</p> : null}
+            {top.reason ? (
+              <p className="text-sm text-muted-foreground">{top.reason}</p>
+            ) : null}
           </div>
         ) : null}
       </CardContent>
@@ -127,7 +142,9 @@ function AskStylistWidget() {
         <CardTitle className="flex items-center gap-2 text-base">
           <SparklesIcon className="size-4" /> Ask the stylist
         </CardTitle>
-        <CardDescription>Plain-language questions about your wardrobe.</CardDescription>
+        <CardDescription>
+          Plain-language questions about your wardrobe.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form
@@ -170,7 +187,11 @@ function TodaysInsightWidget() {
           <CardTitle className="flex items-center gap-2 text-base">
             <LightbulbIcon className="size-4" /> Today&apos;s insight
           </CardTitle>
-          <Button variant="ghost" size="sm" render={<a href="/dashboard/insights">More</a>} />
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<a href="/dashboard/insights">More</a>}
+          />
         </div>
       </CardHeader>
       <CardContent>
@@ -181,7 +202,8 @@ function TodaysInsightWidget() {
             <p className="text-sm">{report.overallSummary}</p>
             {action ? (
               <p className="text-sm text-muted-foreground">
-                <span className="font-medium text-foreground">Next:</span> {action.title}
+                <span className="font-medium text-foreground">Next:</span>{" "}
+                {action.title}
               </p>
             ) : null}
           </div>
@@ -199,23 +221,42 @@ function ShoppingSuggestionsWidget() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="flex items-center gap-2 text-base">
-            <ShoppingBagIcon className="size-4" /> Shopping suggestions
+            <ShoppingBagIcon className="size-4" /> Acquisition suggestions
           </CardTitle>
-          <Button variant="ghost" size="sm" render={<a href="/acquisition/advisor">Advisor</a>} />
+          <div className="flex gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              render={<Link href="/acquisitions" />}
+            >
+              Hub
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              render={<Link href="/acquisition/advisor" />}
+            >
+              Advisor
+            </Button>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
         {query.isPending ? <Loading /> : null}
         {query.isError ? <ErrorLine message="Couldn't load gaps." /> : null}
         {query.data && gaps.length === 0 ? (
-          <p className="text-sm text-muted-foreground">No gaps flagged — your wardrobe looks complete.</p>
+          <p className="text-sm text-muted-foreground">
+            No gaps flagged — your wardrobe looks complete.
+          </p>
         ) : null}
         {gaps.length > 0 ? (
           <ul className="space-y-1.5">
             {gaps.slice(0, 3).map((gap, i) => (
               <li key={i} className="text-sm">
                 <span className="font-medium">{gap.label}</span>
-                {gap.detail ? <span className="text-muted-foreground"> — {gap.detail}</span> : null}
+                {gap.detail ? (
+                  <span className="text-muted-foreground"> — {gap.detail}</span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -235,7 +276,11 @@ function WardrobeHealthWidget() {
           <CardTitle className="flex items-center gap-2 text-base">
             <HeartPulseIcon className="size-4" /> Wardrobe health
           </CardTitle>
-          <Button variant="ghost" size="sm" render={<a href="/dashboard/health">Details</a>} />
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<a href="/dashboard/health">Details</a>}
+          />
         </div>
       </CardHeader>
       <CardContent className="space-y-2">
@@ -244,12 +289,20 @@ function WardrobeHealthWidget() {
         {health ? (
           <>
             <div className="flex items-baseline gap-2">
-              <span className="text-2xl font-semibold tabular-nums">{Math.round(health.overallScore)}</span>
+              <span className="text-2xl font-semibold tabular-nums">
+                {Math.round(health.overallScore)}
+              </span>
               <span className="text-xs text-muted-foreground">/ 100</span>
             </div>
-            <Progress value={Math.round(health.overallScore)} aria-label="Wardrobe health score" className="h-1.5" />
+            <Progress
+              value={Math.round(health.overallScore)}
+              aria-label="Wardrobe health score"
+              className="h-1.5"
+            />
             {health.strengths[0] ? (
-              <p className="text-sm text-muted-foreground">{health.strengths[0]}</p>
+              <p className="text-sm text-muted-foreground">
+                {health.strengths[0]}
+              </p>
             ) : null}
           </>
         ) : null}
@@ -262,7 +315,11 @@ const QUICK_ACTIONS = [
   { label: "Add item", href: "/inventory", icon: PlusIcon },
   { label: "Create outfit", href: "/outfits/new", icon: LayersIcon },
   { label: "Plan a trip", href: "/trips", icon: LuggageIcon },
-  { label: "Recommendations", href: "/recommendations", icon: WandSparklesIcon },
+  {
+    label: "Recommendations",
+    href: "/recommendations",
+    icon: WandSparklesIcon,
+  },
 ];
 
 function QuickActionsWidget() {
@@ -273,7 +330,12 @@ function QuickActionsWidget() {
       </CardHeader>
       <CardContent className="grid grid-cols-2 gap-2">
         {QUICK_ACTIONS.map((a) => (
-          <Button key={a.href} variant="outline" className="justify-start" render={<a href={a.href} />}>
+          <Button
+            key={a.href}
+            variant="outline"
+            className="justify-start"
+            render={<a href={a.href} />}
+          >
             <a.icon /> {a.label}
           </Button>
         ))}
@@ -292,21 +354,32 @@ function RecentActivityWidget() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="text-base">Recent activity</CardTitle>
-          <Button variant="ghost" size="sm" render={<a href="/wear-logs">Wear logs</a>} />
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<a href="/wear-logs">Wear logs</a>}
+          />
         </div>
       </CardHeader>
       <CardContent>
         {query.isPending ? <Loading lines={3} /> : null}
-        {query.isError ? <ErrorLine message="Couldn't load recent wears." /> : null}
+        {query.isError ? (
+          <ErrorLine message="Couldn't load recent wears." />
+        ) : null}
         {query.data && recent.length === 0 ? (
           <p className="text-sm text-muted-foreground">No wears logged yet.</p>
         ) : null}
         {recent.length > 0 ? (
           <ul className="space-y-1.5">
             {recent.map((log) => (
-              <li key={log.id} className="flex items-center justify-between gap-2 text-sm">
+              <li
+                key={log.id}
+                className="flex items-center justify-between gap-2 text-sm"
+              >
                 <span className="truncate">{log.item?.name ?? "Item"}</span>
-                <span className="shrink-0 tabular-nums text-muted-foreground">{log.worn_on}</span>
+                <span className="shrink-0 tabular-nums text-muted-foreground">
+                  {log.worn_on}
+                </span>
               </li>
             ))}
           </ul>
@@ -336,15 +409,23 @@ function DoThisNextSection() {
             <SparklesIcon className="size-4 text-muted-foreground" />
             <CardTitle className="text-base">Do this next</CardTitle>
           </div>
-          <Button variant="ghost" size="sm" render={<Link href="/intelligence">All</Link>} />
+          <Button
+            variant="ghost"
+            size="sm"
+            render={<Link href="/intelligence">All</Link>}
+          />
         </div>
-        <CardDescription>Prioritised actions from every engine (RFC-015).</CardDescription>
+        <CardDescription>
+          Prioritised actions from every engine (RFC-015).
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-2">
         {query.isPending ? (
           <Loading lines={3} />
         ) : actions.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nothing urgent — your wardrobe looks healthy.</p>
+          <p className="text-sm text-muted-foreground">
+            Nothing urgent — your wardrobe looks healthy.
+          </p>
         ) : (
           actions.map((card) => <ActionCardRow key={card.id} card={card} />)
         )}
@@ -357,7 +438,11 @@ export function TodayView() {
   const now = useNow();
   const greeting = now ? greetingFor(now.getHours()) : "Welcome back";
   const dateLabel = now
-    ? now.toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })
+    ? now.toLocaleDateString(undefined, {
+        weekday: "long",
+        month: "long",
+        day: "numeric",
+      })
     : "";
 
   return (
@@ -365,7 +450,10 @@ export function TodayView() {
       <PageHeader
         title={greeting}
         badge={<Badge variant="secondary">Today</Badge>}
-        description={dateLabel || "Your wardrobe at a glance — today's outfit, insights, and what to do next."}
+        description={
+          dateLabel ||
+          "Your wardrobe at a glance — today's outfit, insights, and what to do next."
+        }
       />
 
       <DoThisNextSection />
