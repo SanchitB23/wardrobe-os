@@ -162,14 +162,15 @@ reasoning in [FUTURE.md](docs/product/FUTURE.md):
   strategy. Acquisition decides each item; Shopping Intelligence ranks; AI
   explains. Surfaced at `/acquisitions/intelligence`. Additive schema documented.
   (Budget Planning dropped.)
+- **Vision Intelligence v2 (RFC-019) — ✅ implemented.** Closet Scan, Assisted
+  Outfit Recognition, Visual Duplicate Detection, and a confirmation Review Queue
+  over the Vision Engine (RFC-002). Surfaces at `/vision`. Never auto-adds or
+  auto-logs. (Laundry Detection deferred.)
 - **Acquisitions product hub (UX shell) — ✅.** Flagship `/acquisitions` landing
   with wishlist CRUD (notes/priority/status), Decision History, timeline, ROI,
   shopping history, and KPIs. Renames the Shopping nav/route to Acquisitions;
   `/shopping` redirects. Silent Buy vs Skip decision snapshots. Intelligence
   stays secondary — no new ranking work in this shell.
-- **Vision Intelligence v2 (RFC-019).** Closet Scan · Duplicate Detection ·
-  Assisted Outfit Recognition. (Laundry Detection deferred.)
-
 ### ~~v1.2 — Wardrobe Intelligence~~ ⏸️ Parked
 
 The former "higher-order reasoning" epic is parked: **cross-engine orchestration**

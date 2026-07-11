@@ -124,15 +124,22 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   multi-city merges per-leg forecasts from the Weather Runtime (RFC-011) into one
   forecast the engine plans over. Engines decide; AI explains.
 - **Shopping Intelligence (RFC-018)** — `src/features/shopping` (+ pure
-  `src/domain/shopping` aggregation), `/shopping`. Like the Intelligence Center,
-  it **aggregates, never decides**: the Acquisition engine (Buy vs Skip, RFC-001)
-  decides each wishlist item, and Shopping Intelligence ranks the queue
-  (Need × Impact × Buy), computes ROI, and clusters duplicates. It reuses the
-  acquisition context once (`loadAcquisitionContext` → `evaluateWithContext`) so
-  Recommendation + Personalization still flow through Buy vs Skip; the wishlist↔
-  wardrobe duplicate axis reuses the acquisition `similarExistingItems`. No new
-  verdict, no duplicated scoring. Engines decide; AI explains.
-- **Future (RFC per feature):** Calendar, Shopping, and more — each registers
-  capabilities and is *requested*, reusing all wiring. The existing
-  Recommendation / Acquisition / Screenshot flows can migrate to request
-  capabilities incrementally (behaviour-preserving).
+  `src/domain/shopping` aggregation), `/acquisitions` hub + `/acquisitions/intelligence`.
+  Like the Intelligence Center, it **aggregates, never decides**: the Acquisition
+  engine (Buy vs Skip, RFC-001) decides each wishlist item, and Shopping
+  Intelligence ranks the queue (Need × Impact × Buy), computes ROI, and clusters
+  duplicates. It reuses the acquisition context once (`loadAcquisitionContext` →
+  `evaluateWithContext`) so Recommendation + Personalization still flow through
+  Buy vs Skip; the wishlist↔wardrobe duplicate axis reuses the acquisition
+  `similarExistingItems`. No new verdict, no duplicated scoring. Engines decide;
+  AI explains.
+- **Vision Intelligence v2 (RFC-019)** — `src/features/vision` (+ pure
+  `src/domain/vision-intelligence`), `/vision`. Workflow layer over the Vision
+  Engine (RFC-002): Closet Scan, Assisted Outfit Recognition, Visual Duplicate
+  Detection, Review Queue. Perception stays in `analyzeImage` / `/api/ai/vision`;
+  Intelligence only matches to inventory and builds confirmation actions. Never
+  auto-adds or auto-logs. Engines detect; user confirms; AI may explain.
+- **Future (RFC per feature):** Calendar and more — each registers capabilities
+  and is *requested*, reusing all wiring. The existing Recommendation /
+  Acquisition / Screenshot flows can migrate to request capabilities
+  incrementally (behaviour-preserving).

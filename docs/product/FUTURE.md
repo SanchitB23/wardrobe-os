@@ -46,12 +46,12 @@ the closet into the contexts a wardrobe serves. Engines decide; AI explains.
 - **Potential Version:** v2.0.
 
 ### RFC-019 — Vision Intelligence v2
-- **Status:** Planned.
-- **Scope (keep):** Closet Scan · Duplicate Detection · Assisted Outfit
-  Recognition.
+- **Status:** ✅ Implemented ([RFC-019](../rfc/RFC-019-Vision-Intelligence-v2.md)).
+- **Scope (shipped):** Closet Scan · Assisted Outfit Recognition · Visual
+  Duplicate Detection · Review Queue. Surfaces at `/vision`, `/vision/scan`,
+  `/vision/review`; debug at `/developer/vision`. Reuses Vision Engine (RFC-002);
+  never auto-adds or auto-logs.
 - **Deferred:** Laundry Detection (see Parking Lot).
-- **Reason:** extends the Vision Engine (RFC-002) into wardrobe capture + assisted
-  logging; laundry detection is a nice-to-have that can follow.
 - **Potential Version:** v2.0.
 
 ---

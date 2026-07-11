@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Vision Intelligence v2 (RFC-019)
+
+Practical Vision workflows over the existing Vision Engine (RFC-002) — **no
+duplicated perception stack**. Vision detects; the user confirms; nothing is
+auto-added or auto-logged.
+
+- **Domain** (`src/domain/vision-intelligence`, pure): visual attribute
+  similarity, ClosetScanner, OutfitRecognition, DuplicateVision, ReviewQueue.
+- **Feature** (`src/features/vision`): scan service (reuses `/api/ai/vision`),
+  session-local review queue, hub / scan / review UI, Developer Vision Debug.
+- **Routes:** `/vision`, `/vision/scan`, `/vision/review`, `/developer/vision`.
+- **Nav:** Wardrobe → Vision; Developer → Vision Debug.
+- Laundry / stain / OCR / auto-logging remain non-goals.
+
 ### Added — Acquisitions product experience (pre-intelligence shell)
 
 Renames the **Shopping** product surface to **Acquisitions** and ships the

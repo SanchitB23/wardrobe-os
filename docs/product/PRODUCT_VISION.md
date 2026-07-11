@@ -153,7 +153,7 @@ scope and the full "will / might / won't" reasoning live in
   duplicate detection, purchase prioritization. _(Budget planning dropped — a
   single owner doesn't need a budgeting tool.)_
 - **Vision Intelligence v2 (RFC-019)** — closet scan, duplicate detection,
-  assisted outfit recognition. _(Laundry detection deferred.)_
+  assisted outfit recognition, review queue at `/vision`. _(Laundry deferred.)_
 
 **Parked / absorbed** (see [FUTURE.md](FUTURE.md)):
 

@@ -1,5 +1,6 @@
 import {
   CalendarDaysIcon,
+  CameraIcon,
   ChartLineIcon,
   ClipboardCheckIcon,
   CompassIcon,
@@ -74,6 +75,7 @@ export const NAV_SECTIONS: NavSection[] = [
         matchNested: true,
       },
       { label: "Wear Logs", href: "/wear-logs", icon: CalendarDaysIcon },
+      { label: "Vision", href: "/vision", icon: CameraIcon, matchNested: true },
     ],
   },
   {
@@ -164,6 +166,7 @@ export const DEVELOPER_SECTION: NavSection = {
       matchNested: true,
     },
     { label: "AI Playground", href: "/ai/playground", icon: FlaskConicalIcon },
+    { label: "Vision Debug", href: "/developer/vision", icon: CameraIcon },
     {
       label: "AI Test",
       href: "/api/ai/test",
