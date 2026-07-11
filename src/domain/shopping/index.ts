@@ -75,3 +75,6 @@ export type {
   WishlistInsights,
   ShoppingDashboard,
 } from "@/domain/shopping/types";
+
+/** Acquisitions Intelligence (RFC-018B) — evolution layer over RFC-018. */
+export * as acquisitionsIntelligence from "@/domain/shopping/v2";

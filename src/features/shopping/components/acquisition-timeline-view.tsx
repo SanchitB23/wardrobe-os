@@ -5,6 +5,7 @@ import { Loader2Icon } from "lucide-react";
 
 import { TIMELINE_STAGE_LABELS, TIMELINE_STAGE_ORDER } from "@/domain/shopping";
 import { useAcquisitionsHub } from "@/features/shopping/hooks";
+import { LifecycleIntelligencePanel } from "@/features/shopping/components/acquisitions-intelligence-panels";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,14 @@ import {
 export function AcquisitionTimelineView() {
   const hub = useAcquisitionsHub();
   const subjects = hub.data?.timeline ?? [];
+  const intelligence = hub.data?.intelligence;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Acquisition Timeline"
         badge={<Badge variant="secondary">Acquisitions</Badge>}
-        description="Lifecycle for each consideration: Wishlist → Analysis → Purchase → First Wear → ROI."
+        description="Hub stages (Wishlist → ROI) plus Purchase Lifecycle learning states (established / low usage / retired)."
         actions={
           <Button variant="outline" render={<Link href="/acquisitions" />}>
             Hub
@@ -33,11 +35,15 @@ export function AcquisitionTimelineView() {
         }
       />
 
+      {intelligence ? (
+        <LifecycleIntelligencePanel intelligence={intelligence} />
+      ) : null}
+
       <Card>
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm">Stages</CardTitle>
+          <CardTitle className="text-sm">Hub stages</CardTitle>
           <CardDescription>
-            Product lifecycle — not Shopping Intelligence ranking.
+            Product UX stages — complementary to 018B lifecycle above.
           </CardDescription>
         </CardHeader>
         <CardContent>

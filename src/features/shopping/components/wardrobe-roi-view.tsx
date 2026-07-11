@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Loader2Icon } from "lucide-react";
 
 import { useAcquisitionsHub } from "@/features/shopping/hooks";
+import { RoiEvolutionPanel } from "@/features/shopping/components/acquisitions-intelligence-panels";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -19,13 +20,14 @@ import { Progress } from "@/components/ui/progress";
 export function WardrobeRoiView() {
   const hub = useAcquisitionsHub();
   const roi = hub.data?.roi;
+  const intelligence = hub.data?.intelligence;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Wardrobe ROI"
         badge={<Badge variant="secondary">Acquisitions</Badge>}
-        description="Utilization of what you’ve bought — are you buying well? Cost-per-wear from purchases and wears."
+        description="Snapshot utilization plus ROI evolution over purchase history and category cohorts."
         actions={
           <Button variant="outline" render={<Link href="/acquisitions" />}>
             Hub
@@ -115,6 +117,10 @@ export function WardrobeRoiView() {
               )}
             </CardContent>
           </Card>
+
+          {intelligence ? (
+            <RoiEvolutionPanel intelligence={intelligence} />
+          ) : null}
         </>
       ) : null}
     </div>

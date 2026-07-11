@@ -41,7 +41,11 @@ export type RecoWearLogRow = {
   outfit_id: string | null;
 };
 
-export type RecoPurchaseRow = { item_id: string; price: number | null };
+export type RecoPurchaseRow = {
+  item_id: string;
+  price: number | null;
+  purchase_date: string | null;
+};
 export type RecoOutfitRow = {
   id: string;
   name: string;
@@ -72,7 +76,7 @@ export async function selectRecommendationData(): Promise<{
   const [items, wearLogs, purchases, outfits, outfitItems] = await Promise.all([
     supabase.from("wardrobe_items").select(RECO_ITEM_SELECT).order("name"),
     supabase.from("wear_logs").select("item_id, worn_on, outfit_id"),
-    supabase.from("purchases").select("item_id, price"),
+    supabase.from("purchases").select("item_id, price, purchase_date"),
     supabase.from("outfits").select("id, name, favorite, rating"),
     supabase.from("outfit_items").select("outfit_id, item_id"),
   ]);

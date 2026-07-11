@@ -133,6 +133,11 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   Buy vs Skip; the wishlist↔wardrobe duplicate axis reuses the acquisition
   `similarExistingItems`. No new verdict, no duplicated scoring. Engines decide;
   AI explains.
+- **Acquisitions Intelligence (RFC-018B)** — `src/domain/shopping/v2` (+ hub
+  panels / `/developer/acquisitions`). Letter-suffix evolution of RFC-018:
+  purchase lifecycle, shallow+deep recommendation accuracy, need/ROI timelines,
+  opportunity queue, and dynamic strategy from outcomes. Composes 018 dashboard
+  outputs; never reimplements Buy vs Skip or PriorityEngine.
 - **Vision Intelligence v2 (RFC-019)** — `src/features/vision` (+ pure
   `src/domain/vision-intelligence`), `/vision`. Workflow layer over the Vision
   Engine (RFC-002): Closet Scan, Assisted Outfit Recognition, Visual Duplicate

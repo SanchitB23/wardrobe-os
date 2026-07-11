@@ -1,7 +1,6 @@
 /**
- * Shopping / Acquisitions service — wishlist CRUD + hub helpers (KPIs, timeline,
- * shopping history). Intelligence dashboard (`getShoppingDashboard`) remains for
- * `/acquisitions/intelligence`. No new ranking logic here.
+ * Shopping / Acquisitions service — wishlist CRUD + hub helpers + RFC-018
+ * intelligence dashboard + RFC-018B Acquisitions Intelligence composer.
  */
 
 import {
@@ -16,6 +15,10 @@ import {
   type TimelineSubject,
   type TimelineSubjectInput,
 } from "@/domain/shopping";
+import {
+  buildAcquisitionsIntelligence,
+  type AcquisitionsIntelligence,
+} from "@/domain/shopping/v2";
 import type { BuyDecision } from "@/domain/acquisition";
 import {
   evaluateWithContext,
@@ -54,16 +57,27 @@ function toPurchaseRecords(raw: AcquisitionContext["raw"]): PurchaseRecord[] {
     if (!wear.item_id) continue;
     wearCounts.set(wear.item_id, (wearCounts.get(wear.item_id) ?? 0) + 1);
   }
-  const nameById = new Map(raw.items.map((i) => [i.id, i.name]));
+  const itemById = new Map(
+    raw.items.map((i) => [i.id, i] as const),
+  );
   return raw.purchases
     .filter((p): p is typeof p & { item_id: string } => Boolean(p.item_id))
-    .map((p) => ({
-      itemId: p.item_id,
-      name: nameById.get(p.item_id) ?? p.item_id,
-      price: p.price ?? null,
-      wears: wearCounts.get(p.item_id) ?? 0,
-      purchaseDate: null,
-    }));
+    .map((p) => {
+      const item = itemById.get(p.item_id);
+      return {
+        itemId: p.item_id,
+        name: item?.name ?? p.item_id,
+        category: item?.category?.name ?? null,
+        price: p.price ?? null,
+        wears: wearCounts.get(p.item_id) ?? 0,
+        purchaseDate: p.purchase_date ?? null,
+      };
+    });
+}
+
+function costPerWear(price: number | null, wears: number): number | null {
+  if (price == null || wears <= 0) return null;
+  return Math.round((price / wears) * 100) / 100;
 }
 
 // --- Wishlist CRUD ---------------------------------------------------------
@@ -112,7 +126,7 @@ export function updateWishlistPriority(
   return setWishlistPriority(id, priority);
 }
 
-// --- Intelligence dashboard (secondary route) ------------------------------
+// --- Intelligence dashboard (RFC-018 secondary route) ----------------------
 
 export async function getShoppingDashboard(): Promise<
   Result<ShoppingDashboard>
@@ -152,7 +166,7 @@ export async function getShoppingDashboard(): Promise<
   return { data: dashboard, error: null };
 }
 
-// --- Acquisitions hub helpers (no new intelligence) ------------------------
+// --- Acquisitions hub + RFC-018B -------------------------------------------
 
 export interface AcquisitionsHubData {
   kpis: AcquisitionsKpis;
@@ -166,6 +180,10 @@ export interface AcquisitionsHubData {
     accuracySampleSize: number;
   };
   roi: ReturnType<typeof computeShoppingROI>;
+  /** RFC-018B continuous learning surfaces. */
+  intelligence: AcquisitionsIntelligence;
+  /** RFC-018 queue snapshot (may be empty if wardrobe context failed). */
+  shoppingDashboard: ShoppingDashboard | null;
 }
 
 function latestDecisionByName(
@@ -207,17 +225,102 @@ function buildTimelineInputs(
       purchased,
       purchaseDate: purchase?.purchaseDate ?? null,
       wears: purchase?.wears ?? 0,
-      costPerWear:
-        purchase && purchase.price != null && purchase.wears > 0
-          ? Math.round((purchase.price / purchase.wears) * 100) / 100
-          : null,
+      costPerWear: costPerWear(purchase?.price ?? null, purchase?.wears ?? 0),
     };
+  });
+}
+
+function buildIntelligence(
+  wishlist: WishlistItem[],
+  decisions: AcquisitionDecisionRecord[],
+  purchases: PurchaseRecord[],
+  health: AcquisitionContext["health"],
+  dashboard: ShoppingDashboard | null,
+  generatedAt: string,
+): AcquisitionsIntelligence {
+  const byName = latestDecisionByName(decisions);
+  const purchaseByName = new Map(
+    purchases.map((p) => [p.name.trim().toLowerCase(), p] as const),
+  );
+
+  const lifecycleSubjects = wishlist.map((w) => {
+    const key = w.item.name.trim().toLowerCase();
+    const decision = byName.get(key);
+    const purchase = purchaseByName.get(key);
+    const purchased = w.status === "purchased" || Boolean(purchase);
+    return {
+      id: w.id,
+      name: w.item.name,
+      category: w.item.category || null,
+      status: w.status,
+      latestDecision: (decision?.decision as BuyDecision | undefined) ?? null,
+      purchased,
+      wears: purchase?.wears ?? 0,
+      costPerWear: costPerWear(purchase?.price ?? null, purchase?.wears ?? 0),
+      retired: false,
+      updatedAt: w.updatedAt,
+    };
+  });
+
+  // Also include purchases that never appeared on the wishlist.
+  for (const purchase of purchases) {
+    const key = purchase.name.trim().toLowerCase();
+    if (wishlist.some((w) => w.item.name.trim().toLowerCase() === key)) {
+      continue;
+    }
+    lifecycleSubjects.push({
+      id: `purchase:${purchase.itemId}`,
+      name: purchase.name,
+      category: purchase.category,
+      status: "purchased",
+      latestDecision: byName.get(key)?.decision ?? null,
+      purchased: true,
+      wears: purchase.wears,
+      costPerWear: costPerWear(purchase.price, purchase.wears),
+      retired: false,
+      updatedAt: purchase.purchaseDate ?? generatedAt,
+    });
+  }
+
+  const accuracyDecisions = decisions.map((d) => {
+    const key = d.itemName.trim().toLowerCase();
+    const purchase = purchaseByName.get(key);
+    return {
+      decisionId: d.id,
+      itemName: d.itemName,
+      decision: d.decision,
+      outcome: outcomeByName(d.itemName, wishlist),
+      wears: purchase?.wears ?? 0,
+      costPerWear: costPerWear(purchase?.price ?? null, purchase?.wears ?? 0),
+    };
+  });
+
+  return buildAcquisitionsIntelligence({
+    dashboard,
+    lifecycleSubjects,
+    accuracyDecisions,
+    health,
+    needPurchases: purchases.map((p) => ({
+      date: p.purchaseDate ?? generatedAt,
+      category: p.category,
+      name: p.name,
+    })),
+    roiPurchases: purchases.map((p) => ({
+      itemId: p.itemId,
+      name: p.name,
+      category: p.category,
+      price: p.price,
+      wears: p.wears,
+      purchaseDate: p.purchaseDate,
+    })),
+    generatedAt,
   });
 }
 
 export async function getAcquisitionsHub(): Promise<
   Result<AcquisitionsHubData>
 > {
+  const generatedAt = new Date().toISOString();
   const [wishlistResult, decisionsResult, contextResult] = await Promise.all([
     selectWishlist(),
     listDecisions(),
@@ -230,8 +333,8 @@ export async function getAcquisitionsHub(): Promise<
 
   const wishlist = wishlistResult.data ?? [];
   const decisions = decisionsResult.data ?? [];
-  const purchases =
-    contextResult.data != null ? toPurchaseRecords(contextResult.data.raw) : [];
+  const context = contextResult.data;
+  const purchases = context != null ? toPurchaseRecords(context.raw) : [];
   const roi = computeShoppingROI(purchases, []);
 
   const active = activeWishlist(wishlist);
@@ -258,6 +361,32 @@ export async function getAcquisitionsHub(): Promise<
     })),
   );
 
+  let shoppingDashboard: ShoppingDashboard | null = null;
+  if (context) {
+    const entries: ShoppingEngineEntry[] = active.map((w) => ({
+      id: w.id,
+      item: w.item,
+      analysis: evaluateWithContext(w.item, context, w.source),
+    }));
+    shoppingDashboard = buildShoppingDashboard(
+      {
+        entries,
+        health: context.health,
+        purchases,
+      },
+      { generatedAt },
+    );
+  }
+
+  const intelligence = buildIntelligence(
+    wishlist,
+    decisions,
+    purchases,
+    context?.health ?? null,
+    shoppingDashboard,
+    generatedAt,
+  );
+
   const hub: AcquisitionsHubData = {
     kpis: {
       wishlistActive: active.length,
@@ -278,7 +407,20 @@ export async function getAcquisitionsHub(): Promise<
       accuracySampleSize: accuracy.sampleSize,
     },
     roi,
+    intelligence,
+    shoppingDashboard,
   };
 
   return { data: hub, error: null };
+}
+
+/** Standalone 018B load for Developer Mode (same composer as the hub). */
+export async function getAcquisitionsIntelligence(): Promise<
+  Result<AcquisitionsIntelligence>
+> {
+  const hub = await getAcquisitionsHub();
+  if (hub.error || !hub.data) {
+    return { data: null, error: hub.error ?? toError("Hub unavailable.") };
+  }
+  return { data: hub.data.intelligence, error: null };
 }

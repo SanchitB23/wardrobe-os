@@ -89,6 +89,14 @@ planScore + packingConfidence + tradeoffs + warnings). Weather comes from the
 never a provider. Surfaced at `/lifestyle/trip`. See
 [ENGINE_GRAPH.md](ENGINE_GRAPH.md).
 
+### Shopping & Acquisitions Intelligence
+`src/domain/shopping` (RFC-018) ranks a wishlist of Buy vs Skip analyses into a
+`ShoppingDashboard` (priority, ROI, duplicates, static strategy). 
+`src/domain/shopping/v2` (RFC-018B) learns from outcomes — lifecycle, accuracy,
+need/ROI timelines, opportunity queue, dynamic strategy — without replacing 018
+engines. Feature orchestration lives in `src/features/shopping`; product hub at
+`/acquisitions`; Developer debug at `/developer/acquisitions`.
+
 ### Weather Runtime
 `src/runtime/weather/**` (RFC-011) is the **single deterministic weather source**:
 **weather is data; the engines decide; AI explains.** It is a runtime (I/O)
@@ -119,8 +127,9 @@ same "engines decide, UI surfaces" rule that governs every other view.
 
 **Developer Mode** is a client toggle (`useDevMode`, persisted to
 `localStorage`); when on, `nav-config` appends a `DEVELOPER_SECTION` that exposes
-otherwise-hidden internal tooling (the AI Playground, the Weather Runtime
-inspector at `/developer/weather`, and the `/developer` hub).
+otherwise-hidden internal tooling (the AI Playground, Weather Runtime at
+`/developer/weather`, Vision Debug, Acquisitions Intelligence debug at
+`/developer/acquisitions`, and the `/developer` hub).
 This keeps developer surfaces out of the everyday IA without a separate build.
 **Settings** (`/settings`) and **About** (`/about`) are thin presentational
 surfaces sourcing static release/architecture metadata.

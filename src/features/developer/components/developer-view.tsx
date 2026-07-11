@@ -8,6 +8,7 @@ import {
   GaugeIcon,
   NetworkIcon,
   ScrollTextIcon,
+  ShoppingBagIcon,
   TerminalIcon,
   WrenchIcon,
 } from "lucide-react";
@@ -52,6 +53,14 @@ const TOOLS: DevTool[] = [
     description: "Capability routing, provider policies, latency + cost metrics, benchmarking (RFC-014).",
     icon: GaugeIcon,
     href: "/developer/ai-runtime",
+    status: "available",
+  },
+  {
+    title: "Acquisitions Intelligence",
+    description:
+      "Opportunity weights, need/ROI evolution, accuracy, lifecycle (RFC-018B).",
+    icon: ShoppingBagIcon,
+    href: "/developer/acquisitions",
     status: "available",
   },
   {

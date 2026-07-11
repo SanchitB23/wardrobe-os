@@ -66,6 +66,7 @@ export type ShoppingPriority = ShoppingRecommendation[];
 export interface PurchaseRecord {
   itemId: string;
   name: string;
+  category: string | null;
   price: number | null;
   wears: number;
   purchaseDate: string | null;

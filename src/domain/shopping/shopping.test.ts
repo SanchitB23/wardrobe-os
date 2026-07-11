@@ -101,8 +101,22 @@ describe("rankWishlist", () => {
 describe("computeShoppingROI", () => {
   it("computes realized cost-per-wear, projected, and a utilization signal", () => {
     const purchases: PurchaseRecord[] = [
-      { itemId: "1", name: "Coat", price: 200, wears: 20, purchaseDate: "2026-01-01" },
-      { itemId: "2", name: "Shoes", price: 100, wears: 0, purchaseDate: "2026-02-01" },
+      {
+        itemId: "1",
+        name: "Coat",
+        category: null,
+        price: 200,
+        wears: 20,
+        purchaseDate: "2026-01-01",
+      },
+      {
+        itemId: "2",
+        name: "Shoes",
+        category: null,
+        price: 100,
+        wears: 0,
+        purchaseDate: "2026-02-01",
+      },
     ];
     const queue = [rec("q", { estimatedCostPerWear: 8 }, 70)];
     const roi = computeShoppingROI(purchases, queue);
@@ -159,7 +173,16 @@ describe("buildShoppingDashboard", () => {
           { id: "lo", item: item({ name: "Cap", category: "hat" }), analysis: analysis({ score: 30, wardrobeImpactScore: 20, decision: "skip" }) },
         ],
         health: healthWith([{ label: "Blazer", kind: "staple", detail: "need a blazer", priority: "high" }]),
-        purchases: [{ itemId: "1", name: "Coat", price: 200, wears: 10, purchaseDate: "2026-01-01" }],
+        purchases: [
+          {
+            itemId: "1",
+            name: "Coat",
+            category: null,
+            price: 200,
+            wears: 10,
+            purchaseDate: "2026-01-01",
+          },
+        ],
       },
       { generatedAt: "2026-07-11T00:00:00.000Z" },
     );

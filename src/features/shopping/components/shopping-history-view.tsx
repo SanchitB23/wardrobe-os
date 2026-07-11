@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Loader2Icon } from "lucide-react";
 
 import { useAcquisitionsHub } from "@/features/shopping/hooks";
+import { AccuracyIntelligencePanel } from "@/features/shopping/components/acquisitions-intelligence-panels";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -18,13 +19,14 @@ import {
 export function ShoppingHistoryView() {
   const hub = useAcquisitionsHub();
   const history = hub.data?.shoppingHistory;
+  const intelligence = hub.data?.intelligence;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
         title="Shopping History"
         badge={<Badge variant="secondary">Acquisitions</Badge>}
-        description="Purchased wishlist items, realized ROI, and how often Buy vs Skip lined up with what you did."
+        description="Purchased wishlist items, realized ROI, and shallow + deep recommendation accuracy (bought → worn → ROI)."
         actions={
           <Button variant="outline" render={<Link href="/acquisitions" />}>
             Hub
@@ -148,22 +150,27 @@ export function ShoppingHistoryView() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm">Recommendation accuracy</CardTitle>
-              <CardDescription>
-                Among buy/skip decisions later matched to purchased/dismissed
-                wishlist items: buy→purchased and skip→dismissed count as hits.
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm">
-                {history.accuracyPercent != null
-                  ? `${history.accuracyPercent}% accurate across ${history.accuracySampleSize} outcomes.`
-                  : "Not enough matched outcomes yet — analyze items, then mark them purchased or dismissed."}
-              </p>
-            </CardContent>
-          </Card>
+          {intelligence ? (
+            <AccuracyIntelligencePanel intelligence={intelligence} />
+          ) : (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm">Recommendation accuracy</CardTitle>
+                <CardDescription>
+                  Among buy/skip decisions later matched to purchased/dismissed
+                  wishlist items: buy→purchased and skip→dismissed count as
+                  hits.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm">
+                  {history.accuracyPercent != null
+                    ? `${history.accuracyPercent}% accurate across ${history.accuracySampleSize} outcomes.`
+                    : "Not enough matched outcomes yet — analyze items, then mark them purchased or dismissed."}
+                </p>
+              </CardContent>
+            </Card>
+          )}
         </>
       ) : null}
     </div>

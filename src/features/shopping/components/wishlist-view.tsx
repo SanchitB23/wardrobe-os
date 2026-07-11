@@ -19,10 +19,12 @@ import type {
   WishlistStatus,
 } from "@/features/shopping/types";
 import {
+  useAcquisitionsHub,
   useSaveWishlistMutation,
   useWishlist,
   useWishlistStatusMutation,
 } from "@/features/shopping/hooks";
+import { NeedEvolutionPanel } from "@/features/shopping/components/acquisitions-intelligence-panels";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -97,6 +99,7 @@ function toSaveInput(form: FormState, id?: string) {
 
 export function WishlistView() {
   const wishlist = useWishlist();
+  const hub = useAcquisitionsHub();
   const save = useSaveWishlistMutation();
   const status = useWishlistStatusMutation();
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -105,6 +108,10 @@ export function WishlistView() {
   const items = wishlist.data ?? [];
   const active = items.filter((i) => i.status === "active");
   const archived = items.filter((i) => i.status !== "active");
+  const opportunityById = new Map(
+    (hub.data?.intelligence.opportunityQueue ?? []).map((o) => [o.id, o]),
+  );
+  const intelligence = hub.data?.intelligence;
 
   function startEdit(w: WishlistItem) {
     setEditingId(w.id);
@@ -131,7 +138,7 @@ export function WishlistView() {
       <PageHeader
         title="Wishlist"
         badge={<Badge variant="secondary">Acquisitions</Badge>}
-        description="Capture items you’re considering. Notes, priority, and status only — Buy vs Skip decides; Shopping Intelligence ranks later."
+        description="Capture items you’re considering. User priority stays yours; Opportunity Score (018B) shows learned ranking when available."
         actions={
           <div className="flex gap-2">
             <Button
@@ -184,20 +191,30 @@ export function WishlistView() {
 
       {active.length > 0 ? (
         <div className="space-y-2">
-          {active.map((w) => (
-            <WishlistRow
-              key={w.id}
-              item={w}
-              busy={status.isPending || save.isPending}
-              onEdit={() => startEdit(w)}
-              onPurchased={() =>
-                status.mutate({ id: w.id, action: "purchased" })
-              }
-              onDismiss={() => status.mutate({ id: w.id, action: "dismissed" })}
-              onDelete={() => status.mutate({ id: w.id, action: "delete" })}
-            />
-          ))}
+          {active.map((w) => {
+            const opp = opportunityById.get(w.id);
+            return (
+              <WishlistRow
+                key={w.id}
+                item={w}
+                opportunityScore={opp?.opportunityScore ?? null}
+                busy={status.isPending || save.isPending}
+                onEdit={() => startEdit(w)}
+                onPurchased={() =>
+                  status.mutate({ id: w.id, action: "purchased" })
+                }
+                onDismiss={() =>
+                  status.mutate({ id: w.id, action: "dismissed" })
+                }
+                onDelete={() => status.mutate({ id: w.id, action: "delete" })}
+              />
+            );
+          })}
         </div>
+      ) : null}
+
+      {intelligence ? (
+        <NeedEvolutionPanel intelligence={intelligence} />
       ) : null}
 
       {archived.length > 0 ? (
@@ -402,6 +419,7 @@ function WishlistForm({
 
 function WishlistRow({
   item,
+  opportunityScore,
   busy,
   onEdit,
   onPurchased,
@@ -409,6 +427,7 @@ function WishlistRow({
   onDelete,
 }: {
   item: WishlistItem;
+  opportunityScore: number | null;
   busy: boolean;
   onEdit: () => void;
   onPurchased: () => void;
@@ -424,6 +443,11 @@ function WishlistRow({
             <Badge variant="secondary" className="capitalize">
               {item.priority}
             </Badge>
+            {opportunityScore != null ? (
+              <Badge variant="outline" className="tabular-nums">
+                Opp {opportunityScore}
+              </Badge>
+            ) : null}
           </div>
           <div className="text-xs text-muted-foreground">
             {[item.item.category, item.item.color].filter(Boolean).join(" · ")}

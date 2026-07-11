@@ -149,6 +149,24 @@ capability — shopping suggestions for missing items. Returns a `LifestylePlan`
 packingConfidence + tradeoffs + warnings). Weather arrives as a normalized
 `WeatherSnapshot` from the **Weather Runtime** (below).
 
+## Shopping Intelligence
+**`src/domain/shopping/`** → `buildShoppingDashboard(...)` (RFC-018).
+
+Ranks and aggregates a wishlist of Acquisition verdicts: Need × Impact × Buy
+priority queue, wardrobe ROI, duplicate clusters, static top-N strategy, and
+timeline. Never re-decides buy/skip — every verdict is a `BuyVsSkipAnalysis`.
+Surfaced at `/acquisitions/intelligence`.
+
+## Acquisitions Intelligence
+**`src/domain/shopping/v2/`** → `buildAcquisitionsIntelligence(...)` (RFC-018B).
+
+Continuous learning **over** Shopping Intelligence: Purchase Lifecycle,
+Recommendation Accuracy (shallow + deep: bought → worn → ROI), Need Evolution,
+ROI Evolution (timeline + category cohorts), OpportunityEngine (composes 018
+priority with need + lifecycle urgency), and StrategyEvolution (dynamic rules,
+distinct from 018's static top-N). Reuses 018 outputs; no duplicated Priority /
+Buy vs Skip scoring. Hub panels + `/developer/acquisitions`. AI explains only.
+
 ---
 
 ## Weather Runtime

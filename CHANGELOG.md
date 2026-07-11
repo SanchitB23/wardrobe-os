@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Acquisitions Intelligence (RFC-018B)
+
+Continuous learning **on top of** Shopping Intelligence (RFC-018) — no engine
+replacement. Acquisition still decides; 018 still ranks; 018B learns from
+outcomes.
+
+- **Domain** (`src/domain/shopping/v2`, pure): PurchaseLifecycleEngine,
+  RecommendationAccuracyEngine (shallow + deep), NeedEvolution, ROIEvolution,
+  OpportunityEngine (60% 018 priority + 20% need + 20% lifecycle urgency),
+  StrategyEvolution (dynamic rules, distinct from 018 static top-N), composer
+  `buildAcquisitionsIntelligence`.
+- **Service:** `getAcquisitionsHub` now returns `intelligence` + optional 018
+  dashboard snapshot; purchase records include category + purchase_date.
+- **UI:** Hub Opportunity Queue + Strategy (learned); timeline lifecycle;
+  history deep accuracy; ROI evolution; wishlist Opp badges + need panel;
+  Developer `/developer/acquisitions`.
+- **Tests:** +10 Vitest cases (559 total). No version bump / tag.
+
 ### Added — Vision Intelligence v2 (RFC-019)
 
 Practical Vision workflows over the existing Vision Engine (RFC-002) — **no

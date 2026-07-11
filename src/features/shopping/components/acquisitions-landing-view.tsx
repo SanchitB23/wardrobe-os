@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 
 import { useAcquisitionsHub } from "@/features/shopping/hooks";
+import { AcquisitionsIntelligenceSummary } from "@/features/shopping/components/acquisitions-intelligence-panels";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -39,7 +40,7 @@ export function AcquisitionsLandingView() {
       <PageHeader
         title="Acquisitions"
         badge={<Badge variant="secondary">Flagship</Badge>}
-        description="Wishlist, decisions, timeline, and ROI — the product shell for smarter buying. Buy vs Skip decides each item; Shopping Intelligence ranks when you need it."
+        description="Wishlist, decisions, timeline, and ROI — plus continuous learning from purchase outcomes. Buy vs Skip decides; Shopping Intelligence ranks; Acquisitions Intelligence learns."
         actions={
           <div className="flex gap-2">
             <Button
@@ -179,15 +180,15 @@ export function AcquisitionsLandingView() {
 
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm">Top opportunities</CardTitle>
+            <CardTitle className="text-sm">Wishlist priority (yours)</CardTitle>
             <CardDescription>
-              Active wishlist by your priority — not engine ranking.
+              Active items by your priority — not engine ranking.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-2">
             {!data || data.topOpportunities.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                Add wishlist items to see opportunities.
+                Add wishlist items to see your list.
               </p>
             ) : (
               data.topOpportunities.map((w) => (
@@ -213,15 +214,19 @@ export function AcquisitionsLandingView() {
         </Card>
       </div>
 
+      {data?.intelligence ? (
+        <AcquisitionsIntelligenceSummary intelligence={data.intelligence} />
+      ) : null}
+
       <Card>
         <CardContent className="flex flex-wrap items-center justify-between gap-3 py-4">
           <div className="flex items-start gap-2">
             <SparklesIcon className="mt-0.5 size-4 text-muted-foreground" />
             <div>
-              <p className="text-sm font-medium">Shopping Intelligence</p>
+              <p className="text-sm font-medium">Queue (today)</p>
               <p className="text-xs text-muted-foreground">
-                Priority queue, duplicates, and strategy — secondary surface for
-                later.
+                RFC-018 Shopping Intelligence — priority queue, duplicates, and
+                static top-N strategy.
               </p>
             </div>
           </div>

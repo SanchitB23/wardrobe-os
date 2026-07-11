@@ -5,3 +5,11 @@ export { AcquisitionTimelineView } from "@/features/shopping/components/acquisit
 export { WardrobeRoiView } from "@/features/shopping/components/wardrobe-roi-view";
 export { ShoppingHistoryView } from "@/features/shopping/components/shopping-history-view";
 export { ShoppingView } from "@/features/shopping/components/shopping-view";
+export {
+  AcquisitionsIntelligenceSummary,
+  AccuracyIntelligencePanel,
+  LifecycleIntelligencePanel,
+  NeedEvolutionPanel,
+  RoiEvolutionPanel,
+} from "@/features/shopping/components/acquisitions-intelligence-panels";
+export { AcquisitionsDebugView } from "@/features/shopping/components/acquisitions-debug-view";

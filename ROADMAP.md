@@ -162,6 +162,10 @@ reasoning in [FUTURE.md](docs/product/FUTURE.md):
   strategy. Acquisition decides each item; Shopping Intelligence ranks; AI
   explains. Surfaced at `/acquisitions/intelligence`. Additive schema documented.
   (Budget Planning dropped.)
+- **Acquisitions Intelligence (RFC-018B) — ✅ implemented.** Evolution of RFC-018:
+  purchase lifecycle, shallow+deep recommendation accuracy, need/ROI timelines,
+  opportunity queue, and dynamic strategy. Domain at `src/domain/shopping/v2`;
+  hub panels + `/developer/acquisitions`. Does not replace 018 engines.
 - **Vision Intelligence v2 (RFC-019) — ✅ implemented.** Closet Scan, Assisted
   Outfit Recognition, Visual Duplicate Detection, and a confirmation Review Queue
   over the Vision Engine (RFC-002). Surfaces at `/vision`. Never auto-adds or
