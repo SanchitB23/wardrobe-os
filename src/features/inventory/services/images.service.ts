@@ -17,6 +17,7 @@ import {
   setImagePrimaryById,
   uploadImageToStorage,
 } from "@/features/inventory/repositories/images.repository";
+import { markVisualAttributesStaleOnPrimaryChange } from "@/features/inventory/services/visual-attributes.service";
 import type { ItemImageRow } from "@/features/inventory/types";
 import { formatEnumLabel, type ImageType } from "@/types/wardrobe";
 import { toError } from "@/shared/utils/data-result";
@@ -192,6 +193,10 @@ export async function uploadPrimaryItemImage(
 
   const resolved = await resolveItemImageRow(insertResult.data);
 
+  if (resolved?.id) {
+    await markVisualAttributesStaleOnPrimaryChange(itemId, resolved.id);
+  }
+
   return { data: resolved, error: null };
 }
 
@@ -241,6 +246,9 @@ export async function uploadItemImage(input: {
   }
 
   const resolved = await resolveItemImageRow(insertResult.data);
+  if (shouldBePrimary && resolved?.id) {
+    await markVisualAttributesStaleOnPrimaryChange(input.itemId, resolved.id);
+  }
   return { data: resolved, error: null };
 }
 
@@ -250,6 +258,9 @@ export async function setPrimaryItemImage(
   imageId: string,
 ): Promise<{ error: Error | null }> {
   const error = await setImagePrimaryById(itemId, imageId);
+  if (!error) {
+    await markVisualAttributesStaleOnPrimaryChange(itemId, imageId);
+  }
   return { error };
 }
 

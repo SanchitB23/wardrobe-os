@@ -105,6 +105,84 @@ export type Database = {
         };
         Relationships: [];
       };
+      item_visual_attributes: {
+        Row: {
+          id: string;
+          item_id: string;
+          image_id: string;
+          vision_summary: Json | null;
+          dominant_colors: Json | null;
+          secondary_colors: Json | null;
+          pattern: string | null;
+          texture: string | null;
+          material_guess: string | null;
+          silhouette: string | null;
+          formality_guess: string | null;
+          style_tags: string[];
+          confidence: number;
+          status: string;
+          created_at: string;
+          updated_at: string;
+          accepted_at: string | null;
+          rejected_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          item_id: string;
+          image_id: string;
+          vision_summary?: Json | null;
+          dominant_colors?: Json | null;
+          secondary_colors?: Json | null;
+          pattern?: string | null;
+          texture?: string | null;
+          material_guess?: string | null;
+          silhouette?: string | null;
+          formality_guess?: string | null;
+          style_tags?: string[];
+          confidence: number;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+          accepted_at?: string | null;
+          rejected_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          item_id?: string;
+          image_id?: string;
+          vision_summary?: Json | null;
+          dominant_colors?: Json | null;
+          secondary_colors?: Json | null;
+          pattern?: string | null;
+          texture?: string | null;
+          material_guess?: string | null;
+          silhouette?: string | null;
+          formality_guess?: string | null;
+          style_tags?: string[];
+          confidence?: number;
+          status?: string;
+          created_at?: string;
+          updated_at?: string;
+          accepted_at?: string | null;
+          rejected_at?: string | null;
+        };
+        Relationships: [
+          {
+            foreignKeyName: "item_visual_attributes_item_id_fkey";
+            columns: ["item_id"];
+            isOneToOne: true;
+            referencedRelation: "wardrobe_items";
+            referencedColumns: ["id"];
+          },
+          {
+            foreignKeyName: "item_visual_attributes_image_id_fkey";
+            columns: ["image_id"];
+            isOneToOne: false;
+            referencedRelation: "item_images";
+            referencedColumns: ["id"];
+          },
+        ];
+      };
       wardrobe_items: {
         Row: {
           brand_id: string | null;

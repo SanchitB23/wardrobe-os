@@ -32,6 +32,17 @@ friendliness, a `protected` flag for scuff-prone pieces). Every item is
 analysable via safe fallbacks. Downstream engines consume Style DNA, not raw
 fields. See [ADR-003](docs/adr/ADR-003-style-dna.md).
 
+## Inventory Image Intelligence
+**`src/domain/inventory-image-intelligence/`** → `analyzeInventoryImage`,
+`mergeVisualIntoStyleDNAItem` (RFC-020).
+
+Maps a Vision Engine `VisionAnalysis` (RFC-002) for an inventory primary image
+into durable `VisualStyleAttributes` (pending until the owner Accepts). The
+merge fills StyleDNA gaps only — manual colour / material / formality / tags
+always win; confidence below 0.5 contributes nothing. Perception stays in
+Vision; this module never reimplements detection. Surfaced on item detail +
+`/developer/inventory-images`.
+
 ## WardrobeHealthEngine
 **`src/domain/analytics/WardrobeHealthEngine.ts`** → `WardrobeHealth`.
 

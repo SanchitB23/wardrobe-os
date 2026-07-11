@@ -6,6 +6,7 @@ import {
   FlagIcon,
   FlaskConicalIcon,
   GaugeIcon,
+  ImagesIcon,
   NetworkIcon,
   ScrollTextIcon,
   ShoppingBagIcon,
@@ -61,6 +62,14 @@ const TOOLS: DevTool[] = [
       "Opportunity weights, need/ROI evolution, accuracy, lifecycle (RFC-018B).",
     icon: ShoppingBagIcon,
     href: "/developer/acquisitions",
+    status: "available",
+  },
+  {
+    title: "Inventory Image Backfill",
+    description:
+      "Batch-analyze primary photos into pending visual attributes (RFC-020). Accept still happens per item.",
+    icon: ImagesIcon,
+    href: "/developer/inventory-images",
     status: "available",
   },
   {

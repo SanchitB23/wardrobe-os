@@ -7,10 +7,12 @@ status of not-yet-built RFCs; [ROADMAP.md](../../ROADMAP.md) and
 
 Every item lists a **Status**, a **Reason**, and a **Potential Version**.
 
-> **Note on RFC numbers.** RFC-016 … RFC-021 are *reserved/planned* numbers — none
-> is authored yet. Titles for RFC-020 / RFC-021 correspond to the former v1.2
-> "Wardrobe Intelligence" concepts (cross-engine orchestration and higher-order
-> reasoning); adjust when/if their RFCs are actually written.
+> **Note on RFC numbers.** RFC-016 and RFC-021 remain reserved/parked. **RFC-020
+> was reassigned:** the former v1.2 "Cross-Engine Orchestration" title is
+> cancelled (covered by RFC-005); RFC-020 is now **Inventory Image Intelligence**
+> ([Implemented](../rfc/RFC-020-Inventory-Image-Intelligence.md), v2.0.1).
+> RFC-021 still corresponds to the former long-horizon / multi-step reasoning
+> concept (absorbed — see Parking Lot).
 
 ---
 
@@ -54,6 +56,18 @@ the closet into the contexts a wardrobe serves. Engines decide; AI explains.
 - **Deferred:** Laundry Detection (see Parking Lot).
 - **Potential Version:** v2.0.
 
+### RFC-020 — Inventory Image Intelligence
+- **Status:** ✅ Implemented ([RFC](../rfc/RFC-020-Inventory-Image-Intelligence.md), v2.0.1).
+- **Scope:** Analyze inventory primary images → `VisualStyleAttributes` →
+  user Accept/Reject → StyleDNA enrichment → RecommendationContext. Manual
+  fields always win; no auto-overwrite. Reuses Vision Engine (RFC-002); does not
+  duplicate RFC-019 workflows.
+- **Reason:** Photos, Vision, Reco v2, and Vision Intel v2 exist, but owned-item
+  images still do not enrich StyleDNA.
+- **Version:** v2.0.1.
+- **Number history:** Replaces the cancelled Cross-Engine Orchestration
+  reservation (see Parking Lot).
+
 ---
 
 ## Parking Lot
@@ -68,13 +82,15 @@ Deliberately deferred — plausible later, not now.
 - **Potential Version:** revisit at v2.x+ only if a compelling single-user case
   emerges.
 
-### RFC-020 — Cross-Engine Orchestration
-- **Status:** Parked (cancelled).
-- **Reason:** **architecture already sufficient** — the Intelligence Orchestrator
-  (RFC-005) already resolves capability dependencies, plans execution, isolates
-  failures, and returns one `ExecutionReport`. No separate orchestration RFC is
-  warranted.
-- **Potential Version:** n/a (superseded by RFC-005).
+### ~~RFC-020~~ — Cross-Engine Orchestration (number reassigned)
+- **Status:** Parked topic **cancelled**; **RFC-020 number reassigned** to
+  Inventory Image Intelligence ([Implemented](../rfc/RFC-020-Inventory-Image-Intelligence.md), v2.0.1).
+- **Reason (topic):** **architecture already sufficient** — the Intelligence
+  Orchestrator (RFC-005) already resolves capability dependencies, plans
+  execution, isolates failures, and returns one `ExecutionReport`. No separate
+  orchestration RFC is warranted.
+- **Potential Version:** n/a (topic superseded by RFC-005; number reused per
+  product decision for Inventory Image Intelligence).
 
 ### RFC-021 — Long-Horizon Planning & Multi-Step Reasoning
 - **Status:** Parked (cancelled).

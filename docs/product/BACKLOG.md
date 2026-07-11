@@ -137,7 +137,7 @@ multi-step reasoning are absorbed into AI Runtime v2 (RFC-014), Personalization 
 
 | RFC                  | Title                                        | Status                                        |
 | -------------------- | -------------------------------------------- | --------------------------------------------- |
-| [RFC-020](FUTURE.md) | Cross-Engine Orchestration                   | ⏸️ Parked (architecture sufficient — RFC-005) |
+| ~~RFC-020~~          | ~~Cross-Engine Orchestration~~               | ⏸️ Number reassigned → Inventory Image Intelligence (✅ v2.0.1) |
 | [RFC-021](FUTURE.md) | Long-Horizon Planning & Multi-Step Reasoning | ⏸️ Parked (absorbed — RFC-013/014/005)        |
 
 ## Epic 7 — Product Experience & v1.0 Polish (v1.0)
@@ -163,11 +163,12 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 | ------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------- |
 | [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
 
-## Epic 9 — Lifestyle Intelligence Platform (v2.0) ✅ v2.0.0 shipped
+## Epic 9 — Lifestyle Intelligence Platform (v2.0) ✅ v2.0.0 + v2.0.1
 
 Grow beyond the closet into the contexts a wardrobe serves. Engines decide; AI
-explains. **v2.0.0** (2026-07-12) ships RFC-017 / 018 / 018B / 019 + the
-Acquisitions hub. Full status + reasoning in [FUTURE.md](FUTURE.md).
+explains. **v2.0.0** ships RFC-017 / 018 / 018B / 019 + the Acquisitions hub;
+**v2.0.1** ships RFC-020 Inventory Image Intelligence. Full status + reasoning in
+[FUTURE.md](FUTURE.md).
 
 | RFC                                                | Title                                                                                                                                                                                                           | Status                           |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
@@ -175,6 +176,7 @@ Acquisitions hub. Full status + reasoning in [FUTURE.md](FUTURE.md).
 | [RFC-018](../rfc/RFC-018-Shopping-Intelligence.md) | Shopping Intelligence — wishlist · priority queue · wardrobe ROI · duplicate intelligence · shopping timeline (no budget planning). Product hub: `/acquisitions`; intelligence UI: `/acquisitions/intelligence` | ✅ Implemented                   |
 | [RFC-018B](../rfc/RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence — purchase lifecycle · recommendation accuracy · need/ROI evolution · opportunity queue · dynamic strategy (evolution of RFC-018; no engine replacement) | ✅ Implemented |
 | [RFC-019](../rfc/RFC-019-Vision-Intelligence-v2.md) | Vision Intelligence v2 — closet scan · assisted outfit recognition · visual duplicate detection · review queue (laundry deferred) | ✅ Implemented                   |
+| [RFC-020](../rfc/RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence — primary image → VisualStyleAttributes → Accept → StyleDNA (v2.0.1) | ✅ Implemented                   |
 | [RFC-016](FUTURE.md)                               | Calendar Intelligence                                                                                                                                                                                           | ⏸️ Parked (low ROI, single-user) |
 
 ## Removed / parked from scope
@@ -187,8 +189,9 @@ Acquisitions hub. Full status + reasoning in [FUTURE.md](FUTURE.md).
   Wardrobe ROI already give the money signal.
 
 **Parked** — deferred, revisit later ([FUTURE.md](FUTURE.md) → Parking Lot):
-Calendar Intelligence (RFC-016), Cross-Engine Orchestration (RFC-020),
-Long-Horizon Planning & Multi-Step Reasoning (RFC-021), Laundry Detection.
+Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step Reasoning
+(RFC-021), Laundry Detection. Former Cross-Engine Orchestration topic remains
+cancelled (RFC-005); RFC-020 number is Inventory Image Intelligence (✅ v2.0.1).
 
 ---
 

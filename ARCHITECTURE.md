@@ -59,7 +59,9 @@ reproducible and unit-testable. See [ENGINE.md](ENGINE.md).
 (wardrobe, usage, purchase, health, preferences, weather, commute, saved
 outfits, and RFC-013 `personalization` directives — preference lifecycle +
 explore/exploit weights) that the recommendation/generation engines score
-against. Services do the I/O; engines receive the context, never raw rows. See
+against. Optional accepted **visual attributes** (RFC-020) merge into each
+item's StyleDNA input before `deriveStyleDNA` — manual non-null fields always
+win. Services do the I/O; engines receive the context, never raw rows. See
 [ADR-002](docs/adr/ADR-002-recommendation-context.md).
 
 ### Intelligence Orchestrator
@@ -128,7 +130,8 @@ same "engines decide, UI surfaces" rule that governs every other view.
 **Developer Mode** is a client toggle (`useDevMode`, persisted to
 `localStorage`); when on, `nav-config` appends a `DEVELOPER_SECTION` that exposes
 otherwise-hidden internal tooling (the AI Playground, Weather Runtime at
-`/developer/weather`, Vision Debug, Acquisitions Intelligence debug at
+`/developer/weather`, Vision Debug, Inventory Image Backfill at
+`/developer/inventory-images`, Acquisitions Intelligence debug at
 `/developer/acquisitions`, and the `/developer` hub).
 This keeps developer surfaces out of the everyday IA without a separate build.
 **Settings** (`/settings`) and **About** (`/about`) are thin presentational
@@ -189,8 +192,9 @@ never touches the database. `ChatModel` / `GeminiChatModel` drive the streaming
 chat loop. See [ADR-007](docs/adr/ADR-007-ai-tool-calling.md).
 
 ### Supabase storage & database
-Postgres holds wardrobe items, outfits, wear logs, purchases, lookups, and the
-`ai_cache` table. Storage holds item images (public bucket). Access is
+Postgres holds wardrobe items, outfits, wear logs, purchases, lookups, the
+`ai_cache` table, and (RFC-020) `item_visual_attributes` for reviewed
+vision-derived style cues. Storage holds item images (public bucket). Access is
 RLS-gated with anon policies; two typed clients exist —
 `src/lib/supabase/client.ts` (browser) and `src/lib/supabase/server.ts` (server,
 cookie-aware).

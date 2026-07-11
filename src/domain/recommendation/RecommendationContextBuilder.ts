@@ -13,6 +13,8 @@ import { colorFamilyFor } from "@/domain/analytics/WardrobeHealthEngine";
 import { deriveStyleDNA } from "@/domain/style-dna";
 import type { WardrobeHealth } from "@/domain/analytics/WardrobeHealthEngine";
 import type { UsageAnalytics } from "@/domain/analytics/UsageAnalyticsEngine";
+import type { VisualStyleAttributes } from "@/domain/inventory-image-intelligence";
+import { mergeVisualIntoStyleDNAItem } from "@/domain/inventory-image-intelligence";
 import type {
   FormalityEnum,
   ItemStatus,
@@ -49,6 +51,7 @@ export interface WardrobeItemInput {
   subcategory?: string | null;
   color?: string | null;
   brand?: string | null;
+  material?: string | null;
   formality?: FormalityEnum | null;
   usage?: UsageFrequency | null;
   rating?: number | null;
@@ -56,6 +59,11 @@ export interface WardrobeItemInput {
   seasons?: readonly string[];
   styles?: readonly string[];
   tags?: readonly string[];
+  /**
+   * Optional accepted visual enrichment (RFC-020). Applied via StyleDNA merge
+   * before deriveStyleDNA — never overwrites manual non-null fields.
+   */
+  acceptedVisual?: VisualStyleAttributes | null;
 }
 
 export interface WearLogInput {
@@ -152,7 +160,22 @@ function toItemSnapshot(input: WardrobeItemInput): WardrobeItemSnapshot {
     styles: [...(input.styles ?? [])],
     tags: [...(input.tags ?? [])],
   };
-  return { ...base, styleDNA: deriveStyleDNA({ ...base, colorFamily }) };
+  const styleItem = mergeVisualIntoStyleDNAItem({
+    manual: {
+      ...base,
+      material: input.material ?? null,
+      colorFamily,
+    },
+    visual: input.acceptedVisual ?? null,
+  });
+  return {
+    ...base,
+    color: styleItem.color ?? base.color,
+    colorFamily: styleItem.colorFamily ?? base.colorFamily,
+    formality: styleItem.formality ?? base.formality,
+    tags: [...(styleItem.tags ?? base.tags)],
+    styleDNA: deriveStyleDNA(styleItem),
+  };
 }
 
 // ---------------------------------------------------------------------------

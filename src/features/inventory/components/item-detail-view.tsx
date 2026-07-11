@@ -17,6 +17,7 @@ import {
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
 import { ItemFormDialog } from "@/features/inventory/components/item-form-dialog";
 import { ItemImageGallery } from "@/features/inventory/components/item-image-gallery";
+import { ItemVisualAnalysisCard } from "@/features/inventory/components/item-visual-analysis-card";
 import { LogWearDialog } from "@/features/wear-logs/components/log-wear-dialog";
 import { PurchaseFormDialog } from "@/features/purchases/components/purchase-form-dialog";
 import { Badge } from "@/components/ui/badge";
@@ -137,17 +138,21 @@ function BadgeGroup({ label, items }: { label: string; items: LookupOption[] }) 
 
 function ImageColumn({
   item,
+  materials,
+  tags,
   onToggleFavorite,
   isFavoritePending,
 }: {
   item: WardrobeItemRow;
+  materials: LookupOption[];
+  tags: LookupOption[];
   onToggleFavorite: () => void;
   isFavoritePending: boolean;
 }) {
   const isHero = item.usage === "hero";
 
   return (
-    <div className="lg:sticky lg:top-20">
+    <div className="lg:sticky lg:top-20 space-y-4">
       <ItemImageGallery
         itemId={item.id}
         itemName={item.name}
@@ -175,6 +180,15 @@ function ImageColumn({
             </Button>
           </>
         }
+      />
+      <ItemVisualAnalysisCard
+        itemId={item.id}
+        manual={{
+          color: item.primary_color?.name ?? null,
+          material: materials[0]?.name ?? null,
+          formality: item.formality ?? null,
+          tags: tags.map((t) => t.name),
+        }}
       />
     </div>
   );
@@ -641,6 +655,8 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
       <div className="grid gap-8 lg:grid-cols-[minmax(320px,380px)_minmax(0,1fr)] lg:items-start">
         <ImageColumn
           item={item}
+          materials={relations.materials}
+          tags={relations.tags}
           onToggleFavorite={() =>
             favoriteMutation.mutate({ id: item.id, favorite: !item.favorite })
           }

@@ -144,6 +144,11 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   Detection, Review Queue. Perception stays in `analyzeImage` / `/api/ai/vision`;
   Intelligence only matches to inventory and builds confirmation actions. Never
   auto-adds or auto-logs. Engines detect; user confirms; AI may explain.
+- **Inventory Image Intelligence (RFC-020)** — `src/domain/inventory-image-intelligence`
+  (+ inventory feature service/repo/UI). Primary image → Vision → pending
+  `VisualStyleAttributes` → Accept/Reject → StyleDNA gap-fill into
+  RecommendationContext. Item detail card + `/developer/inventory-images`.
+  Manual fields always win; never auto-accepts; does not duplicate RFC-019.
 - **Future (RFC per feature):** Calendar and more — each registers capabilities
   and is *requested*, reusing all wiring. The existing Recommendation /
   Acquisition / Screenshot flows can migrate to request capabilities

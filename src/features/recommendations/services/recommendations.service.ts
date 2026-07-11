@@ -29,6 +29,10 @@ import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.
 import { buildExplainSharedContext } from "@/features/recommendations/ai/explanation-input";
 import type { ExplainSharedContext } from "@/features/recommendations/ai/explanation.types";
 import { selectPrimaryImageUrls } from "@/features/inventory/repositories/images.repository";
+import {
+  rowToVisualStyleAttributes,
+  selectAcceptedVisualAttributesByItemIds,
+} from "@/features/inventory/repositories/visual-attributes.repository";
 import { fetchOutfitItemLinks } from "@/features/outfits/repositories/outfits.repository";
 import { createOutfit } from "@/features/outfits/services/outfits.service";
 import { insertWearLogs } from "@/features/wear-logs/repositories/wear-logs.repository";
@@ -207,6 +211,22 @@ export async function fetchOutfitRecommendations(
 
   const raw = dataResult.data;
   const wardrobeItems = raw.items.map(toItemInput);
+
+  // RFC-020: attach accepted visual attributes for StyleDNA merge (best-effort).
+  const visualResult = await selectAcceptedVisualAttributesByItemIds(
+    wardrobeItems.map((item) => item.id),
+  );
+  if (visualResult.data?.length) {
+    const byItem = new Map(
+      visualResult.data.map((row) => [
+        row.item_id,
+        rowToVisualStyleAttributes(row),
+      ]),
+    );
+    for (const item of wardrobeItems) {
+      item.acceptedVisual = byItem.get(item.id) ?? null;
+    }
+  }
 
   // Best-effort primary images (blocked by RLS today → falls back to swatches).
   const imageResult = await selectPrimaryImageUrls(wardrobeItems.map((item) => item.id));

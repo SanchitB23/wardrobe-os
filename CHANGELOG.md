@@ -7,14 +7,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.1] — 2026-07-12
+
+**Inventory Image Intelligence (RFC-020).** Connects owned-item primary photos to
+StyleDNA / RecommendationContext via user-confirmed visual attributes. Vision
+proposes; Accept/Reject is manual; engines still decide (ADR-005). Reuses the
+existing Vision Engine — no duplicated perception stack. 566 unit tests green.
+
+### Added — Inventory Image Intelligence (RFC-020)
+
+- **Domain** (`src/domain/inventory-image-intelligence`, pure):
+  `analyzeInventoryImage`, `mergeVisualIntoStyleDNAItem`, `visualManualDiff`,
+  `VisualStyleAttributes` + confidence threshold (0.5).
+- **Persistence:** `item_visual_attributes` table (additive migration
+  `docs/migrations/RFC-020-inventory-image-intelligence.sql`); repository +
+  service; primary image change marks attrs `stale`.
+- **UI:** Visual Analysis card on item detail (Analyze / Accept / Reject);
+  Developer backfill at `/developer/inventory-images`.
+- **Recommendations:** accepted visuals merge into StyleDNA before scoring
+  (manual non-null fields always win).
+- **Types:** `types/database.ts` includes `item_visual_attributes`.
+- **Tests:** +7 Vitest cases (566 total).
+
 ## [2.0.0] — 2026-07-12
 
 **Vision and Acquisitions Intelligence.** Lifestyle Intelligence Platform core:
 Trip Planner (RFC-017), Shopping Intelligence (RFC-018), Acquisitions product
 hub, Acquisitions Intelligence (RFC-018B), Vision Intelligence v2 (RFC-019), plus
 the post-v1.1 AI Runtime cost layer (RFC-014A / RFC-014B). Engines decide; AI
-explains (ADR-005). **RFC-020** (Inventory Image Intelligence) is **not** in this
-cut — remains Draft for v2.0.1. 559 unit tests green.
+explains (ADR-005). 559 unit tests green.
 
 ### Added — Acquisitions Intelligence (RFC-018B)
 
@@ -664,7 +685,8 @@ explains and converses — without ever becoming the source of truth.
 
 - Database schema and inventory CRUD.
 
-[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.0...HEAD
+[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.1...HEAD
+[2.0.1]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.1...v1.0.2

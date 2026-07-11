@@ -7,6 +7,7 @@ import {
   FlaskConicalIcon,
   HeartPulseIcon,
   HomeIcon,
+  ImagesIcon,
   InfoIcon,
   LayersIcon,
   LayoutDashboardIcon,
@@ -167,6 +168,11 @@ export const DEVELOPER_SECTION: NavSection = {
     },
     { label: "AI Playground", href: "/ai/playground", icon: FlaskConicalIcon },
     { label: "Vision Debug", href: "/developer/vision", icon: CameraIcon },
+    {
+      label: "Inventory Images",
+      href: "/developer/inventory-images",
+      icon: ImagesIcon,
+    },
     {
       label: "Acquisitions Debug",
       href: "/developer/acquisitions",

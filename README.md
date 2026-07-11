@@ -1,13 +1,15 @@
 # Wardrobe OS
 
-**Version:** v2.0.0 — _Vision and Acquisitions Intelligence_
+**Version:** v2.0.1 — _Inventory Image Intelligence_
 
 Wardrobe OS is a personal wardrobe operating system: a single place to catalogue
 what you own, understand how you use it, score and generate outfits, plan trips,
 optimize purchases, and talk to an **AI stylist** that answers in natural
 language. In v2.0 it ships **Trips**, an **Acquisitions** hub with continuous
 shopping intelligence, and **Vision** workflows (closet scan / review) — still
-opening on **Today** as the daily assistant home.
+opening on **Today** as the daily assistant home. **v2.0.1** adds **Inventory
+Image Intelligence**: analyze an item's primary photo, Accept/Reject visual
+cues, and gap-fill StyleDNA without overwriting manual fields.
 
 Its defining principle: **deterministic engines decide, AI explains.** All
 scoring, eligibility, ranking, health, and cost analysis are computed by pure
@@ -22,19 +24,22 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
   (deep-links into chat), shopping suggestions, wardrobe health, quick actions,
   and recent activity. It surfaces engine output; it decides nothing new.
 - **Inventory** — full item CRUD, images (upload + primary + delete), bulk JSON
-  import, rich item detail pages, and an advanced filterable inventory table.
+  import, rich item detail pages, visual analysis (Accept/Reject), and an
+  advanced filterable inventory table.
 - **Analytics** — dashboard, **Wardrobe Health**, **Usage Analytics**,
   **Purchase / cost-per-wear** tracking, and an **Insight Center**.
 - **Outfits** — outfit builder, deterministic **Outfit Scoring**, and
   **Outfit Generation** from your wardrobe.
 - **Recommendations** — **Recommendation Engine v2** (weather- & preference-aware)
-  with a debuggable Recommendation Center and **Intelligence Center** actions.
+  with a debuggable Recommendation Center and **Intelligence Center** actions;
+  accepted visual attrs enrich StyleDNA gaps.
 - **Acquisitions** — flagship `/acquisitions` hub (wishlist, decision history,
   timeline, ROI, shopping history), deterministic **Buy vs Skip**, **Shopping
   Intelligence** + **Acquisitions Intelligence** (lifecycle, opportunity,
   strategy), and shopping-screenshot capture.
 - **Vision** — **Vision Intelligence v2**: closet scan, assisted outfit
-  recognition, visual duplicates, and a confirmation review queue (`/vision`).
+  recognition, visual duplicates, and a confirmation review queue (`/vision`);
+  plus **Inventory Image Intelligence** on item detail.
 - **Lifestyle / Trips** — first-class **Trip Planner** (`/trips`): templates,
   multi-city, packing checklist, timeline, weather refresh.
 - **AI Stylist** — natural-language explanations, streaming **tool-calling chat**
@@ -121,6 +126,7 @@ strategy document, not a roadmap.
 - [VERSION.md](VERSION.md) — current release + included modules
 - [ROADMAP.md](ROADMAP.md) — versioned roadmap (v0.1 → v2.0)
 - [CHANGELOG.md](CHANGELOG.md) — release history (Keep a Changelog)
+- [docs/releases/v2.0.1.md](docs/releases/v2.0.1.md) — v2.0.1 release notes
 - [docs/releases/v2.0.0.md](docs/releases/v2.0.0.md) — v2.0.0 release notes
 - [ARCHITECTURE.md](ARCHITECTURE.md) — layers, data flow, AI abstraction
 - [ENGINE.md](ENGINE.md) — the domain engines + AI tool router
@@ -137,6 +143,7 @@ strategy document, not a roadmap.
 `v0.6` AI Stylist Beta → `v0.7` Acquisition Engine → `v0.8` Vision AI →
 `v0.9` Personalization Engine → `v1.0` Lifestyle + Today →
 `v1.1` Intelligence Refinement →
-**`v2.0` Lifestyle Intelligence Platform (Trips · Acquisitions · Vision)`**.
+**`v2.0` Lifestyle Intelligence Platform** →
+**`v2.0.1` Inventory Image Intelligence**.
 
-See [ROADMAP.md](ROADMAP.md) and [docs/releases/v2.0.0.md](docs/releases/v2.0.0.md).
+See [ROADMAP.md](ROADMAP.md) and [docs/releases/v2.0.1.md](docs/releases/v2.0.1.md).

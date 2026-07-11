@@ -41,6 +41,14 @@ import {
   fetchAllItemsForReview,
 } from "@/features/inventory/services/review.service";
 import { fetchWardrobeItemRelations } from "@/features/inventory/services/relations.service";
+import {
+  acceptItemVisualAttributes,
+  analyzeItemPrimaryImage,
+  backfillVisualAnalysis,
+  getItemVisualAttributes,
+  listVisualBackfillCandidates,
+  rejectItemVisualAttributes,
+} from "@/features/inventory/services/visual-attributes.service";
 import type {
   BulkCleanupMode,
   BulkEditInput,
@@ -112,6 +120,107 @@ export function useItemImages(itemId: string) {
     queryKey: wardrobeKeys.itemImages(itemId),
     queryFn: async () => unwrapData(await fetchItemImagesForItem(itemId)),
     enabled: Boolean(itemId),
+  });
+}
+
+export function useItemVisualAttributes(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemVisualAttributes(itemId),
+    queryFn: async () => {
+      const result = await getItemVisualAttributes(itemId);
+      if (result.error) {
+        throw result.error;
+      }
+      return result.data;
+    },
+    enabled: Boolean(itemId),
+  });
+}
+
+export function useAnalyzeItemPrimaryImageMutation(itemId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => unwrapData(await analyzeItemPrimaryImage(itemId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemVisualAttributes(itemId),
+      });
+      toast.success("Visual analysis ready for review");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to analyze primary image");
+    },
+  });
+}
+
+export function useAcceptItemVisualAttributesMutation(itemId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () =>
+      unwrapData(await acceptItemVisualAttributes(itemId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemVisualAttributes(itemId),
+      });
+      await invalidateWardrobeQueries(queryClient);
+      toast.success("Visual attributes accepted");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to accept visual attributes");
+    },
+  });
+}
+
+export function useRejectItemVisualAttributesMutation(itemId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () =>
+      unwrapData(await rejectItemVisualAttributes(itemId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemVisualAttributes(itemId),
+      });
+      toast.success("Visual attributes rejected");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to reject visual attributes");
+    },
+  });
+}
+
+export function useVisualBackfillCandidates() {
+  return useQuery({
+    queryKey: wardrobeKeys.visualBackfillCandidates(),
+    queryFn: async () => unwrapData(await listVisualBackfillCandidates()),
+  });
+}
+
+export function useBackfillVisualAnalysisMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (itemIds: string[]) =>
+      unwrapData(await backfillVisualAnalysis(itemIds)),
+    onSuccess: async (result) => {
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.visualBackfillCandidates(),
+      });
+      await queryClient.invalidateQueries({
+        queryKey: [...wardrobeKeys.all, "item-visual-attributes"],
+      });
+      toast.success(
+        `Analyzed ${result.ok.length} item${result.ok.length === 1 ? "" : "s"}` +
+          (result.failed.length
+            ? ` (${result.failed.length} failed)`
+            : ""),
+      );
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Backfill analysis failed");
+    },
   });
 }
 

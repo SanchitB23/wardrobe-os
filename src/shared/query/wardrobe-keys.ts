@@ -17,6 +17,10 @@ export const wardrobeKeys = {
   item: (id: string) => [...wardrobeKeys.all, "item", id] as const,
   itemImages: (itemId: string) =>
     [...wardrobeKeys.all, "item-images", itemId] as const,
+  itemVisualAttributes: (itemId: string) =>
+    [...wardrobeKeys.all, "item-visual-attributes", itemId] as const,
+  visualBackfillCandidates: () =>
+    [...wardrobeKeys.all, "visual-backfill-candidates"] as const,
   itemRelations: (itemId: string) =>
     [...wardrobeKeys.all, "item-relations", itemId] as const,
   itemDetail: (itemId: string) =>

@@ -154,15 +154,18 @@ scope and the full "will / might / won't" reasoning live in
   single owner doesn't need a budgeting tool.)_
 - **Vision Intelligence v2 (RFC-019)** — closet scan, duplicate detection,
   assisted outfit recognition, review queue at `/vision`. _(Laundry deferred.)_
+- **Inventory Image Intelligence (RFC-020) — v2.0.1.** Primary image → Vision →
+  Accept/Reject → StyleDNA gap-fill; manual fields always win.
 
 **Parked / absorbed** (see [FUTURE.md](FUTURE.md)):
 
 - **Calendar Intelligence (RFC-016)** — parked; low ROI for a single-user app.
 - **Higher-order reasoning** (cross-engine orchestration, long-horizon planning,
-  multi-step reasoning; RFC-020/021) — already delivered or absorbed by the
-  Intelligence Orchestrator (RFC-005), AI Runtime v2 (RFC-014), and Personalization
-  v2 (RFC-013).
-
+  multi-step reasoning; formerly reserved as RFC-020/021) — already delivered or
+  absorbed by the Intelligence Orchestrator (RFC-005), AI Runtime v2 (RFC-014),
+  and Personalization v2 (RFC-013). **RFC-020 is now Inventory Image Intelligence**
+  ([Implemented](../rfc/RFC-020-Inventory-Image-Intelligence.md), v2.0.1); RFC-021
+  remains parked.
 ### v3.0 — Wardrobe Intelligence Graph
 
 Everything becomes connected. Items, outfits, trips, purchases,
