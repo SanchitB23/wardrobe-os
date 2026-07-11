@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.0.0] — 2026-07-12
+
+**Vision and Acquisitions Intelligence.** Lifestyle Intelligence Platform core:
+Trip Planner (RFC-017), Shopping Intelligence (RFC-018), Acquisitions product
+hub, Acquisitions Intelligence (RFC-018B), Vision Intelligence v2 (RFC-019), plus
+the post-v1.1 AI Runtime cost layer (RFC-014A / RFC-014B). Engines decide; AI
+explains (ADR-005). **RFC-020** (Inventory Image Intelligence) is **not** in this
+cut — remains Draft for v2.0.1. 559 unit tests green.
+
 ### Added — Acquisitions Intelligence (RFC-018B)
 
 Continuous learning **on top of** Shopping Intelligence (RFC-018) — no engine
@@ -23,7 +32,7 @@ outcomes.
 - **UI:** Hub Opportunity Queue + Strategy (learned); timeline lifecycle;
   history deep accuracy; ROI evolution; wishlist Opp badges + need panel;
   Developer `/developer/acquisitions`.
-- **Tests:** +10 Vitest cases (559 total). No version bump / tag.
+- **Tests:** +10 Vitest cases (559 total).
 
 ### Added — Vision Intelligence v2 (RFC-019)
 
@@ -655,7 +664,9 @@ explains and converses — without ever becoming the source of truth.
 
 - Database schema and inventory CRUD.
 
-[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.2...HEAD
+[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.0...HEAD
+[2.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v1.1.0...v2.0.0
+[1.1.0]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.2...v1.1.0
 [1.0.2]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.1...v1.0.2
 [1.0.1]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.0...v1.0.1
 [1.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v0.6.0...v1.0.0

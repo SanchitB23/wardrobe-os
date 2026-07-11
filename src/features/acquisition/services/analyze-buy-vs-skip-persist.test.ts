@@ -5,12 +5,10 @@
 
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const recordDecisionSilent = vi.fn(async () => {
-  throw new Error("history write boom");
-});
-
 vi.mock("@/features/shopping/services/decision.service", () => ({
-  recordDecisionSilent: (...args: unknown[]) => recordDecisionSilent(...args),
+  recordDecisionSilent: vi.fn(async () => {
+    throw new Error("history write boom");
+  }),
 }));
 
 vi.mock(
@@ -85,10 +83,13 @@ vi.mock("@/domain/acquisition", async (importOriginal) => {
 });
 
 import { analyzeBuyVsSkip } from "@/features/acquisition/services/acquisition.service";
+import { recordDecisionSilent } from "@/features/shopping/services/decision.service";
+
+const recordDecisionSilentMock = vi.mocked(recordDecisionSilent);
 
 describe("analyzeBuyVsSkip silent persist", () => {
   beforeEach(() => {
-    recordDecisionSilent.mockClear();
+    recordDecisionSilentMock.mockClear();
   });
 
   it("returns analysis even when decision history write throws", async () => {
@@ -99,6 +100,6 @@ describe("analyzeBuyVsSkip silent persist", () => {
     expect(result.error).toBeNull();
     expect(result.data?.decision).toBe("buy");
     expect(result.data?.score).toBe(72);
-    expect(recordDecisionSilent).toHaveBeenCalledOnce();
+    expect(recordDecisionSilentMock).toHaveBeenCalledOnce();
   });
 });

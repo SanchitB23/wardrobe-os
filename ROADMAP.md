@@ -24,11 +24,10 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 
 - ✅ Today Experience & v1.0 Product Polish (RFC-007)
 
-**Current:** **v1.0.1 — Stabilization** (shipped). v1.0.0 (RFC-004 Personalization,
-RFC-005 Intelligence Orchestrator, RFC-006 Lifestyle Engine, RFC-007 Today
-Experience, and the RFC-008 hardening pass) is tagged; **v1.0.1 (RFC-009)** is a
-quality-only patch — performance, accessibility, developer-experience, and
-resilience improvements, no new features.
+**Current:** **v2.0.0 — Vision and Acquisitions Intelligence** (shipped 2026-07-12).
+v1.1.0 (RFC-011…015) remains the Intelligence Refinement baseline; this major
+adds Trip Planner, Shopping / Acquisitions Intelligence, and Vision Intelligence
+v2. See [docs/releases/v2.0.0.md](docs/releases/v2.0.0.md).
 
 ## Phases
 
@@ -41,7 +40,7 @@ resilience improvements, no new features.
 | v1.0       | Lifestyle Engine + Today Experience   | ✅        | Trip planning, and the assistant-style Today home that unifies every surface                                                                            |
 | **v1.0.1** | **Stabilization (RFC-009)**           | **✅**    | **Quality only: performance, accessibility, DX, resilience — no new features**                                                                          |
 | **v1.1**   | **Intelligence Refinement + Runtime** | **✅**    | **Weather Runtime, Recommendation v2, Personalization v2, AI Runtime v2, Intelligence Center (RFC-011…015)**                                            |
-| v2.0       | Lifestyle Intelligence Platform       | 🚧        | Trip Planner (RFC-017 — ✅ shipped, first), Shopping Intelligence (RFC-018), Vision Intelligence v2 (RFC-019) — see [FUTURE.md](docs/product/FUTURE.md) |
+| **v2.0**   | **Lifestyle Intelligence Platform**   | **✅**    | **Trip Planner (017), Shopping Intelligence (018), Acquisitions hub + 018B, Vision Intelligence v2 (019). RFC-020 Draft → v2.0.1**                        |
 | ~~v1.2~~   | ~~Wardrobe Intelligence~~             | ⏸️ Parked | Cross-engine orchestration + higher-order reasoning — superseded / absorbed by RFC-005/013/014 (see [FUTURE.md](docs/product/FUTURE.md))                |
 
 ---
@@ -144,37 +143,31 @@ detail behind the engines.
 | Vision                    | Gemini  | —        |
 | Image Generation (future) | OpenAI  | —        |
 
-### v2.0 — Lifestyle Intelligence Platform 🚧 (in progress)
+### v2.0 — Lifestyle Intelligence Platform ✅ Shipped (v2.0.0 — 2026-07-12)
 
-Grow beyond the closet into the contexts a wardrobe serves. Full status +
-reasoning in [FUTURE.md](docs/product/FUTURE.md):
+Grow beyond the closet into the contexts a wardrobe serves. Release notes:
+[docs/releases/v2.0.0.md](docs/releases/v2.0.0.md). Full status + reasoning in
+[FUTURE.md](docs/product/FUTURE.md):
 
-- **Trip Planner (RFC-017) — ✅ implemented, the first v2.0 feature.** First-class,
-  persisted, reusable trips: CRUD, templates, history/clone, multi-city, an
-  interactive packing checklist + progress, a timeline / outfit calendar, weather
-  refresh, and trip-anchored shopping. Trip is _data_; the Lifestyle Engine
-  (RFC-006) still derives the plan (Recommendation/Acquisition via the
-  Orchestrator; Weather Runtime for forecasts) — no planning logic duplicated.
-  Surfaced at `/trips`. Additive schema documented (not applied).
-- **Shopping Intelligence (RFC-018) — ✅ implemented.** A continuous shopping
-  system over Buy vs Skip (RFC-001): persisted wishlist, deterministic priority
-  queue (Need × Impact × Buy), wardrobe ROI, duplicate intelligence, timeline, and
-  strategy. Acquisition decides each item; Shopping Intelligence ranks; AI
-  explains. Surfaced at `/acquisitions/intelligence`. Additive schema documented.
-  (Budget Planning dropped.)
-- **Acquisitions Intelligence (RFC-018B) — ✅ implemented.** Evolution of RFC-018:
-  purchase lifecycle, shallow+deep recommendation accuracy, need/ROI timelines,
-  opportunity queue, and dynamic strategy. Domain at `src/domain/shopping/v2`;
-  hub panels + `/developer/acquisitions`. Does not replace 018 engines.
-- **Vision Intelligence v2 (RFC-019) — ✅ implemented.** Closet Scan, Assisted
-  Outfit Recognition, Visual Duplicate Detection, and a confirmation Review Queue
-  over the Vision Engine (RFC-002). Surfaces at `/vision`. Never auto-adds or
-  auto-logs. (Laundry Detection deferred.)
-- **Acquisitions product hub (UX shell) — ✅.** Flagship `/acquisitions` landing
-  with wishlist CRUD (notes/priority/status), Decision History, timeline, ROI,
-  shopping history, and KPIs. Renames the Shopping nav/route to Acquisitions;
-  `/shopping` redirects. Silent Buy vs Skip decision snapshots. Intelligence
-  stays secondary — no new ranking work in this shell.
+- **Trip Planner (RFC-017) — ✅ shipped.** First-class, persisted, reusable
+  trips: CRUD, templates, history/clone, multi-city, interactive packing
+  checklist + progress, timeline / outfit calendar, weather refresh, and
+  trip-anchored shopping. Trip is _data_; the Lifestyle Engine (RFC-006) still
+  derives the plan. Surfaced at `/trips`.
+- **Shopping Intelligence (RFC-018) — ✅ shipped.** Continuous shopping over Buy
+  vs Skip: wishlist, priority queue, wardrobe ROI, duplicate intelligence,
+  timeline, strategy. Surfaced at `/acquisitions/intelligence`.
+- **Acquisitions Intelligence (RFC-018B) — ✅ shipped.** Purchase lifecycle,
+  shallow+deep accuracy, need/ROI evolution, opportunity queue, dynamic
+  strategy. Domain at `src/domain/shopping/v2`; hub panels + `/developer/acquisitions`.
+- **Vision Intelligence v2 (RFC-019) — ✅ shipped.** Closet Scan, Assisted Outfit
+  Recognition, Visual Duplicate Detection, Review Queue over Vision Engine
+  (RFC-002). Surfaces at `/vision`. Never auto-adds or auto-logs.
+- **Acquisitions product hub (UX shell) — ✅ shipped.** Flagship `/acquisitions`
+  landing with wishlist CRUD, Decision History, timeline, ROI, shopping history.
+  `/shopping` redirects. Intelligence stays secondary.
+- **Next (not in v2.0.0):** RFC-020 Inventory Image Intelligence — **Draft**,
+  target **v2.0.1**.
 ### ~~v1.2 — Wardrobe Intelligence~~ ⏸️ Parked
 
 The former "higher-order reasoning" epic is parked: **cross-engine orchestration**
@@ -204,5 +197,7 @@ product (see [FUTURE.md](docs/product/FUTURE.md) → Rejected):
   - Wardrobe ROI already give the useful money signal.
 
 **Parked** (deferred, not rejected — [FUTURE.md](docs/product/FUTURE.md) → Parking
-Lot): Calendar Intelligence (RFC-016), Cross-Engine Orchestration (RFC-020),
-Long-Horizon Planning & Multi-Step Reasoning (RFC-021), Laundry Detection.
+Lot): Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step
+Reasoning (RFC-021), Laundry Detection. Former “Cross-Engine Orchestration”
+topic remains cancelled (covered by RFC-005); **RFC-020 number** is now Inventory
+Image Intelligence (Draft → v2.0.1).

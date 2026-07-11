@@ -163,10 +163,11 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 | ------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------- |
 | [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
 
-## Epic 9 — Lifestyle Intelligence Platform (v2.0)
+## Epic 9 — Lifestyle Intelligence Platform (v2.0) ✅ v2.0.0 shipped
 
 Grow beyond the closet into the contexts a wardrobe serves. Engines decide; AI
-explains. Full status + reasoning in [FUTURE.md](FUTURE.md) (Planned).
+explains. **v2.0.0** (2026-07-12) ships RFC-017 / 018 / 018B / 019 + the
+Acquisitions hub. Full status + reasoning in [FUTURE.md](FUTURE.md).
 
 | RFC                                                | Title                                                                                                                                                                                                           | Status                           |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |

@@ -1,12 +1,13 @@
 # Wardrobe OS
 
-**Version:** v1.0.2 — _Access Guard_
+**Version:** v2.0.0 — _Vision and Acquisitions Intelligence_
 
 Wardrobe OS is a personal wardrobe operating system: a single place to catalogue
 what you own, understand how you use it, score and generate outfits, plan trips,
-and talk to an **AI stylist** that answers in natural language. In v1.0 it opens
-on **Today** — an assistant-style home that answers "what do I do about my
-wardrobe today?" by composing every engine into one daily view.
+optimize purchases, and talk to an **AI stylist** that answers in natural
+language. In v2.0 it ships **Trips**, an **Acquisitions** hub with continuous
+shopping intelligence, and **Vision** workflows (closet scan / review) — still
+opening on **Today** as the daily assistant home.
 
 Its defining principle: **deterministic engines decide, AI explains.** All
 scoring, eligibility, ranking, health, and cost analysis are computed by pure
@@ -26,19 +27,21 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
   **Purchase / cost-per-wear** tracking, and an **Insight Center**.
 - **Outfits** — outfit builder, deterministic **Outfit Scoring**, and
   **Outfit Generation** from your wardrobe.
-- **Recommendations** — a **Unified Recommendation Engine** (saved + generated
-  outfits ranked together) with a debuggable Recommendation Center.
-- **Acquisition & Vision** — deterministic **Buy vs Skip** guidance
-  (`/acquisition/advisor`), item-photo understanding, and **shopping screenshot**
-  interpretation (`/acquisition/screenshot`).
-- **Lifestyle** — a deterministic **Trip Planner** (`/lifestyle/trip`): per-day
-  outfits, packing, laundry, and shopping plans, with live or manual weather.
-- **AI Stylist** — natural-language explanations of recommendations, a
-  streaming **tool-calling chat** (`/chat`), a durable AI response cache, and a
-  developer **AI Playground** (behind Developer Mode).
-- **One assistant** — a finalized navigation IA, real **Settings** and
-  **About** (`/about`) surfaces, and a gated **Developer Mode** hub
-  (`/developer`) that keeps internal tooling out of the everyday sidebar.
+- **Recommendations** — **Recommendation Engine v2** (weather- & preference-aware)
+  with a debuggable Recommendation Center and **Intelligence Center** actions.
+- **Acquisitions** — flagship `/acquisitions` hub (wishlist, decision history,
+  timeline, ROI, shopping history), deterministic **Buy vs Skip**, **Shopping
+  Intelligence** + **Acquisitions Intelligence** (lifecycle, opportunity,
+  strategy), and shopping-screenshot capture.
+- **Vision** — **Vision Intelligence v2**: closet scan, assisted outfit
+  recognition, visual duplicates, and a confirmation review queue (`/vision`).
+- **Lifestyle / Trips** — first-class **Trip Planner** (`/trips`): templates,
+  multi-city, packing checklist, timeline, weather refresh.
+- **AI Stylist** — natural-language explanations, streaming **tool-calling chat**
+  (`/chat`), durable AI response cache, cost-aware AI Runtime (Gemini-first;
+  optional OpenAI), and a developer **AI Playground** (behind Developer Mode).
+- **One assistant** — finalized navigation IA, real **Settings** and **About**
+  surfaces, **Access Guard**, and a gated **Developer Mode** hub.
 
 ## Tech stack
 
@@ -116,8 +119,9 @@ strategy document, not a roadmap.
 
 - [docs/product/PRODUCT_VISION.md](docs/product/PRODUCT_VISION.md) — long-term product vision & philosophy
 - [VERSION.md](VERSION.md) — current release + included modules
-- [ROADMAP.md](ROADMAP.md) — versioned roadmap (v0.1 → v1.0)
+- [ROADMAP.md](ROADMAP.md) — versioned roadmap (v0.1 → v2.0)
 - [CHANGELOG.md](CHANGELOG.md) — release history (Keep a Changelog)
+- [docs/releases/v2.0.0.md](docs/releases/v2.0.0.md) — v2.0.0 release notes
 - [ARCHITECTURE.md](ARCHITECTURE.md) — layers, data flow, AI abstraction
 - [ENGINE.md](ENGINE.md) — the domain engines + AI tool router
 - [DECISIONS.md](DECISIONS.md) — major decisions (indexes the ADRs)
@@ -131,7 +135,8 @@ strategy document, not a roadmap.
 `v0.1` Inventory → `v0.2` Visual Inventory → `v0.3` Analytics →
 `v0.4` Outfit Engine → `v0.5` Recommendation Engine →
 `v0.6` AI Stylist Beta → `v0.7` Acquisition Engine → `v0.8` Vision AI →
-`v0.9` Personalization Engine →
-**`v1.0` Lifestyle Engine + Today Experience (release candidate)**.
+`v0.9` Personalization Engine → `v1.0` Lifestyle + Today →
+`v1.1` Intelligence Refinement →
+**`v2.0` Lifestyle Intelligence Platform (Trips · Acquisitions · Vision)`**.
 
-See [ROADMAP.md](ROADMAP.md) for details.
+See [ROADMAP.md](ROADMAP.md) and [docs/releases/v2.0.0.md](docs/releases/v2.0.0.md).
