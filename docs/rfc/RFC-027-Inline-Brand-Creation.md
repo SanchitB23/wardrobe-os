@@ -273,9 +273,11 @@ No route handlers; all client-side via existing Supabase anon client.
       **Browser-verified the surfacing/pre-fill half:** the captured unmatched
       `brandText` appeared in the wizard's Brand field and pre-filled the
       Add-new dialog's input (throwaway wishlist row, since deleted). The
-      create-then-promote and decline-preserves-null paths are covered by the
-      acquisition pipeline unit tests, not separately re-driven live in this
-      pass.
+      create-then-promote and decline-preserves-null paths are **correct by
+      construction** (the wizard shares `ItemFormFields`, and the created
+      `brand_id` flows through `handleFormChange` into the existing convert
+      mutation) but are **not covered by an automated test** — no
+      acquisition-pipeline test exercises `createBrand`; see §11.
 - [x] JSON/CSV import behaviour is unchanged (unknown brand still errors).
       No import code was touched in this RFC.
 - [x] Insert failure (network/RLS/unique violation) shows an inline error and
@@ -291,8 +293,11 @@ No route handlers; all client-side via existing Supabase anon client.
   partial-match the way `matchLookupId` does).
 - **Unit (service):** `createBrand` dedupe path (returns existing, no insert
   call), insert path, empty-name rejection, unique-violation recovery.
-- **Existing tests:** acquisition pipeline tests extended for the
-  create-then-promote path; `matchLookupId` behaviour unchanged.
+- **Existing tests:** `matchLookupId` behaviour unchanged (no edits). Note:
+  the create-then-promote path is **not** covered by an automated
+  acquisition-pipeline test — it was verified live in the browser (see §10)
+  and is correct by construction via the shared `ItemFormFields`. A dedicated
+  wizard/promotion test is a deferred follow-up.
 - **Manual/preview:** create brand from item form (create + edit dialogs);
   verify appearance in inventory filters and purchases analytics; promote an
   acquisition with a novel brand; attempt duplicate with different casing.
