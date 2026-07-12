@@ -176,7 +176,7 @@ export function ItemPreviewDialog({
             <div className="flex gap-2">
               <Button
                 size="sm"
-                disabled={!item}
+                disabled={!item || lookupsQuery.isPending}
                 onClick={() => setEditOpen(true)}
               >
                 <PencilIcon className="size-4" /> Edit

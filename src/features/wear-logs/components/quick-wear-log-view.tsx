@@ -76,6 +76,11 @@ export function QuickWearLogView({
     return map;
   }, [items]);
 
+  const pickedAnywhere = useMemo(
+    () => new Set(QUICK_SLOTS.flatMap((s) => slotPicks[s] ?? [])),
+    [slotPicks],
+  );
+
   async function handleSave() {
     setError(null);
     const selected = buildWearLogSlotEntries(slotPicks, QUICK_SLOTS, extraIds);
@@ -174,7 +179,7 @@ export function QuickWearLogView({
             const isMulti = MULTI_SLOTS.includes(slot);
 
             if (isMulti) {
-              const available = options.filter((i) => !picked.includes(i.id));
+              const available = options.filter((i) => !pickedAnywhere.has(i.id));
               return (
                 <div key={slot} className="space-y-1.5">
                   <Label>{def?.label ?? slot}</Label>
@@ -212,7 +217,7 @@ export function QuickWearLogView({
                               {item?.name ?? id.slice(0, 8)}
                               <button
                                 type="button"
-                                aria-label="Preview item"
+                                aria-label={`Preview ${item?.name ?? "item"}`}
                                 className="text-muted-foreground hover:text-foreground"
                                 onClick={() => setPreviewItemId(id)}
                               >
@@ -220,7 +225,7 @@ export function QuickWearLogView({
                               </button>
                               <button
                                 type="button"
-                                aria-label="Remove item"
+                                aria-label={`Remove ${item?.name ?? "item"}`}
                                 className="text-muted-foreground hover:text-foreground"
                                 onClick={() =>
                                   setSlotPicks((prev) => ({
@@ -264,11 +269,13 @@ export function QuickWearLogView({
                     </SelectTrigger>
                     <SelectContent>
                       <SelectItem value="__none__">None</SelectItem>
-                      {options.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
+                      {options
+                        .filter((item) => item.id === value || !pickedAnywhere.has(item.id))
+                        .map((item) => (
+                          <SelectItem key={item.id} value={item.id}>
+                            {item.name}
+                          </SelectItem>
+                        ))}
                     </SelectContent>
                   </Select>
                   {value ? (
