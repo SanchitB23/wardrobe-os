@@ -1,17 +1,32 @@
 "use client";
 
-import { ActivityIcon, CircuitBoardIcon, InfoIcon, WalletIcon } from "lucide-react";
+import { useState } from "react";
+import { useMutation } from "@tanstack/react-query";
+import {
+  ActivityIcon,
+  CircuitBoardIcon,
+  InfoIcon,
+  Loader2Icon,
+  PlayIcon,
+  WalletIcon,
+} from "lucide-react";
 
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   Card,
+  CardAction,
   CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import type { StatusModel } from "@/domain/status";
+import type { ServiceId, StatusModel } from "@/domain/status";
+import {
+  runStatusProbes,
+  type ProbeResult,
+} from "@/features/status/services/status.service";
 
 const SERVICE_LABELS: Record<string, string> = {
   gemini: "Google Gemini",
@@ -37,6 +52,21 @@ export function StatusView({
   version: string;
   environment: string;
 }) {
+  const [probedAt, setProbedAt] = useState<number | null>(null);
+
+  const probe = useMutation<ProbeResult[], Error, void>({
+    mutationFn: async () => {
+      const { data, error } = await runStatusProbes();
+      if (error) throw error;
+      return data ?? [];
+    },
+    onSuccess: () => setProbedAt(Date.now()),
+  });
+
+  const probeById = new Map<ServiceId, ProbeResult>(
+    (probe.data ?? []).map((result) => [result.id, result]),
+  );
+
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
@@ -82,25 +112,76 @@ export function StatusView({
           <CardDescription>
             Passive signals — key presence and the most recent real call.
           </CardDescription>
+          <CardAction>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => probe.mutate()}
+              disabled={probe.isPending}
+            >
+              {probe.isPending ? (
+                <Loader2Icon className="animate-spin" />
+              ) : (
+                <PlayIcon />
+              )}
+              {probe.isPending ? "Checking…" : "Run checks"}
+            </Button>
+          </CardAction>
         </CardHeader>
         <CardContent className="space-y-1.5">
-          {model.services.map((service) => (
-            <div key={service.id} className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">
-                {SERVICE_LABELS[service.id] ?? service.id}
-              </span>
-              <span className="flex items-center gap-2">
-                {service.lastCall ? (
-                  <span className="text-xs text-muted-foreground">
-                    last call {new Date(service.lastCall.at).toLocaleTimeString()}
+          {model.services.map((service) => {
+            const result = probeById.get(service.id);
+            return (
+              <div key={service.id} className="space-y-0.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">
+                    {SERVICE_LABELS[service.id] ?? service.id}
                   </span>
-                ) : (
-                  <span className="text-xs text-muted-foreground">no recent calls</span>
-                )}
-                <Badge variant={STATE_VARIANT[service.state]}>{service.state}</Badge>
-              </span>
-            </div>
-          ))}
+                  <span className="flex items-center gap-2">
+                    {result ? (
+                      result.skipped ? (
+                        <span className="text-xs text-muted-foreground">not routed</span>
+                      ) : (
+                        <span className="text-xs text-muted-foreground">
+                          {result.ok ? "ok" : "failed"} · {result.latencyMs}ms
+                          {probedAt ? ` · ${new Date(probedAt).toLocaleTimeString()}` : ""}
+                        </span>
+                      )
+                    ) : service.lastCall ? (
+                      <span className="text-xs text-muted-foreground">
+                        last call {new Date(service.lastCall.at).toLocaleTimeString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">no recent calls</span>
+                    )}
+                    <Badge
+                      variant={
+                        result && !result.skipped
+                          ? result.ok
+                            ? "default"
+                            : "destructive"
+                          : STATE_VARIANT[service.state]
+                      }
+                    >
+                      {result && !result.skipped
+                        ? result.ok
+                          ? "ok"
+                          : "failed"
+                        : service.state}
+                    </Badge>
+                  </span>
+                </div>
+                {result && !result.ok && result.error ? (
+                  <p className="text-right text-xs text-destructive">{result.error}</p>
+                ) : null}
+              </div>
+            );
+          })}
+          {probe.isError ? (
+            <p className="text-xs text-destructive">
+              {probe.error?.message ?? "Run checks failed."}
+            </p>
+          ) : null}
         </CardContent>
       </Card>
 

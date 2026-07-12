@@ -1,0 +1,105 @@
+/**
+ * Manual status probes (RFC-028). Never called automatically. AI probes run
+ * through the runtime so the budget guard and cost tracker observe them; the
+ * provider is targeted by picking a capability it currently serves as primary.
+ */
+
+import { NextResponse } from "next/server";
+
+import { getServerAIRuntime } from "@/ai/server/ai-runtime.server";
+import type { ServiceId } from "@/domain/status";
+import { createClient } from "@/lib/supabase/server";
+import type { AICapability } from "@/runtime/ai";
+import { withApiLogging } from "@/runtime/logging/api-logger";
+
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
+type ProbeResult = {
+  id: ServiceId;
+  ok: boolean;
+  latencyMs: number;
+  skipped?: boolean;
+  error?: string;
+};
+
+async function timed(
+  id: ServiceId,
+  fn: () => Promise<void>,
+): Promise<ProbeResult> {
+  const start = Date.now();
+  try {
+    await fn();
+    return { id, ok: true, latencyMs: Date.now() - start };
+  } catch (error) {
+    return {
+      id,
+      ok: false,
+      latencyMs: Date.now() - start,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
+}
+
+function capabilityFor(provider: "gemini" | "openai"): AICapability | null {
+  const aiRuntime = getServerAIRuntime();
+  const resolver = aiRuntime.getPolicyResolver();
+  const capabilities = Object.keys(aiRuntime.getPolicies()) as AICapability[];
+  return (
+    capabilities.find(
+      (capability) => resolver.describe(capability).provider === provider,
+    ) ?? null
+  );
+}
+
+async function probeAI(provider: "gemini" | "openai"): Promise<ProbeResult> {
+  const capability = capabilityFor(provider);
+  if (!capability) {
+    return { id: provider, ok: true, latencyMs: 0, skipped: true };
+  }
+  return timed(provider, async () => {
+    // `run()` throws (AIError) on failure rather than returning a status field
+    // (see AIRuntime.run / src/ai/types AIResponse) — `timed` catches it.
+    await getServerAIRuntime().run({
+      capability,
+      request: {
+        system: "You are a health check. Reply with the single word: ok",
+        prompt: "ok?",
+        maxTokens: 4,
+      },
+    });
+  });
+}
+
+async function probeSupabase(): Promise<ProbeResult> {
+  return timed("supabase", async () => {
+    const supabase = await createClient();
+    const { error } = await supabase
+      .from("occasions")
+      .select("id", { count: "exact", head: true });
+    if (error) throw new Error(error.message);
+  });
+}
+
+async function probeOpenMeteo(): Promise<ProbeResult> {
+  return timed("open_meteo", async () => {
+    const response = await fetch(
+      "https://api.open-meteo.com/v1/forecast?latitude=0&longitude=0&current=temperature_2m",
+      { cache: "no-store" },
+    );
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+  });
+}
+
+async function handleProbe(request: Request): Promise<Response> {
+  void request;
+  const results = await Promise.all([
+    probeAI("gemini"),
+    probeAI("openai"),
+    probeSupabase(),
+    probeOpenMeteo(),
+  ]);
+  return NextResponse.json({ results });
+}
+
+export const POST = withApiLogging("/api/status/probe", handleProbe);
