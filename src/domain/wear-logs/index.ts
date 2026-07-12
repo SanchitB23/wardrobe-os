@@ -26,3 +26,7 @@ export {
   buildOrderedWearItems,
   legacyOutfitGroupKey,
 } from "@/domain/wear-logs/WearCombination";
+
+export type { WearLogSlotEntry } from "@/domain/wear-logs/quick-log-selection";
+
+export { buildWearLogSlotEntries } from "@/domain/wear-logs/quick-log-selection";
