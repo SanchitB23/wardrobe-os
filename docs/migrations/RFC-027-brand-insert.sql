@@ -9,4 +9,4 @@ create policy "mvp_anon_insert_brands"
   with check (true);
 
 create unique index if not exists brands_name_ci_unique
-  on public.brands (lower(btrim(name)));
+  on public.brands (lower(regexp_replace(btrim(name), '\s+', ' ', 'g')));
