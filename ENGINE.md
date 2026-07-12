@@ -21,6 +21,16 @@ reason/strengths/weaknesses/suggestions; the engine combines them into a
 weighted `overallScore` and `confidence`. This is the scoring primitive the
 generation and recommendation engines build on.
 
+## Wear Logs (combination helpers)
+**`src/domain/wear-logs/`** → `buildCombinationKey`, `shouldSuggestOutfitPromotion`,
+`mapWearLogToOutfitDraft` (RFC-023).
+
+Pure fingerprinting for event-centric wear history. Saved Outfits remain curated
+(`outfits` / `outfit_items`); wear events live in `wear_events` +
+`wear_event_items` with optional `outfit_id`. Repeated identical combinations
+(default threshold 3, ≥2 items) may *suggest* promotion — never auto-save.
+Analytics still consume per-item facts via dual-write to legacy `wear_logs`.
+
 ## StyleDNAEngine
 **`src/domain/style-dna/StyleDNA.ts`** → derives a `StyleDNA` per item.
 

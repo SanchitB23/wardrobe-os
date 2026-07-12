@@ -28,6 +28,7 @@ import type {
 } from "@/features/chat/types";
 import { logAIUsage } from "@/runtime/logging/ai-usage-logger";
 import { RuntimeCostEstimator } from "@/runtime/ai/RuntimeCostEstimator";
+import { aiRuntimeMetrics } from "@/runtime/ai";
 
 const CHAT_TTL_SECONDS = 60 * 60; // 1 hour
 const DEFAULT_MAX_STEPS = 6;
@@ -143,6 +144,18 @@ export async function* streamChat(
         estimatedCostUsd: costUsd,
         latencyMs,
         status: "cache_hit",
+      });
+      aiRuntimeMetrics.record({
+        capability: "conversation",
+        provider: "gemini",
+        model: modelId,
+        promptVersion: "v1",
+        latencyMs,
+        usage: cached.response.usage,
+        costUsd,
+        cacheHit: true,
+        ok: true,
+        usedFallback: false,
       });
       yield {
         type: "done",
@@ -262,6 +275,18 @@ export async function* streamChat(
       latencyMs,
       status: "ok",
     });
+    aiRuntimeMetrics.record({
+      capability: "conversation",
+      provider: "gemini",
+      model: modelId,
+      promptVersion: "v1",
+      latencyMs,
+      usage,
+      costUsd,
+      cacheHit: false,
+      ok: true,
+      usedFallback: false,
+    });
 
     yield {
       type: "done",
@@ -283,6 +308,17 @@ export async function* streamChat(
       latencyMs: now() - startedMs,
       status: "error",
       errorCode: error instanceof Error ? error.name : "unknown",
+    });
+    aiRuntimeMetrics.record({
+      capability: "conversation",
+      provider: "gemini",
+      model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+      promptVersion: "v1",
+      latencyMs: now() - startedMs,
+      costUsd: 0,
+      cacheHit: false,
+      ok: false,
+      usedFallback: false,
     });
     yield {
       type: "error",

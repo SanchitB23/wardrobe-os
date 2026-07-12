@@ -202,6 +202,40 @@ describe("AIRuntime — metrics, cost, benchmarking", () => {
     expect(row?.failures).toBe(1);
   });
 
+  it("counts fallbacks and cache savings on the metrics snapshot", async () => {
+    const metrics = new RuntimeMetrics();
+    metrics.record({
+      capability: "explanation",
+      provider: "gemini",
+      model: "gemini-2.5-flash",
+      promptVersion: "adhoc",
+      latencyMs: 10,
+      costUsd: 0.01,
+      cacheHit: false,
+      ok: true,
+      usedFallback: true,
+    });
+    metrics.record({
+      capability: "explanation",
+      provider: "gemini",
+      model: "gemini-2.5-flash",
+      promptVersion: "adhoc",
+      latencyMs: 1,
+      costUsd: 0.02,
+      cacheHit: true,
+      ok: true,
+      usedFallback: false,
+    });
+    const snap = metrics.snapshot();
+    expect(snap.totalFallbacks).toBe(1);
+    expect(snap.totalCacheSavingsUsd).toBeCloseTo(0.02);
+    expect(snap.totalCostUsd).toBeCloseTo(0.01);
+    const row = snap.byCapabilityProvider[0];
+    expect(row.model).toBe("gemini-2.5-flash");
+    expect(row.fallbacks).toBe(1);
+    expect(row.cacheSavingsUsd).toBeCloseTo(0.02);
+  });
+
   it("estimateCost uses the price table", () => {
     const cost = estimateCost({ promptTokens: 1000, completionTokens: 1000, totalTokens: 2000 }, "gemini", "gemini-2.5-flash");
     expect(cost).toBeGreaterThan(0);

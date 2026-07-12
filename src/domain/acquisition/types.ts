@@ -25,6 +25,8 @@ export interface ProspectiveItem {
   /** Accepted but NOT parsed in RFC-001. */
   productUrl?: string | null;
   notes?: string | null;
+  /** Optional UI-only preview URL (not used by Buy vs Skip scoring). */
+  imagePreviewUrl?: string | null;
 }
 
 export type BuyVsSkipInputSource = "manual" | "url" | "image";

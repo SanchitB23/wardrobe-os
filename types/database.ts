@@ -773,6 +773,63 @@ export type Database = {
         };
         Relationships: [];
       };
+      wear_events: {
+        Row: {
+          id: string;
+          worn_on: string;
+          occasion_id: string | null;
+          outfit_id: string | null;
+          source: Database["public"]["Enums"]["wear_log_source"];
+          notes: string | null;
+          weather: Json | null;
+          combination_key: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          worn_on: string;
+          occasion_id?: string | null;
+          outfit_id?: string | null;
+          source?: Database["public"]["Enums"]["wear_log_source"];
+          notes?: string | null;
+          weather?: Json | null;
+          combination_key: string;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          worn_on?: string;
+          occasion_id?: string | null;
+          outfit_id?: string | null;
+          source?: Database["public"]["Enums"]["wear_log_source"];
+          notes?: string | null;
+          weather?: Json | null;
+          combination_key?: string;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      wear_event_items: {
+        Row: {
+          wear_event_id: string;
+          item_id: string;
+          slot: string | null;
+          sort_order: number;
+        };
+        Insert: {
+          wear_event_id: string;
+          item_id: string;
+          slot?: string | null;
+          sort_order?: number;
+        };
+        Update: {
+          wear_event_id?: string;
+          item_id?: string;
+          slot?: string | null;
+          sort_order?: number;
+        };
+        Relationships: [];
+      };
       care_profiles: {
         Row: {
           item_id: string;
@@ -818,6 +875,12 @@ export type Database = {
         | "worn"
         | "closeup"
         | "label";
+      wear_log_source:
+        | "outfit"
+        | "ad_hoc"
+        | "recommendation"
+        | "trip"
+        | "ai";
     };
     CompositeTypes: { [_ in never]: never };
   };

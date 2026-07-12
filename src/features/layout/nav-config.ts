@@ -6,6 +6,7 @@ import {
   ClipboardCheckIcon,
   CompassIcon,
   FlaskConicalIcon,
+  GaugeIcon,
   HeartPulseIcon,
   HomeIcon,
   ImagesIcon,
@@ -183,6 +184,16 @@ export const DEVELOPER_SECTION: NavSection = {
       label: "Observability",
       href: "/developer/observability",
       icon: ActivityIcon,
+    },
+    {
+      label: "AI Runtime",
+      href: "/developer/ai-runtime",
+      icon: GaugeIcon,
+    },
+    {
+      label: "Runtime Stats",
+      href: "/developer/runtime-statistics",
+      icon: GaugeIcon,
     },
     {
       label: "AI Test",

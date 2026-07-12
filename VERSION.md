@@ -1,30 +1,36 @@
 # Version
 
-## Current: v2.0.1 — Inventory Image Intelligence
+## Current: v2.1.0 — Wear Logs, Acquisitions Pipeline & Observability
 
-- **Version:** v2.0.1
-- **Release name:** Wardrobe OS 2.0.1 — Inventory Image Intelligence
-- **Status:** Stable (patch on Lifestyle Intelligence Platform)
+- **Version:** v2.1.0
+- **Release name:** Wardrobe OS 2.1.0 — Wear Logs, Acquisitions Pipeline & Observability
+- **Status:** Stable (minor on Lifestyle Intelligence Platform)
 - **Date:** 2026-07-12
 
 ### What this release is
 
-Closes the owned-item photo → StyleDNA loop left open after v2.0.0. **RFC-020
-Inventory Image Intelligence** analyzes each item's primary image via the
-existing Vision Engine (RFC-002), stores reviewable `VisualStyleAttributes`, and
-— only after explicit Accept — gap-fills StyleDNA / RecommendationContext.
-Manual fields always win; Analyze never auto-accepts; primary image changes
-mark attrs stale.
+Ships the post–v2.0.1 product and ops wave:
 
-**Not a new Vision stack.** Perception stays in `analyzeImage` /
-`analyzeImageRequest` / `/api/ai/vision`. RFC-019 workflows (closet scan /
-outfit / duplicates) are unchanged.
+1. **Ad-hoc Wear Logs & Outfit Promotion (RFC-023)** — log what you wore without
+   creating a Saved Outfit; promote repeated combinations with confirmation.
+2. **Acquisition-to-Inventory Pipeline (RFC-018C)** — Buy/Skip → wishlist →
+   purchased → confirmed inventory (+ Decision History polish).
+3. **Category Optimization (RFC-015A)** — guided Optimize workflow from the
+   Intelligence Center.
+4. **Logging & Observability (RFC-022 + audit follow-up)** — structured JSON
+   logs, production AI via AIRuntime, developer hub surfaces (trace, graph,
+   flags, runtime stats, replay).
 
-566 unit tests green. See [CHANGELOG.md](CHANGELOG.md),
-[docs/releases/v2.0.1.md](docs/releases/v2.0.1.md), and [ROADMAP.md](ROADMAP.md).
+Deterministic engines still decide; AI explains. Never auto-creates inventory or
+auto-promotes outfits.
+
+640 unit tests green. See [CHANGELOG.md](CHANGELOG.md),
+[docs/releases/v2.1.0.md](docs/releases/v2.1.0.md), and [ROADMAP.md](ROADMAP.md).
 
 ### Prior releases
 
+- **v2.0.1 — Inventory Image Intelligence** (2026-07-12): RFC-020 primary image →
+  VisualStyleAttributes → Accept → StyleDNA gap-fill.
 - **v2.0.0 — Vision and Acquisitions Intelligence** (2026-07-12): Trip Planner,
   Shopping / Acquisitions Intelligence, Vision Intelligence v2.
 - **v1.1.0 — Intelligence Refinement** (2026-07-10): RFC-011 … RFC-015
@@ -38,27 +44,27 @@ outfit / duplicates) are unchanged.
 ### Included modules (cumulative)
 
 **Foundation & Inventory** — schema, CRUD, images, bulk import, filters,
-**Inventory Image Intelligence** (RFC-020 visual attrs + Accept/Reject).
+visual StyleDNA from primary photos (RFC-020).
 
-**Analytics** — dashboard, Wardrobe Health, Usage, purchases / CPW, Insights.
+**Analytics & Intelligence** — health, usage, insights, Intelligence Center,
+category optimization (RFC-015A).
 
-**Outfits & Recommendations** — builder, scoring, generation, Recommendation
-Center; Recommendation Engine v2 + Personalization v2; accepted visuals merge
-into StyleDNA before scoring.
+**Outfits & Wear** — outfit builder/scorer, ad-hoc wear events + promotion
+(RFC-023), legacy wear_logs dual-write.
 
-**AI Stylist** — provider abstraction, Gemini + optional OpenAI, explanations,
-cache, playground, tool-calling chat, AI Runtime v2 (cost-aware routing).
+**Recommendations & AI** — recommendation engine, AI Runtime, stylist,
+structured logging / observability (RFC-022).
 
-**Acquisition & Vision** — Buy vs Skip, Vision Engine, shopping screenshots,
-Shopping Intelligence, Acquisitions hub + Intelligence (018B), Vision
-Intelligence v2 (scan / review), Inventory Image Intelligence (enrichment).
+**Acquisition & Shopping** — Buy vs Skip, wishlist, acquisitions hub,
+018B intelligence, 018C inventory handoff.
 
-**Lifestyle** — Lifestyle Engine + Trip Planner (`/trips`), Weather Runtime.
+**Vision & Lifestyle** — vision workflows, trip planner, Today home.
 
-**Product Experience** — Today, Settings, About, Access Guard, Developer Mode,
-Intelligence Center.
+### Schema notes for this release
 
-### Cutting the release
+Apply additive migrations if not already applied:
 
-Per [CLAUDE.md](CLAUDE.md) §13: `package.json` → `2.0.1`, `npm test` green,
-annotated tag `v2.0.1`. See [CHANGELOG.md](CHANGELOG.md).
+- `docs/migrations/RFC-018C-acquisition-to-inventory-pipeline.sql`
+- `docs/migrations/RFC-023-ad-hoc-wear-logs.sql`
+
+(Category optimization and logging are app-layer only.)

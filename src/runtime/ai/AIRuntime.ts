@@ -190,10 +190,12 @@ export class AIRuntime {
         capability: req.capability,
         provider: route.policy.primary,
         promptVersion,
+        model: request.model ?? "unknown",
         latencyMs: null,
         costUsd: 0,
         cacheHit: false,
         ok: false,
+        usedFallback: false,
       });
       const errorCode =
         error instanceof AIError
@@ -274,11 +276,13 @@ export class AIRuntime {
       capability,
       provider: servedBy,
       promptVersion,
+      model: response.model || "unknown",
       latencyMs: response.latencyMs ?? null,
       usage: response.usage,
       costUsd,
       cacheHit: cached,
       ok: true,
+      usedFallback,
     });
 
     logAIUsage({
@@ -290,7 +294,7 @@ export class AIRuntime {
       promptVersion,
       cacheHit: cached,
       usage: response.usage,
-      estimatedCostUsd: costUsd,
+      estimatedCostUsd: cached ? 0 : costUsd,
       latencyMs: response.latencyMs ?? null,
       status: cached ? "cache_hit" : "ok",
     });

@@ -31,3 +31,16 @@ export function getRequestId(): string | null {
 export function getRequestRoute(): string | null {
   return storage.getStore()?.route ?? null;
 }
+
+/**
+ * Soft bridge so client-safe modules (e.g. WeatherRuntime) can read requestId
+ * without importing this ALS module into the browser bundle. Populated only when
+ * the logging package loads on the server.
+ */
+declare global {
+  var __wardrobeGetRequestId: (() => string | null) | undefined;
+}
+
+if (typeof globalThis !== "undefined") {
+  globalThis.__wardrobeGetRequestId = getRequestId;
+}

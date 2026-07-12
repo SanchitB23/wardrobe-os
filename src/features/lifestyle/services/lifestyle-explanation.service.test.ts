@@ -7,15 +7,9 @@ import {
   type LifestylePlanExplanationInput,
 } from "@/ai/schemas/LifestylePlanExplanation.schema";
 import { ParseError } from "@/ai/types";
-import type {
-  AICallOptions,
-  AIRequest,
-  AIResponse,
-  AIService,
-  AIStreamChunk,
-} from "@/ai/types";
 import type { LifestylePlan } from "@/domain/lifestyle";
 import { explainLifestylePlan } from "@/features/lifestyle/services/LifestyleExplanationService";
+import type { AIRuntime, AIRuntimeRequest, AIRuntimeResult } from "@/runtime/ai";
 
 const input: LifestylePlanExplanationInput = {
   trip: { destination: "Bangalore", days: 3, strategy: "balanced", weatherSource: "forecast" },
@@ -43,21 +37,27 @@ const validJson = JSON.stringify({
   travelTips: ["Wear the bulkiest shoes on the plane."],
 });
 
-function fakeAI(text: string, cached = false): AIService {
+function fakeRuntime(text: string, cached = false): Pick<AIRuntime, "run"> {
   return {
-    async generate<T>(_req: AIRequest, opts?: AICallOptions<T>): Promise<AIResponse<T>> {
-      void _req;
-      const base = { text, provider: "gemini" as const, model: "fake", finishReason: "stop" as const, cached };
-      if (opts?.parser) {
-        const result = opts.parser.parse(text);
+    async run<T>(req: AIRuntimeRequest<T>): Promise<AIRuntimeResult<T>> {
+      const base = {
+        text,
+        provider: "gemini" as const,
+        model: "fake",
+        finishReason: "stop" as const,
+        cached,
+        capability: req.capability,
+        promptVersion: "adhoc",
+        servedBy: "gemini" as const,
+        usedFallback: false,
+        costUsd: 0,
+      };
+      if (req.parser) {
+        const result = req.parser.parse(text);
         if (!result.ok) throw new ParseError(result.errors);
-        return { ...base, parsed: result.data } as AIResponse<T>;
+        return { ...base, parsed: result.data } as AIRuntimeResult<T>;
       }
-      return base as AIResponse<T>;
-    },
-    async *stream(): AsyncIterable<AIStreamChunk> {},
-    async vision<T>(): Promise<AIResponse<T>> {
-      throw new Error("not used");
+      return base as AIRuntimeResult<T>;
     },
   };
 }
@@ -91,10 +91,18 @@ describe("LifestylePlanExplanation — prompt builder + schema", () => {
       tripPlan: {
         capsule: { itemCount: 4, dayCount: 2 },
         dailyOutfits: [
-          { date: "2026-09-01", occasion: "Beach", weather: { condition: "hot" }, itemIds: ["a", "b"], uncovered: false },
+          {
+            date: "2026-09-01",
+            occasion: "Beach",
+            weather: { condition: "hot" },
+            itemIds: ["a", "b"],
+            uncovered: false,
+          },
         ],
       },
-      shoppingPlan: { shoppingSuggestions: [{ need: "Rain jacket", analysis: { decision: "buy" } }] },
+      shoppingPlan: {
+        shoppingSuggestions: [{ need: "Rain jacket", analysis: { decision: "buy" } }],
+      },
     } as unknown as LifestylePlan;
 
     const curated = toLifestyleExplanationInput(plan);
@@ -105,7 +113,6 @@ describe("LifestylePlanExplanation — prompt builder + schema", () => {
       packingCount: 4,
       shoppingSuggestions: [{ need: "Rain jacket", decision: "buy" }],
     });
-    // Curated daily outfits carry counts, not item ids/names.
     expect(curated.dailyOutfits[0]).toEqual({
       date: "2026-09-01",
       occasion: "Beach",
@@ -119,53 +126,54 @@ describe("LifestylePlanExplanation — prompt builder + schema", () => {
 
 describe("explainLifestylePlan — service", () => {
   it("returns the validated explanation (cache miss)", async () => {
-    const result = await explainLifestylePlan(input, { ai: fakeAI(validJson) });
+    const result = await explainLifestylePlan(input, { runtime: fakeRuntime(validJson) });
     expect(result.explanation.summary).toBe("A tight 3-day capsule.");
     expect(result.explanation.travelTips).toEqual(["Wear the bulkiest shoes on the plane."]);
     expect(result.cached).toBe(false);
   });
 
   it("surfaces a cache hit", async () => {
-    const result = await explainLifestylePlan(input, { ai: fakeAI(validJson, true) });
+    const result = await explainLifestylePlan(input, {
+      runtime: fakeRuntime(validJson, true),
+    });
     expect(result.cached).toBe(true);
   });
 
   it("passes a parser + 7-day cache descriptor keyed on the input", async () => {
-    const ai = fakeAI(validJson);
-    const spy = vi.spyOn(ai, "generate");
-    await explainLifestylePlan(input, { ai });
-    const [request, options] = spy.mock.calls[0];
-    expect(request.responseFormat).toBe("json");
-    expect(options?.parser).toBeDefined();
-    expect(options?.cache?.promptBuilder).toBe("lifestyle-plan-explanation");
-    expect(options?.cache?.promptVersion).toBe("v1");
-    expect(options?.cache?.input).toBe(input);
-    expect(options?.cache?.ttlSeconds).toBe(7 * 24 * 60 * 60);
+    const runtime = fakeRuntime(validJson);
+    const spy = vi.spyOn(runtime, "run");
+    await explainLifestylePlan(input, { runtime });
+    const [req] = spy.mock.calls[0];
+    expect(req.capability).toBe("explanation");
+    expect(req.request?.responseFormat).toBe("json");
+    expect(req.parser).toBeDefined();
+    expect(req.cache?.promptBuilder).toBe("lifestyle-plan-explanation");
+    expect(req.cache?.promptVersion).toBe("v1");
+    expect(req.cache?.input).toBe(input);
+    expect(req.cache?.ttlSeconds).toBe(7 * 24 * 60 * 60);
   });
 
   it("forwards forceRefresh to bypass the cache", async () => {
-    const ai = fakeAI(validJson);
-    const spy = vi.spyOn(ai, "generate");
-    await explainLifestylePlan(input, { ai, forceRefresh: true });
-    expect(spy.mock.calls[0][1]?.forceRefresh).toBe(true);
+    const runtime = fakeRuntime(validJson);
+    const spy = vi.spyOn(runtime, "run");
+    await explainLifestylePlan(input, { runtime, forceRefresh: true });
+    expect(spy.mock.calls[0][0].forceRefresh).toBe(true);
   });
 
   it("throws on malformed JSON (caller degrades gracefully)", async () => {
-    await expect(explainLifestylePlan(input, { ai: fakeAI("not json") })).rejects.toBeInstanceOf(
-      ParseError,
-    );
+    await expect(
+      explainLifestylePlan(input, { runtime: fakeRuntime("not json") }),
+    ).rejects.toBeInstanceOf(ParseError);
   });
 
-  it("propagates provider failures (fallback happens inside the AI service)", async () => {
-    const failing: AIService = {
-      async generate() {
+  it("propagates provider failures (fallback happens inside AIRuntime)", async () => {
+    const failing: Pick<AIRuntime, "run"> = {
+      async run() {
         throw new Error("all providers down");
       },
-      async *stream() {},
-      async vision<T>(): Promise<AIResponse<T>> {
-        throw new Error("x");
-      },
     };
-    await expect(explainLifestylePlan(input, { ai: failing })).rejects.toThrow("all providers down");
+    await expect(explainLifestylePlan(input, { runtime: failing })).rejects.toThrow(
+      "all providers down",
+    );
   });
 });

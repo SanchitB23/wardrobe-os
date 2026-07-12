@@ -1,7 +1,8 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { SlidersHorizontalIcon, XIcon } from "lucide-react";
+import { ShirtIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
 
 import { BulkEditDialog } from "@/features/inventory/components/bulk-edit-dialog";
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ export function BulkActionsToolbar({
   onClearSelection,
   onCompleted,
 }: BulkActionsToolbarProps) {
+  const router = useRouter();
   const [editOpen, setEditOpen] = useState(false);
 
   if (selectedCount === 0) {
@@ -36,6 +38,16 @@ export function BulkActionsToolbar({
             <Button variant="outline" onClick={onClearSelection}>
               <XIcon />
               Clear
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => {
+                const qs = selectedIds.join(",");
+                router.push(`/wear-logs/new?items=${encodeURIComponent(qs)}`);
+              }}
+            >
+              <ShirtIcon />
+              Log Wear
             </Button>
             <Button onClick={() => setEditOpen(true)}>
               <SlidersHorizontalIcon />

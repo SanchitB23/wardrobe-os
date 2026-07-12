@@ -1,12 +1,12 @@
 /**
  * Server-side Buy vs Skip explanation (RFC-003). Runs the explanation prompt
- * through the app AI service (with cache), returning validated prose. The AI
- * only explains the deterministic verdict — it never decides. Injectable
- * AIService for tests.
+ * through AIRuntime (capability: explanation, with cache), returning validated
+ * prose. The AI only explains the deterministic verdict — it never decides.
+ * Injectable runtime for tests.
  */
 
-import { getServerAIService } from "@/ai/server/ai-service.server";
-import type { AIService } from "@/ai/types";
+import { getServerAIRuntime } from "@/ai/server/ai-runtime.server";
+import type { AIRuntime } from "@/runtime/ai";
 import type { BuyVsSkipAnalysis } from "@/domain/acquisition";
 import {
   BUY_VS_SKIP_EXPLANATION_PROMPT_VERSION,
@@ -23,7 +23,7 @@ function resolveModel(): string {
 }
 
 export interface ExplainBuyVsSkipDeps {
-  ai?: AIService;
+  runtime?: Pick<AIRuntime, "run">;
   now?: string;
   forceRefresh?: boolean;
 }
@@ -32,7 +32,7 @@ export async function explainBuyVsSkip(
   analysis: BuyVsSkipAnalysis,
   deps: ExplainBuyVsSkipDeps = {},
 ): Promise<BuyVsSkipExplanation> {
-  const ai = deps.ai ?? getServerAIService();
+  const runtime = deps.runtime ?? getServerAIRuntime();
   const model = resolveModel();
   const input = toExplanationInput(analysis);
 
@@ -42,22 +42,27 @@ export async function explainBuyVsSkip(
     now: deps.now,
   });
 
-  const response = await ai.generate<BuyVsSkipExplanation>(
-    { system: built.system, prompt: built.prompt, model, responseFormat: "json", temperature: 0.4, maxTokens: 500 },
-    {
-      parser: buyVsSkipExplanationParser,
-      forceRefresh: deps.forceRefresh,
-      cache: {
-        promptBuilder: buyVsSkipExplanationPromptBuilder.id,
-        promptVersion: BUY_VS_SKIP_EXPLANATION_PROMPT_VERSION,
-        model,
-        // Cache keyed on the verdict's shape — same analysis ⇒ same explanation.
-        input,
-        ttlSeconds: TTL_SECONDS,
-      },
+  const result = await runtime.run<BuyVsSkipExplanation>({
+    capability: "explanation",
+    request: {
+      system: built.system,
+      prompt: built.prompt,
+      model,
+      responseFormat: "json",
+      temperature: 0.4,
+      maxTokens: 500,
     },
-  );
+    parser: buyVsSkipExplanationParser,
+    forceRefresh: deps.forceRefresh,
+    cache: {
+      promptBuilder: buyVsSkipExplanationPromptBuilder.id,
+      promptVersion: BUY_VS_SKIP_EXPLANATION_PROMPT_VERSION,
+      model,
+      input,
+      ttlSeconds: TTL_SECONDS,
+    },
+  });
 
-  if (!response.parsed) throw new Error("Explanation was not parsed.");
-  return response.parsed;
+  if (!result.parsed) throw new Error("Explanation was not parsed.");
+  return result.parsed;
 }

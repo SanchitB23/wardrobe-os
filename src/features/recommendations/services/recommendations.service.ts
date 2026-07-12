@@ -35,7 +35,10 @@ import {
 } from "@/features/inventory/repositories/visual-attributes.repository";
 import { fetchOutfitItemLinks } from "@/features/outfits/repositories/outfits.repository";
 import { createOutfit } from "@/features/outfits/services/outfits.service";
-import { insertWearLogs } from "@/features/wear-logs/repositories/wear-logs.repository";
+import {
+  createWearLogFromOutfit,
+  createWearLogFromRecommendation,
+} from "@/features/wear-logs/services/wear-events.service";
 import {
   selectRecommendationData,
   type RecoItemRow,
@@ -436,8 +439,9 @@ export async function saveGeneratedOutfit(
 }
 
 /**
- * Logs a wear for each item today. `outfitId` is optional so generated combos
- * can be worn without first being saved.
+ * Logs a wear for each item today as an event-centric wear log (RFC-023).
+ * `outfitId` is optional so generated combos can be worn without being saved.
+ * Source is `recommendation` when unlinked, `outfit` when linked to a saved outfit.
  */
 export async function wearOutfitToday(
   itemIds: readonly string[],
@@ -448,8 +452,19 @@ export async function wearOutfitToday(
     return { error: toError("Cannot log a wear with no items.") };
   }
   const wornOn = todayIso();
-  const result = await insertWearLogs(
-    ids.map((itemId) => ({ item_id: itemId, worn_on: wornOn, outfit_id: outfitId ?? null })),
-  );
+  const items = ids.map((itemId) => ({ itemId }));
+  if (outfitId) {
+    const result = await createWearLogFromOutfit({
+      outfitId,
+      items,
+      wornOn,
+    });
+    return { error: result.error };
+  }
+  const result = await createWearLogFromRecommendation({
+    items,
+    wornOn,
+    outfitId: null,
+  });
   return { error: result.error };
 }

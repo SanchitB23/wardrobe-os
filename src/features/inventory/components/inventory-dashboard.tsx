@@ -117,6 +117,7 @@ export function InventoryDashboard() {
 
   // Load persisted column visibility + saved filters once on mount.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot localStorage hydrate
     setHiddenColumns(getHiddenColumns());
     setSavedFilters(getSavedFilters());
   }, []);
@@ -130,6 +131,7 @@ export function InventoryDashboard() {
 
     const params = new URLSearchParams(window.location.search);
     if (params.get("action") === "add-item") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- deep-link hydrate from URL
       setFormMode("create");
       setSelectedItem(null);
       setFormOpen(true);
@@ -211,6 +213,7 @@ export function InventoryDashboard() {
 
   // Reset the infinite-scroll window whenever the result set changes.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- reset window on filtered list change
     setVisibleCount(PAGE_SIZE);
   }, [displayItems]);
 

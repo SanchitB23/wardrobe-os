@@ -3,20 +3,20 @@
  *
  * Turns a curated {@link ExplanationInput} into a validated
  * {@link RecommendationExplanation} by running the explanation prompt through
- * the app AI service. The AI only explains; it makes no recommendation
- * decisions. Structured JSON is validated by the parser before we return it —
- * on any failure this throws, and the caller (the API route) degrades
- * gracefully.
+ * AIRuntime (capability: explanation). The AI only explains; it makes no
+ * recommendation decisions. Structured JSON is validated by the parser before
+ * we return it — on any failure this throws, and the caller (the API route)
+ * degrades gracefully.
  *
- * Responses are cached (7-day TTL) via the AI service's cache, keyed on the
+ * Responses are cached (7-day TTL) via the AI Runtime cache, keyed on the
  * prompt builder + version + model + input, so an unchanged recommendation is
- * not re-sent to Gemini. `forceRefresh` bypasses the cache.
+ * not re-sent to the provider. `forceRefresh` bypasses the cache.
  *
- * The AIService is injectable so tests can run without a network or API key.
+ * The runtime is injectable so tests can run without a network or API key.
  */
 
-import { getServerAIService } from "@/ai/server/ai-service.server";
-import type { AIService } from "@/ai/types";
+import { getServerAIRuntime } from "@/ai/server/ai-runtime.server";
+import type { AIRuntime } from "@/runtime/ai";
 import {
   buildExplainSharedContext,
   buildExplanationInput,
@@ -40,8 +40,8 @@ function resolveModel(): string {
 }
 
 export interface ExplainDeps {
-  /** Defaults to the app-wide server AI service. */
-  ai?: AIService;
+  /** Defaults to the app-wide server AI Runtime. */
+  runtime?: Pick<AIRuntime, "run">;
   /** Injected timestamp for deterministic prompts (optional). */
   now?: string;
   /** Bypass the cache and regenerate (req 8). */
@@ -58,7 +58,7 @@ export async function explainRecommendation(
   input: ExplanationInput,
   deps: ExplainDeps = {},
 ): Promise<ExplanationResult> {
-  const ai = deps.ai ?? getServerAIService();
+  const runtime = deps.runtime ?? getServerAIRuntime();
   const model = resolveModel();
 
   const built = recommendationExplanationPromptBuilder.build({
@@ -67,8 +67,9 @@ export async function explainRecommendation(
     now: deps.now,
   });
 
-  const response = await ai.generate<RecommendationExplanation>(
-    {
+  const result = await runtime.run<RecommendationExplanation>({
+    capability: "explanation",
+    request: {
       system: built.system,
       prompt: built.prompt,
       model,
@@ -76,25 +77,21 @@ export async function explainRecommendation(
       temperature: 0.4,
       maxTokens: 700,
     },
-    {
-      parser: recommendationExplanationParser,
-      forceRefresh: deps.forceRefresh,
-      cache: {
-        promptBuilder: recommendationExplanationPromptBuilder.id,
-        promptVersion: EXPLANATION_PROMPT_VERSION,
-        model,
-        input,
-        ttlSeconds: EXPLANATION_TTL_SECONDS,
-      },
+    parser: recommendationExplanationParser,
+    forceRefresh: deps.forceRefresh,
+    cache: {
+      promptBuilder: recommendationExplanationPromptBuilder.id,
+      promptVersion: EXPLANATION_PROMPT_VERSION,
+      model,
+      input,
+      ttlSeconds: EXPLANATION_TTL_SECONDS,
     },
-  );
+  });
 
-  if (!response.parsed) {
-    // The parser attaches `parsed` or the orchestrator throws ParseError first;
-    // this guard is a belt-and-braces contract check.
+  if (!result.parsed) {
     throw new Error("Explanation response was not parsed.");
   }
-  return { explanation: response.parsed, cached: Boolean(response.cached) };
+  return { explanation: result.parsed, cached: Boolean(result.cached) };
 }
 
 // Re-export the pure builders so the route/tests have one import site.

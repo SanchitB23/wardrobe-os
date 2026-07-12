@@ -6,20 +6,36 @@ import { useRouter } from "next/navigation";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import {
+  CheckCircle2Icon,
   ChevronDownIcon,
   ChevronRightIcon,
+  ImageIcon,
+  InboxIcon,
   Loader2Icon,
+  PackagePlusIcon,
+  ScanSearchIcon,
+  ShoppingBagIcon,
 } from "lucide-react";
 
 import type { BuyDecision, BuyVsSkipInputSource } from "@/domain/acquisition";
+import { DecisionAnalysisSummary } from "@/features/acquisition/components/DecisionAnalysisSummary";
+import { DecisionLifecycleStepper } from "@/features/acquisition/components/DecisionLifecycleStepper";
+import { DecisionVerdictBadge } from "@/features/acquisition/components/DecisionVerdictBadge";
 import {
   addAnalysisToWishlist,
   buildDecisionCardModel,
   ensureWishlistForAnalysis,
   markWishlistPurchased,
+  type DecisionCardModel,
+  type DecisionWearStats,
 } from "@/features/shopping/services/acquisitionPipeline.service";
-import { useDecisions, useWishlist } from "@/features/shopping/hooks";
+import {
+  useAcquisitionsHub,
+  useDecisions,
+  useWishlist,
+} from "@/features/shopping/hooks";
 import { MarkPurchasedDialog } from "@/features/shopping/components/mark-purchased-dialog";
+import { wishlistItemHref } from "@/features/shopping/lib/wishlist-navigation";
 import type {
   AcquisitionDecisionRecord,
   DecisionListFilters,
@@ -46,17 +62,41 @@ import {
 import { wardrobeKeys } from "@/shared/query/wardrobe-keys";
 import { unwrapData } from "@/shared/utils/data-result";
 
-const decisionVariant = (d: string) =>
-  d === "buy" ? "default" : d === "consider" ? "secondary" : "outline";
-
-const lifecycleLabel: Record<string, string> = {
-  analyzed: "Analyzed",
-  on_wishlist: "On wishlist",
-  purchased: "Purchased",
-  in_inventory: "In inventory",
-  worn: "Worn",
-  roi: "ROI",
+type PurchaseTarget = {
+  decision: AcquisitionDecisionRecord;
+  intent: "mark_only" | "then_convert";
 };
+
+function DecisionThumbnail({ card }: { card: DecisionCardModel }) {
+  if (card.imageUrl) {
+    return (
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
+        src={card.imageUrl}
+        alt=""
+        className="size-16 shrink-0 rounded-md object-cover ring-1 ring-border"
+      />
+    );
+  }
+  if (card.source === "image") {
+    return (
+      <div
+        className="flex size-16 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md bg-muted/80 text-muted-foreground ring-1 ring-border"
+        title="Image analysis"
+      >
+        <ScanSearchIcon className="size-5" aria-hidden />
+        <span className="text-[9px] font-medium uppercase tracking-wide">
+          Image
+        </span>
+      </div>
+    );
+  }
+  return (
+    <div className="flex size-16 shrink-0 items-center justify-center rounded-md bg-muted/60 text-muted-foreground ring-1 ring-border">
+      <ImageIcon className="size-5" aria-hidden />
+    </div>
+  );
+}
 
 export function DecisionHistoryView() {
   const router = useRouter();
@@ -70,10 +110,9 @@ export function DecisionHistoryView() {
   const [from, setFrom] = useState("");
   const [to, setTo] = useState("");
   const [expanded, setExpanded] = useState<string | null>(null);
-  const [purchaseTarget, setPurchaseTarget] = useState<{
-    decision: AcquisitionDecisionRecord;
-    wishlistId?: string;
-  } | null>(null);
+  const [purchaseTarget, setPurchaseTarget] = useState<PurchaseTarget | null>(
+    null,
+  );
 
   const filters: DecisionListFilters = useMemo(
     () => ({
@@ -91,15 +130,28 @@ export function DecisionHistoryView() {
 
   const query = useDecisions(filters);
   const wishlistQuery = useWishlist();
+  const hub = useAcquisitionsHub();
+
   const wishlistById = useMemo(() => {
     const map = new Map<string, WishlistItem>();
     for (const w of wishlistQuery.data ?? []) map.set(w.id, w);
     return map;
   }, [wishlistQuery.data]);
 
+  const wearByInventoryId = useMemo(() => {
+    const map = new Map<string, DecisionWearStats>();
+    for (const r of hub.data?.roi.realized ?? []) {
+      map.set(r.itemId, { wears: r.wears, costPerWear: r.costPerWear });
+    }
+    return map;
+  }, [hub.data?.roi.realized]);
+
   const cards = useMemo(
-    () => (query.data ?? []).map((r) => buildDecisionCardModel(r, wishlistById)),
-    [query.data, wishlistById],
+    () =>
+      (query.data ?? []).map((r) =>
+        buildDecisionCardModel(r, wishlistById, wearByInventoryId),
+      ),
+    [query.data, wishlistById, wearByInventoryId],
   );
 
   async function invalidate() {
@@ -121,9 +173,14 @@ export function DecisionHistoryView() {
           source: record.source,
         }),
       ),
-    onSuccess: async () => {
+    onSuccess: async (wishlist) => {
       await invalidate();
-      toast.success("Added to wishlist");
+      toast.success("Added to wishlist", {
+        action: {
+          label: "View",
+          onClick: () => router.push(wishlistItemHref(wishlist.id)),
+        },
+      });
     },
     onError: (error: Error) => toast.error(error.message || "Failed"),
   });
@@ -141,34 +198,53 @@ export function DecisionHistoryView() {
           source: purchaseTarget.decision.source,
         }),
       );
-      return unwrapData(
+      const marked = unwrapData(
         await markWishlistPurchased({
           wishlistId: ensured.id,
           purchasePrice: input.purchasePrice,
           purchaseDate: input.purchaseDate,
         }),
       );
+      return { wishlist: marked, intent: purchaseTarget.intent };
     },
-    onSuccess: async () => {
+    onSuccess: async ({ wishlist, intent }) => {
       setPurchaseTarget(null);
       await invalidate();
+      if (intent === "then_convert") {
+        toast.success("Marked purchased — continue conversion");
+        router.push(`/acquisitions/convert/${wishlist.id}`);
+        return;
+      }
       toast.success("Marked purchased");
     },
     onError: (error: Error) => toast.error(error.message || "Failed"),
   });
 
   const convertMutation = useMutation({
-    mutationFn: async (record: AcquisitionDecisionRecord) => {
+    mutationFn: async (card: DecisionCardModel) => {
       const ensured = unwrapData(
         await ensureWishlistForAnalysis({
-          decisionId: record.id,
-          item: record.itemSnapshot,
-          source: record.source,
+          decisionId: card.decision.id,
+          item: card.decision.itemSnapshot,
+          source: card.decision.source,
         }),
       );
-      return ensured.id;
+      return { ensured, card };
     },
-    onSuccess: (id) => router.push(`/acquisitions/convert/${id}`),
+    onSuccess: ({ ensured, card }) => {
+      if (
+        ensured.status === "purchased" ||
+        ensured.purchaseDate ||
+        card.wishlistStatus === "purchased"
+      ) {
+        router.push(`/acquisitions/convert/${ensured.id}`);
+        return;
+      }
+      setPurchaseTarget({
+        decision: card.decision,
+        intent: "then_convert",
+      });
+    },
     onError: (error: Error) => toast.error(error.message || "Failed"),
   });
 
@@ -332,44 +408,57 @@ export function DecisionHistoryView() {
 
       {query.data && cards.length === 0 ? (
         <Card className="border-dashed">
-          <CardContent className="py-12 text-center text-sm text-muted-foreground">
-            No decisions match these filters.
+          <CardContent className="flex flex-col items-center gap-3 py-14 text-center">
+            <div className="flex size-12 items-center justify-center rounded-full bg-muted">
+              <InboxIcon className="size-6 text-muted-foreground" />
+            </div>
+            <div className="space-y-1">
+              <p className="text-sm font-medium">No decisions match</p>
+              <p className="text-sm text-muted-foreground">
+                Run Buy vs Skip from the advisor or a screenshot to build history.
+              </p>
+            </div>
+            <div className="flex flex-wrap justify-center gap-2 pt-1">
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href="/acquisition/advisor" />}
+              >
+                Open advisor
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                render={<Link href="/acquisition/screenshot" />}
+              >
+                <ScanSearchIcon className="size-4" />
+                Screenshot
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : null}
 
-      <div className="grid gap-3">
+      <div className="grid gap-4">
         {cards.map((card) => {
           const r = card.decision;
           const open = expanded === r.id;
           return (
-            <Card key={r.id}>
-              <CardContent className="space-y-3 py-4">
-                <div className="flex flex-wrap items-start gap-3">
-                  {card.imageUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={card.imageUrl}
-                      alt=""
-                      className="size-14 rounded object-cover"
-                    />
-                  ) : (
-                    <div className="flex size-14 items-center justify-center rounded bg-muted text-xs text-muted-foreground">
-                      No img
-                    </div>
-                  )}
-                  <div className="min-w-0 flex-1 space-y-1">
+            <Card
+              key={r.id}
+              className="transition-colors hover:bg-muted/25"
+            >
+              <CardContent className="space-y-4 py-5">
+                <div className="flex flex-wrap items-start gap-4">
+                  <DecisionThumbnail card={card} />
+                  <div className="min-w-0 flex-1 space-y-2">
                     <div className="flex flex-wrap items-center gap-2">
-                      <p className="font-medium">{r.itemName}</p>
-                      <Badge variant={decisionVariant(r.decision)}>
-                        {r.decision}
-                      </Badge>
+                      <p className="text-base font-semibold tracking-tight">
+                        {r.itemName}
+                      </p>
+                      <DecisionVerdictBadge decision={r.decision} />
                       <Badge variant="outline" className="capitalize">
                         {card.source}
-                      </Badge>
-                      <Badge variant="secondary">
-                        {lifecycleLabel[card.lifecycleStatus] ??
-                          card.lifecycleStatus}
                       </Badge>
                       {r.score != null ? (
                         <span className="text-sm tabular-nums text-muted-foreground">
@@ -377,25 +466,47 @@ export function DecisionHistoryView() {
                         </span>
                       ) : null}
                     </div>
+
+                    <DecisionLifecycleStepper
+                      status={card.lifecycleStatus}
+                      wears={card.wears}
+                      costPerWear={card.costPerWear}
+                    />
+
                     <p className="text-sm text-muted-foreground">
                       {r.summary || "No summary"} ·{" "}
                       {new Date(r.createdAt).toLocaleString()}
-                      {card.wishlistItemId
-                        ? " · Linked wishlist"
-                        : " · Unlinked"}
                     </p>
+
+                    {card.wishlistItemId ? (
+                      <p className="text-sm">
+                        <span className="text-muted-foreground">Wishlist · </span>
+                        <Link
+                          href={wishlistItemHref(card.wishlistItemId)}
+                          className="font-medium text-foreground underline-offset-4 hover:underline"
+                        >
+                          {card.wishlistItemName ?? "Wishlist item"}
+                        </Link>
+                      </p>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">
+                        Not on wishlist yet
+                      </p>
+                    )}
                   </div>
                   <Button
                     size="sm"
                     variant="ghost"
+                    className="shrink-0"
                     onClick={() => setExpanded(open ? null : r.id)}
+                    aria-expanded={open}
                   >
                     {open ? <ChevronDownIcon /> : <ChevronRightIcon />}
                     Details
                   </Button>
                 </div>
 
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-2 border-t border-border/60 pt-3">
                   {card.actions.includes("add_to_wishlist") ? (
                     <Button
                       size="sm"
@@ -403,6 +514,7 @@ export function DecisionHistoryView() {
                       disabled={addMutation.isPending}
                       onClick={() => addMutation.mutate(r)}
                     >
+                      <ShoppingBagIcon className="size-4" />
                       Add to Wishlist
                     </Button>
                   ) : null}
@@ -411,8 +523,11 @@ export function DecisionHistoryView() {
                     <Button
                       size="sm"
                       variant="outline"
-                      render={<Link href="/acquisitions/wishlist" />}
+                      render={
+                        <Link href={wishlistItemHref(card.wishlistItemId)} />
+                      }
                     >
+                      <ShoppingBagIcon className="size-4" />
                       View Wishlist
                     </Button>
                   ) : null}
@@ -423,10 +538,11 @@ export function DecisionHistoryView() {
                       onClick={() =>
                         setPurchaseTarget({
                           decision: r,
-                          wishlistId: card.wishlistItemId ?? undefined,
+                          intent: "mark_only",
                         })
                       }
                     >
+                      <CheckCircle2Icon className="size-4" />
                       Mark Purchased
                     </Button>
                   ) : null}
@@ -434,8 +550,9 @@ export function DecisionHistoryView() {
                     <Button
                       size="sm"
                       disabled={convertMutation.isPending}
-                      onClick={() => convertMutation.mutate(r)}
+                      onClick={() => convertMutation.mutate(card)}
                     >
+                      <PackagePlusIcon className="size-4" />
                       Convert to Inventory
                     </Button>
                   ) : null}
@@ -452,10 +569,8 @@ export function DecisionHistoryView() {
                   ) : null}
                 </div>
 
-                {open ? (
-                  <pre className="max-h-64 overflow-auto rounded-md bg-muted/50 p-3 text-xs">
-                    {JSON.stringify(r.analysis, null, 2)}
-                  </pre>
+                {open && r.analysis ? (
+                  <DecisionAnalysisSummary analysis={r.analysis} />
                 ) : null}
               </CardContent>
             </Card>

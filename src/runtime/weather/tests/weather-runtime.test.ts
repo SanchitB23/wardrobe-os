@@ -53,7 +53,13 @@ describe("WeatherRuntime", () => {
     const metrics = createWeatherMetrics();
     const provider = fakeProvider("open-meteo", vi.fn(async () => FORECAST));
     const cache = createInMemoryWeatherCache({ now: () => 1000, metrics });
-    const rt = new WeatherRuntime({ provider, cache, metrics, now: () => 1000 });
+    const rt = new WeatherRuntime({
+      provider,
+      cache,
+      metrics,
+      now: () => 1000,
+      onRequest: () => {},
+    });
 
     const first = await rt.getForecast(query);
     expect(first.data).toEqual(FORECAST);
@@ -66,6 +72,33 @@ describe("WeatherRuntime", () => {
     const snap = metrics.snapshot();
     expect(snap.cacheMisses).toBe(1);
     expect(snap.cacheHits).toBe(1);
+  });
+
+  it("invokes onRequest observer for miss, hit, and error", async () => {
+    const events: Array<{ status: string; cached: boolean }> = [];
+    const provider = fakeProvider("open-meteo", vi.fn(async () => FORECAST));
+    const rt = new WeatherRuntime({
+      provider,
+      cache: createInMemoryWeatherCache({ now: () => 1000 }),
+      now: () => 1000,
+      onRequest: (e) => events.push({ status: e.status, cached: e.cached }),
+    });
+
+    await rt.getForecast(query);
+    await rt.getForecast(query);
+    expect(events).toEqual([
+      { status: "ok", cached: false },
+      { status: "cache_hit", cached: true },
+    ]);
+
+    const failing = new WeatherRuntime({
+      provider: fakeProvider("open-meteo", async () => {
+        throw new Error("boom");
+      }),
+      onRequest: (e) => events.push({ status: e.status, cached: e.cached }),
+    });
+    await failing.getForecast(query);
+    expect(events.at(-1)).toEqual({ status: "error", cached: false });
   });
 
   it("re-fetches after the TTL expires", () => {

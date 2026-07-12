@@ -31,5 +31,6 @@ export {
   weatherRuntime,
   DEFAULT_WEATHER_PROVIDER,
   type WeatherRuntimeOptions,
+  type WeatherRequestObserveEvent,
 } from "@/runtime/weather/WeatherRuntime";
 export { weatherCapability, WEATHER_CAPABILITY_ID } from "@/runtime/weather/WeatherCapability";

@@ -3,9 +3,10 @@
  *
  * Registers the available providers (Gemini real; OpenAI/Claude stubs until their
  * SDKs are wired), loads the capability → provider policies from env, and shares
- * the process-local metrics sink. This is additive: existing AI features keep
- * using `getServerAIService()` unchanged — the runtime is exposed for the
- * Developer dashboard and future capability-routed callers. Server-only.
+ * the process-local metrics sink. Production explanation / playground / test
+ * routes call `getServerAIRuntime().run()` so the developer dashboard reflects
+ * real traffic. Legacy `getServerAIService()` remains for transitional callers.
+ * Server-only.
  */
 
 import { createServerAICache } from "@/ai/server/ai-service.server";

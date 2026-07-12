@@ -23,6 +23,7 @@ import {
 } from "@/features/shopping/services/acquisitionPipeline.service";
 import { markWishlistPurchased } from "@/features/shopping/services/acquisitionPipeline.service";
 import { MarkPurchasedDialog } from "@/features/shopping/components/mark-purchased-dialog";
+import { wishlistItemHref } from "@/features/shopping/lib/wishlist-navigation";
 import { Button } from "@/components/ui/button";
 import { wardrobeKeys } from "@/shared/query/wardrobe-keys";
 import { unwrapData } from "@/shared/utils/data-result";
@@ -35,6 +36,8 @@ type BuyVsSkipPipelineActionsProps = {
   imageCandidate?: ImageCandidate | null;
 };
 
+type PurchaseIntent = "mark_only" | "then_convert";
+
 export function BuyVsSkipPipelineActions({
   analysis,
   item,
@@ -46,6 +49,8 @@ export function BuyVsSkipPipelineActions({
   const queryClient = useQueryClient();
   const [wishlistId, setWishlistId] = useState<string | null>(null);
   const [purchaseOpen, setPurchaseOpen] = useState(false);
+  const [purchaseIntent, setPurchaseIntent] =
+    useState<PurchaseIntent>("mark_only");
 
   async function invalidate() {
     await queryClient.invalidateQueries({ queryKey: wardrobeKeys.wishlist() });
@@ -73,7 +78,7 @@ export function BuyVsSkipPipelineActions({
       toast.success("Added to wishlist", {
         action: {
           label: "View",
-          onClick: () => router.push("/acquisitions/wishlist"),
+          onClick: () => router.push(wishlistItemHref(wishlist.id)),
         },
       });
     },
@@ -94,17 +99,23 @@ export function BuyVsSkipPipelineActions({
         }),
       );
       setWishlistId(ensured.id);
-      return unwrapData(
+      const marked = unwrapData(
         await markWishlistPurchased({
           wishlistId: ensured.id,
           purchasePrice: input.purchasePrice,
           purchaseDate: input.purchaseDate,
         }),
       );
+      return { wishlist: marked, intent: purchaseIntent };
     },
-    onSuccess: async () => {
+    onSuccess: async ({ wishlist, intent }) => {
       setPurchaseOpen(false);
       await invalidate();
+      if (intent === "then_convert") {
+        toast.success("Marked purchased — continue conversion");
+        router.push(`/acquisitions/convert/${wishlist.id}`);
+        return;
+      }
       toast.success("Marked purchased");
     },
     onError: (error: Error) => toast.error(error.message || "Failed"),
@@ -121,20 +132,16 @@ export function BuyVsSkipPipelineActions({
         }),
       );
       setWishlistId(ensured.id);
-      if (ensured.status !== "purchased" && !ensured.purchaseDate) {
-        // Wizard can still run; mark purchased intent with estimate if present.
-        if (item.estimatedPrice != null) {
-          await markWishlistPurchased({
-            wishlistId: ensured.id,
-            purchasePrice: item.estimatedPrice,
-            purchaseDate: new Date().toISOString().slice(0, 10),
-          });
-        }
-      }
-      return ensured.id;
+      return ensured;
     },
-    onSuccess: (id) => {
-      router.push(`/acquisitions/convert/${id}`);
+    onSuccess: (ensured) => {
+      // Never silently mark purchased — dialog or wizard only.
+      if (ensured.status === "purchased" || ensured.purchaseDate) {
+        router.push(`/acquisitions/convert/${ensured.id}`);
+        return;
+      }
+      setPurchaseIntent("then_convert");
+      setPurchaseOpen(true);
     },
     onError: (error: Error) => toast.error(error.message || "Failed"),
   });
@@ -154,7 +161,7 @@ export function BuyVsSkipPipelineActions({
           <Button
             size="sm"
             variant="outline"
-            render={<Link href="/acquisitions/wishlist" />}
+            render={<Link href={wishlistItemHref(wishlistId)} />}
           >
             <ShoppingBagIcon className="size-4" />
             View Wishlist Item
@@ -174,7 +181,10 @@ export function BuyVsSkipPipelineActions({
           size="sm"
           variant="outline"
           disabled={busy}
-          onClick={() => setPurchaseOpen(true)}
+          onClick={() => {
+            setPurchaseIntent("mark_only");
+            setPurchaseOpen(true);
+          }}
         >
           <CheckCircle2Icon className="size-4" />
           Mark Purchased
@@ -191,7 +201,10 @@ export function BuyVsSkipPipelineActions({
 
       <MarkPurchasedDialog
         open={purchaseOpen}
-        onOpenChange={setPurchaseOpen}
+        onOpenChange={(open) => {
+          setPurchaseOpen(open);
+          if (!open) setPurchaseIntent("mark_only");
+        }}
         itemName={item.name}
         defaultPrice={item.estimatedPrice}
         busy={purchaseMutation.isPending}

@@ -11,7 +11,7 @@ import type {
   WeatherForecastDay,
 } from "@/domain/lifestyle";
 import type { WeatherCondition } from "@/domain/recommendation";
-import { seasonFor } from "@/runtime/weather";
+import { seasonFor } from "@/runtime/weather/WeatherNormalizer";
 import { useLifestylePlan } from "@/features/lifestyle/hooks/useLifestylePlan";
 import { LifestylePlanResult } from "@/features/lifestyle/components/LifestylePlanResult";
 import { PageHeader } from "@/features/layout";

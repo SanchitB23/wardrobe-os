@@ -44,6 +44,12 @@ Each capability is a thin adapter over an existing engine (`src/domain/orchestra
 | `vision` | ShoppingImageInterpreter (`interpretShoppingImage`, RFC-003) | prospective-item candidate |
 | `acquisition` | BuyVsSkipEngine (`evaluateBuyVsSkip`, RFC-001) | buy/skip verdict |
 
+Wear history for `usage` / `personalization` / `recommendation` still reads
+legacy per-item `wear_logs` rows. RFC-023 writers create event-centric
+`wear_events` (+ items) and **dual-write** those flattened facts so analytics
+engines need no reader change. Combination fingerprinting lives in pure
+`src/domain/wear-logs` (not an Orchestrator capability).
+
 The `weather` capability surfaces the `WeatherSnapshot` already resolved into the
 `RecommendationContext` (weather is data — it never recommends); the runtime that
 fetches it lives outside the pure engine graph in `src/runtime/weather`.

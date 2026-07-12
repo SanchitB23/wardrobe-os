@@ -105,10 +105,15 @@ export function OutfitsView() {
 
   const wearDetailQuery = useOutfit(outfitToWear?.id ?? "");
 
-  const outfits = outfitsQuery.data ?? [];
+  const outfits = useMemo(
+    () => outfitsQuery.data ?? [],
+    [outfitsQuery.data],
+  );
   const lookups = lookupsQuery.data ?? { occasions: [], seasons: [], categories: [] };
-  const scores = scoresQuery.data ?? {};
-  const isInitialLoading = outfitsQuery.isPending && !outfitsQuery.data;
+  const scores = useMemo(
+    () => scoresQuery.data ?? {},
+    [scoresQuery.data],
+  );  const isInitialLoading = outfitsQuery.isPending && !outfitsQuery.data;
   const isRefetching = outfitsQuery.isFetching && !outfitsQuery.isPending;
 
   const selectedOccasionName =

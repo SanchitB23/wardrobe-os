@@ -1,21 +1,21 @@
 /**
  * AI Playground runner — server-side only (req 5).
  *
- * Builds the selected prompt, runs it through the app AI service, and returns
- * everything the debug UI displays: prompts, input, raw + parsed response,
- * schema validation, latency, cache hit/miss, and any error. It deliberately
- * does NOT pass a parser to the AI service, so an invalid JSON response is
- * shown with its validation errors rather than throwing. Provider failures are
- * caught and returned (the prompt/input still come back).
+ * Builds the selected prompt, runs it through AIRuntime (capability: structured),
+ * and returns everything the debug UI displays: prompts, input, raw + parsed
+ * response, schema validation, latency, cache hit/miss, and any error. It
+ * deliberately does NOT pass a parser to the runtime, so an invalid JSON
+ * response is shown with its validation errors rather than throwing. Provider
+ * failures are caught and returned (the prompt/input still come back).
  *
  * Caching is OFF unless explicitly enabled (req 2 / prior task's playground rule).
  *
- * The AIService is injectable so tests run without a network or API key.
+ * The runtime is injectable so tests run without a network or API key.
  */
 
-import { getServerAIService } from "@/ai/server/ai-service.server";
+import { getServerAIRuntime } from "@/ai/server/ai-runtime.server";
 import { createJsonResponseParser } from "@/ai/schemas";
-import type { AIService } from "@/ai/types";
+import type { AIRuntime } from "@/runtime/ai";
 import { getPlaygroundBuilder } from "@/features/playground/builders";
 import type {
   PlaygroundRunRequest,
@@ -26,7 +26,7 @@ import type {
 const PLAYGROUND_TTL_SECONDS = 60 * 60; // 1 hour
 
 export interface PlaygroundDeps {
-  ai?: AIService;
+  runtime?: Pick<AIRuntime, "run">;
   now?: string;
 }
 
@@ -56,18 +56,19 @@ export async function runPlayground(
     input: request.input,
   };
 
-  const ai = deps.ai ?? getServerAIService();
+  const runtime = deps.runtime ?? getServerAIRuntime();
 
   try {
-    const response = await ai.generate({
-      system: built.system,
-      prompt: built.prompt,
-      model,
-      responseFormat: "json",
-      temperature: 0.4,
-      maxTokens: 700,
-    }, {
-      provider: request.provider,
+    const response = await runtime.run({
+      capability: "structured",
+      request: {
+        system: built.system,
+        prompt: built.prompt,
+        model,
+        responseFormat: "json",
+        temperature: 0.4,
+        maxTokens: 700,
+      },
       forceRefresh: request.forceRefresh,
       cache: request.cacheEnabled
         ? {
@@ -86,6 +87,8 @@ export async function runPlayground(
 
     return {
       ...base,
+      provider: response.servedBy ?? request.provider,
+      model: response.model ?? model,
       responseText: response.text,
       responseJson: parsed.ok ? parsed.data : undefined,
       validation: parsed.ok

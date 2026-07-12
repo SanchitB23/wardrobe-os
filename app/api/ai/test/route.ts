@@ -13,7 +13,7 @@
 import { NextResponse } from "next/server";
 
 import { createJsonResponseParser, objectSchema } from "@/ai/schemas";
-import { getServerAIService } from "@/ai/server/ai-service.server";
+import { getServerAIRuntime } from "@/ai/server/ai-runtime.server";
 import { AIError } from "@/ai/types";
 import { withApiLogging } from "@/runtime/logging/api-logger";
 
@@ -39,11 +39,12 @@ const pingSchema = objectSchema<PingResult>({
 
 async function handleAiTest(request: Request): Promise<Response> {
   void request;
-  const ai = getServerAIService();
+  const runtime = getServerAIRuntime();
 
   try {
-    const response = await ai.generate(
-      {
+    const response = await runtime.run({
+      capability: "structured",
+      request: {
         system:
           "You are a health-check endpoint. Reply ONLY with the requested JSON.",
         prompt:
@@ -52,16 +53,17 @@ async function handleAiTest(request: Request): Promise<Response> {
         temperature: 0,
         maxTokens: 256,
       },
-      { parser: createJsonResponseParser(pingSchema) },
-    );
+      parser: createJsonResponseParser(pingSchema),
+    });
 
     return NextResponse.json({
       ok: true,
-      provider: response.provider,
+      provider: response.servedBy,
       model: response.model,
       latencyMs: response.latencyMs,
       usage: response.usage,
       data: response.parsed,
+      usedFallback: response.usedFallback,
     });
   } catch (error) {
     const status =

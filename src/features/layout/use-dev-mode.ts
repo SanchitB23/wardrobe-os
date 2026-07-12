@@ -14,6 +14,7 @@ export function useDevMode(): { devMode: boolean; toggle: () => void } {
 
   useEffect(() => {
     try {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot localStorage hydrate
       setDevMode(window.localStorage.getItem(STORAGE_KEY) === "1");
     } catch {
       // ignore (private mode / unavailable storage)

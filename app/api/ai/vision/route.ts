@@ -11,6 +11,8 @@ import { NextResponse } from "next/server";
 
 import { analyzeImage, VisionError, type VisionSource } from "@/domain/vision";
 import { getServerVisionProvider } from "@/ai/vision/vision.server";
+import { aiRuntimeMetrics } from "@/runtime/ai";
+import type { AIProviderId } from "@/ai/types";
 import { logAIUsage } from "@/runtime/logging/ai-usage-logger";
 import { withApiLogging } from "@/runtime/logging/api-logger";
 
@@ -64,9 +66,10 @@ async function handleVision(request: Request): Promise<Response> {
       },
       { provider: getServerVisionProvider() },
     );
+    const provider = (analysis.metadata.provider || "gemini") as AIProviderId;
     logAIUsage({
       capability: "vision",
-      provider: analysis.metadata.provider || "gemini",
+      provider,
       model: analysis.metadata.model || model,
       promptVersion: "vision-engine",
       cacheHit: false,
@@ -74,6 +77,17 @@ async function handleVision(request: Request): Promise<Response> {
       estimatedCostUsd: null,
       latencyMs: analysis.metadata.latencyMs,
       status: "ok",
+    });
+    aiRuntimeMetrics.record({
+      capability: "vision",
+      provider,
+      model: analysis.metadata.model || model,
+      promptVersion: "vision-engine",
+      latencyMs: analysis.metadata.latencyMs ?? null,
+      costUsd: 0,
+      cacheHit: false,
+      ok: true,
+      usedFallback: false,
     });
     return NextResponse.json({ ok: true, data: analysis });
   } catch (error) {
@@ -91,6 +105,17 @@ async function handleVision(request: Request): Promise<Response> {
       latencyMs: null,
       status: "error",
       errorCode: error instanceof VisionError ? error.code : "unknown",
+    });
+    aiRuntimeMetrics.record({
+      capability: "vision",
+      provider: "gemini",
+      model,
+      promptVersion: "vision-engine",
+      latencyMs: null,
+      costUsd: 0,
+      cacheHit: false,
+      ok: false,
+      usedFallback: false,
     });
     return NextResponse.json(
       {

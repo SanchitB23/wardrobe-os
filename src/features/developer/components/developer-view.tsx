@@ -2,6 +2,7 @@
 
 import {
   ActivityIcon,
+  CalendarDaysIcon,
   CloudSunIcon,
   DatabaseIcon,
   FlagIcon,
@@ -9,6 +10,7 @@ import {
   GaugeIcon,
   ImagesIcon,
   NetworkIcon,
+  RefreshCwIcon,
   ScrollTextIcon,
   ShoppingBagIcon,
   TerminalIcon,
@@ -60,9 +62,37 @@ const TOOLS: DevTool[] = [
   {
     title: "Observability",
     description:
-      "Recent structured API / AI / engine log lines from this process (RFC-022). Vercel Logs remain prod truth.",
+      "Recent structured API / AI / engine log lines + request trace (RFC-022). Vercel Logs remain prod truth.",
     icon: ActivityIcon,
     href: "/developer/observability",
+    status: "available",
+  },
+  {
+    title: "Runtime Statistics",
+    description: "Consolidated AI + Weather process metrics, fallbacks, and cache savings.",
+    icon: GaugeIcon,
+    href: "/developer/runtime-statistics",
+    status: "available",
+  },
+  {
+    title: "Execution Graph",
+    description: "Intelligence Orchestrator capability DAG and recent engine_trace lines.",
+    icon: NetworkIcon,
+    href: "/developer/execution-graph",
+    status: "available",
+  },
+  {
+    title: "Feature Flags",
+    description: "Read-only env flags for logging, AI, weather, and developer capture.",
+    icon: FlagIcon,
+    href: "/developer/feature-flags",
+    status: "available",
+  },
+  {
+    title: "Request Replay",
+    description: "Sanitized API completion capture + GET replay (dev-only, no body storage).",
+    icon: RefreshCwIcon,
+    href: "/developer/replay",
     status: "available",
   },
   {
@@ -79,6 +109,14 @@ const TOOLS: DevTool[] = [
       "Batch-analyze primary photos into pending visual attributes (RFC-020). Accept still happens per item.",
     icon: ImagesIcon,
     href: "/developer/inventory-images",
+    status: "available",
+  },
+  {
+    title: "Wear Logs Runtime",
+    description:
+      "Wear source counts, combination frequency, and Save-as-Outfit promotion candidates (RFC-023).",
+    icon: CalendarDaysIcon,
+    href: "/developer/wear-logs",
     status: "available",
   },
   {
@@ -99,24 +137,6 @@ const TOOLS: DevTool[] = [
     title: "Cache Viewer",
     description: "Browse the ai_cache (keys, TTLs, hit/miss).",
     icon: DatabaseIcon,
-    status: "planned",
-  },
-  {
-    title: "Execution Graph",
-    description: "Inspect an Intelligence Orchestrator ExecutionReport (order, timings, failures).",
-    icon: NetworkIcon,
-    status: "planned",
-  },
-  {
-    title: "Runtime Statistics",
-    description: "Provider selection, latency, and cost analytics.",
-    icon: GaugeIcon,
-    status: "planned",
-  },
-  {
-    title: "Feature Flags",
-    description: "Toggle experimental surfaces.",
-    icon: FlagIcon,
     status: "planned",
   },
 ];

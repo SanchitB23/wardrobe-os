@@ -185,6 +185,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   // Close the mobile nav whenever the route changes.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- close sheet on navigation
     setMobileNavOpen(false);
   }, [pathname]);
 

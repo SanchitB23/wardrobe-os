@@ -113,7 +113,7 @@ export function ProspectiveItemForm({
   initial,
   lowConfidenceFields,
 }: {
-  onAnalyze: (item: ProspectiveItem) => void;
+  onAnalyze: (item: ProspectiveItem) => void | Promise<void>;
   isAnalyzing: boolean;
   /** Seed values, e.g. a vision-extracted candidate. Remount (via key) to reseed. */
   initial?: Partial<ProspectiveItem>;

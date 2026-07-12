@@ -492,7 +492,10 @@ product; keeps ops simple and aligned with current hosting.
 - Prompt-hash-only debug mode (hash of prompt, never raw text).
 - Client-visible “copy request id” on all AI error toasts.
 - Sampling / rate limits for ultra-chatty paths.
-- Weather Runtime request logs unified under the same `Logger` (RFC-011 pattern).
+- Weather Runtime request logs unified under the same `Logger` (RFC-011 pattern)
+  — **partially shipped:** WeatherRuntime emits `weather_request` JSON (client-safe
+  console sink + soft ALS requestId bridge); full Logger/ring-buffer unification
+  remains optional.
 
 ---
 

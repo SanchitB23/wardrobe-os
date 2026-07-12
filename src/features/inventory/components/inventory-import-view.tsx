@@ -303,6 +303,7 @@ export function InventoryImportView() {
     // Deep link from the command palette: /inventory/import?mode=json|csv
     const requested = new URLSearchParams(window.location.search).get("mode");
     if (requested === "json" || requested === "csv") {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot URL hydrate
       setMode(requested);
     }
   }, []);

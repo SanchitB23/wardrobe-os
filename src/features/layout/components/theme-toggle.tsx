@@ -24,6 +24,7 @@ export function ThemeToggle() {
 
   // Avoid a hydration mismatch: the resolved theme is only known client-side.
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot client mount flag
     setMounted(true);
   }, []);
 

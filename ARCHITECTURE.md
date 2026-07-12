@@ -103,6 +103,17 @@ orchestration lives in `src/features/shopping`; product hub at `/acquisitions`;
 conversion wizard at `/acquisitions/convert/[wishlistId]`; Developer debug at
 `/developer/acquisitions`.
 
+### Wear Logs vs Saved Outfits (RFC-023)
+Saved Outfits (`outfits` / `outfit_items`) are curated reusable combinations.
+Wear Logs are historical events in `wear_events` + `wear_event_items` with
+`source` (`ad_hoc` | `outfit` | `recommendation` | `trip` | `ai`) and optional
+`outfit_id`. Domain helpers in `src/domain/wear-logs` fingerprint combinations
+and gate “Save as Outfit?” suggestions (never automatic). Feature orchestration
+in `src/features/wear-logs`; Quick Log at `/wear-logs/new`; detail + promote at
+`/wear-logs/[id]`; Developer inspect at `/developer/wear-logs`. New writes
+dual-write flattened rows to legacy `wear_logs` so Usage / ROI / Recommendation /
+Personalization keep working without reader changes.
+
 ### Weather Runtime
 `src/runtime/weather/**` (RFC-011) is the **single deterministic weather source**:
 **weather is data; the engines decide; AI explains.** It is a runtime (I/O)
@@ -136,7 +147,8 @@ same "engines decide, UI surfaces" rule that governs every other view.
 otherwise-hidden internal tooling (the AI Playground, Weather Runtime at
 `/developer/weather`, Vision Debug, Inventory Image Backfill at
 `/developer/inventory-images`, Acquisitions Intelligence debug at
-`/developer/acquisitions`, and the `/developer` hub).
+`/developer/acquisitions`, Wear Logs Runtime at `/developer/wear-logs`, and the
+`/developer` hub).
 This keeps developer surfaces out of the everyday IA without a separate build.
 **Settings** (`/settings`) and **About** (`/about`) are thin presentational
 surfaces sourcing static release/architecture metadata.
@@ -184,15 +196,23 @@ surfaces sourcing static release/architecture metadata.
 
 - Structured single-line JSON → stdout (Vercel Runtime Logs).
 - `requestId` via `x-request-id` + AsyncLocalStorage; echoed on error responses.
+- Production explanations, playground, and `/api/ai/test` run through
+  `getServerAIRuntime()` so `/developer/ai-runtime` reflects real traffic.
+  Vision + chat also record into `aiRuntimeMetrics`.
 - AI usage lines (provider / model / tokens / estimated cost / fallback) on every
-  `AIRuntime` call and legacy `AIService` / chat edges.
-- API completion logs via `withApiLogging` on all `app/api/**` routes.
+  `AIRuntime` call and chat / vision edges.
+- Fallback counts + cache savings roll up per capability × provider × model.
+- Weather Runtime emits `weather_request` lines (provider, latency, cache, errors).
+- API completion logs via `withApiLogging` on all `app/api/**` routes; access
+  guard (`proxy.ts`) logs when enabled.
 - Orchestrator `engine_trace` at the service boundary when `LOG_ENGINE_TRACES=true`
   (domain engines stay pure — no logging I/O in `src/domain/**`).
 - Redaction by default (`LOG_REDACTED=true`): no keys, access codes, raw prompts,
   or image base64.
-- Developer viewer: `/developer/observability` (process-local ring buffer).
-  Ops guide: [docs/operations/VERCEL_LOGGING.md](docs/operations/VERCEL_LOGGING.md).
+- Developer hub: Observability (request trace), AI Runtime (cost dashboard),
+  Runtime Statistics, Execution Graph, Feature Flags, Request Replay
+  (`REPLAY_CAPTURE`, no prod storage).
+- Ops guide: [docs/operations/VERCEL_LOGGING.md](docs/operations/VERCEL_LOGGING.md).
 
 AI **explains and converses only** — it is never the source of truth for
 scoring, eligibility, ranking, health, or cost.

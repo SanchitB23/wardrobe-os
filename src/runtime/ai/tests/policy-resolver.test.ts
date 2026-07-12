@@ -20,15 +20,18 @@ const ENV = {
 function row(provider: string, estCostUsd: number): MetricRow {
   return {
     capability: "structured",
-    provider,
+    provider: provider as MetricRow["provider"],
+    model: "test-model",
     promptVersion: "adhoc",
     requests: 1,
     cacheHits: 0,
     failures: 0,
+    fallbacks: 0,
     avgLatencyMs: 1,
     lastLatencyMs: 1,
     totalTokens: 100,
     estCostUsd,
+    cacheSavingsUsd: 0,
   };
 }
 function snapshot(rows: MetricRow[]): AIRuntimeMetricsSnapshot {
@@ -36,6 +39,8 @@ function snapshot(rows: MetricRow[]): AIRuntimeMetricsSnapshot {
     byCapabilityProvider: rows,
     totalRequests: rows.length,
     totalCostUsd: rows.reduce((s, r) => s + r.estCostUsd, 0),
+    totalFallbacks: 0,
+    totalCacheSavingsUsd: 0,
   };
 }
 

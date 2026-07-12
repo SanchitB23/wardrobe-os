@@ -24,10 +24,10 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 
 - ✅ Today Experience & v1.0 Product Polish (RFC-007)
 
-**Current:** **v2.0.x — Acquisition-to-Inventory Pipeline (RFC-018C)** implemented
-on top of v2.0.1 Inventory Image Intelligence. Connects analysis → wishlist →
-purchased → confirmed inventory. See CHANGELOG `[Unreleased]`. v2.0.1 remains
-the last tagged patch ([docs/releases/v2.0.1.md](docs/releases/v2.0.1.md)).
+**Current:** **v2.1.0 — Wear Logs, Acquisitions Pipeline & Observability** shipped
+([docs/releases/v2.1.0.md](docs/releases/v2.1.0.md)). Includes RFC-023 wear events,
+RFC-018C acquisition→inventory (+ Decision History polish), RFC-015A category
+optimization, and RFC-022 logging / developer observability.
 
 ## Phases
 
@@ -42,7 +42,7 @@ the last tagged patch ([docs/releases/v2.0.1.md](docs/releases/v2.0.1.md)).
 | **v1.1**   | **Intelligence Refinement + Runtime** | **✅**    | **Weather Runtime, Recommendation v2, Personalization v2, AI Runtime v2, Intelligence Center (RFC-011…015)**                                            |
 | **v2.0**   | **Lifestyle Intelligence Platform**   | **✅**    | **Trip Planner (017), Shopping Intelligence (018), Acquisitions hub + 018B, Vision Intelligence v2 (019)**                                               |
 | **v2.0.1** | **Inventory Image Intelligence**      | **✅**    | **RFC-020 — primary image → VisualStyleAttributes → Accept → StyleDNA gap-fill**                                                                        |
-| **v2.0.x** | **Acquisition-to-Inventory Pipeline** | **✅ code** | **RFC-018C — analysis → wishlist → purchased → confirmed inventory → image → StyleDNA handoff**                                                       |
+| **v2.1.0** | **Wear Logs, Acquisitions & Ops**     | **✅**    | **RFC-023 wear logs; RFC-018C pipeline + Decision History polish; RFC-015A Optimize; RFC-022 observability**                                           |
 | ~~v1.2~~   | ~~Wardrobe Intelligence~~             | ⏸️ Parked | Cross-engine orchestration + higher-order reasoning — superseded / absorbed by RFC-005/013/014 (see [FUTURE.md](docs/product/FUTURE.md))                |
 
 ---
@@ -176,10 +176,20 @@ Grow beyond the closet into the contexts a wardrobe serves. Release notes:
   → Vision Engine → pending `VisualStyleAttributes` → Accept/Reject → StyleDNA
   gap-fill into RecommendationContext. Surfaces on item detail +
   `/developer/inventory-images`. Manual fields always win.
-- **Acquisition-to-Inventory Pipeline (RFC-018C) — ✅ implemented (v2.0.x).**
+- **Acquisition-to-Inventory Pipeline (RFC-018C) — ✅ shipped (v2.1.0).**
   Buy/Skip CTAs → wishlist link → purchase intent → confirmed inventory wizard
   → image carry-forward → optional Visual StyleDNA. Timeline includes Inventory
-  Created. Never auto-creates inventory.
+  Created. Decision History polish (wishlist deep links, First Wear/ROI,
+  human-readable details). Never auto-creates inventory.
+- **Ad-hoc Wear Logs & Outfit Promotion (RFC-023) — ✅ shipped (v2.1.0).**
+  Event-centric wear logs separate from curated outfits; Quick Log / inventory
+  multi-select / recommendation wear; repeated-combo suggest + user-confirmed
+  Save as Outfit; dual-write to legacy `wear_logs` for analytics.
+- **Category Optimization (RFC-015A) — ✅ shipped (v2.1.0).** Optimize workflow
+  from Intelligence Center Replace cards; draft-only shopping handoffs.
+- **Logging & Observability (RFC-022) — ✅ shipped (v2.1.0).** Structured JSON
+  logging + developer hub (trace, graph, flags, runtime stats, replay); production
+  AI routed through AIRuntime metrics.
 
 ### ~~v1.2 — Wardrobe Intelligence~~ ⏸️ Parked
 

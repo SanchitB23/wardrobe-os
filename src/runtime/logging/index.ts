@@ -42,6 +42,16 @@ export {
 } from "@/runtime/logging/ai-usage-logger";
 
 export {
+  logWeatherRequest,
+  type WeatherRequestEventInput,
+} from "@/runtime/logging/weather-logger";
+
+export {
+  replayStore,
+  type ReplayCapture,
+} from "@/runtime/logging/request-replay";
+
+export {
   logApiRequest,
   withApiLogging,
   attachRequestId,
@@ -70,8 +80,10 @@ export {
   type AIUsageLogFields,
   type ApiRequestLogFields,
   type EngineTraceLogFields,
+  type WeatherRequestLogFields,
   type AIUsageStatus,
   type EngineTraceStatus,
+  type WeatherRequestStatus,
   type TokenSource,
   type CostSource,
 } from "@/runtime/logging/log-types";

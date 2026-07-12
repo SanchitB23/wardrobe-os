@@ -1,13 +1,7 @@
 import { describe, expect, it, vi } from "vitest";
 
 import { ParseError } from "@/ai/types";
-import type {
-  AICallOptions,
-  AIRequest,
-  AIResponse,
-  AIService,
-  AIStreamChunk,
-} from "@/ai/types";
+import type { AIRuntime, AIRuntimeRequest, AIRuntimeResult } from "@/runtime/ai";
 import type { ExplanationInput } from "@/features/recommendations/ai/explanation.types";
 import { explainRecommendation } from "@/features/recommendations/services/recommendation-explanation.service";
 
@@ -48,84 +42,78 @@ const validJson = JSON.stringify({
 });
 
 /**
- * Fake AIService that mirrors the orchestrator's parser contract: if a parser
- * is supplied it validates the canned text and attaches `parsed` (or throws
- * ParseError), so the service is exercised exactly as in production — no
- * network, no key.
+ * Fake AIRuntime that mirrors production: parser validates canned text and
+ * attaches `parsed` (or throws ParseError).
  */
-function fakeAI(text: string): AIService {
+function fakeRuntime(text: string, cached = false): Pick<AIRuntime, "run"> {
   return {
-    async generate<T>(_req: AIRequest, opts?: AICallOptions<T>): Promise<AIResponse<T>> {
-      void _req;
+    async run<T>(req: AIRuntimeRequest<T>): Promise<AIRuntimeResult<T>> {
       const base = {
         text,
         provider: "gemini" as const,
         model: "fake",
         finishReason: "stop" as const,
+        cached,
+        capability: req.capability,
+        promptVersion: "adhoc",
+        servedBy: "gemini" as const,
+        usedFallback: false,
+        costUsd: 0,
       };
-      if (opts?.parser) {
-        const result = opts.parser.parse(text);
+      if (req.parser) {
+        const result = req.parser.parse(text);
         if (!result.ok) throw new ParseError(result.errors);
-        return { ...base, parsed: result.data } as AIResponse<T>;
+        return { ...base, parsed: result.data } as AIRuntimeResult<T>;
       }
-      return base as AIResponse<T>;
-    },
-    async *stream(): AsyncIterable<AIStreamChunk> {
-      // unused
-    },
-    async vision<T>(): Promise<AIResponse<T>> {
-      throw new Error("not used");
+      return base as AIRuntimeResult<T>;
     },
   };
 }
 
 describe("explainRecommendation", () => {
   it("returns the validated explanation", async () => {
-    const result = await explainRecommendation(input, { ai: fakeAI(validJson) });
+    const result = await explainRecommendation(input, { runtime: fakeRuntime(validJson) });
     expect(result.explanation.summary).toBe("A crisp look.");
     expect(result.explanation.stylingTips).toEqual(["Cuff the chinos."]);
     expect(result.explanation.thingsToAvoid).toEqual(["Bulky sneakers."]);
     expect(result.cached).toBe(false);
   });
 
-  it("passes a parser and a 7-day cache descriptor to the AI service", async () => {
-    const ai = fakeAI(validJson);
-    const spy = vi.spyOn(ai, "generate");
-    await explainRecommendation(input, { ai });
+  it("passes a parser and a 7-day cache descriptor to AIRuntime", async () => {
+    const runtime = fakeRuntime(validJson);
+    const spy = vi.spyOn(runtime, "run");
+    await explainRecommendation(input, { runtime });
 
-    const [request, options] = spy.mock.calls[0];
-    expect(request.responseFormat).toBe("json");
-    expect(options?.parser).toBeDefined();
-    expect(options?.cache?.promptBuilder).toBe("recommendation-explanation");
-    expect(options?.cache?.promptVersion).toBe("v1");
-    expect(options?.cache?.input).toBe(input);
-    expect(options?.cache?.ttlSeconds).toBe(7 * 24 * 60 * 60);
+    const [req] = spy.mock.calls[0];
+    expect(req.capability).toBe("explanation");
+    expect(req.request?.responseFormat).toBe("json");
+    expect(req.parser).toBeDefined();
+    expect(req.cache?.promptBuilder).toBe("recommendation-explanation");
+    expect(req.cache?.promptVersion).toBe("v1");
+    expect(req.cache?.input).toBe(input);
+    expect(req.cache?.ttlSeconds).toBe(7 * 24 * 60 * 60);
   });
 
   it("forwards forceRefresh to bypass the cache", async () => {
-    const ai = fakeAI(validJson);
-    const spy = vi.spyOn(ai, "generate");
-    await explainRecommendation(input, { ai, forceRefresh: true });
-    expect(spy.mock.calls[0][1]?.forceRefresh).toBe(true);
+    const runtime = fakeRuntime(validJson);
+    const spy = vi.spyOn(runtime, "run");
+    await explainRecommendation(input, { runtime, forceRefresh: true });
+    expect(spy.mock.calls[0][0].forceRefresh).toBe(true);
   });
 
   it("throws (for graceful fallback) when the model returns invalid JSON", async () => {
     await expect(
-      explainRecommendation(input, { ai: fakeAI("sorry, no json here") }),
+      explainRecommendation(input, { runtime: fakeRuntime("sorry, no json here") }),
     ).rejects.toBeInstanceOf(ParseError);
   });
 
   it("propagates provider failures", async () => {
-    const failing: AIService = {
-      async generate() {
+    const failing: Pick<AIRuntime, "run"> = {
+      async run() {
         throw new Error("provider down");
       },
-      async *stream() {},
-      async vision<T>(): Promise<AIResponse<T>> {
-        throw new Error("x");
-      },
     };
-    await expect(explainRecommendation(input, { ai: failing })).rejects.toThrow(
+    await expect(explainRecommendation(input, { runtime: failing })).rejects.toThrow(
       "provider down",
     );
   });

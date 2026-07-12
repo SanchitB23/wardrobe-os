@@ -357,7 +357,7 @@ function RecentActivityWidget() {
           <Button
             variant="ghost"
             size="sm"
-            render={<a href="/wear-logs">Wear logs</a>}
+            render={<Link href="/wear-logs">Wear logs</Link>}
           />
         </div>
       </CardHeader>

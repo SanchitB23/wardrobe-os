@@ -106,9 +106,10 @@ _Update this table (and the backlog) as RFCs are created._
 | [018C](RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline                   | Acquisitions             | Implemented |
 | [019](RFC-019-Vision-Intelligence-v2.md)              | Vision Intelligence v2                              | Vision                   | Implemented |
 | [020](RFC-020-Inventory-Image-Intelligence.md)        | Inventory Image Intelligence                        | Vision / Recommendation  | Implemented |
-| [022](RFC-022-Logging-and-Observability-Runtime.md)   | Logging & Observability Runtime                     | Platform / Observability | Draft       |
+| [022](RFC-022-Logging-and-Observability-Runtime.md)   | Logging & Observability Runtime                     | Platform / Observability | Implemented |
+| [023](RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md) | Ad-hoc Wear Logs & Outfit Promotion               | Wear Logging / Outfit Management | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-022; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-023; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).

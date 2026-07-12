@@ -7,7 +7,12 @@
 
 export type LogLevel = "debug" | "info" | "warn" | "error";
 
-export type LogKind = "api_request" | "ai_usage" | "engine_trace" | "app";
+export type LogKind =
+  | "api_request"
+  | "ai_usage"
+  | "engine_trace"
+  | "weather_request"
+  | "app";
 
 export type AIUsageStatus = "ok" | "error" | "cache_hit";
 
@@ -15,6 +20,8 @@ export type TokenSource = "provider" | "unavailable";
 export type CostSource = "estimated" | "unavailable";
 
 export type EngineTraceStatus = "ok" | "partial" | "failed";
+
+export type WeatherRequestStatus = "ok" | "error" | "cache_hit";
 
 /** Base envelope fields present on every structured log line. */
 export interface LogEnvelope {
@@ -67,10 +74,20 @@ export interface EngineTraceLogFields {
   status: EngineTraceStatus;
 }
 
+export interface WeatherRequestLogFields {
+  provider: string;
+  cached: boolean;
+  latencyMs: number;
+  status: WeatherRequestStatus;
+  errorCode: string | null;
+  locationHint: string | null;
+}
+
 export type StructuredLogRecord =
   | (LogEnvelope & { kind: "api_request" } & ApiRequestLogFields)
   | (LogEnvelope & { kind: "ai_usage" } & AIUsageLogFields)
   | (LogEnvelope & { kind: "engine_trace" } & EngineTraceLogFields)
+  | (LogEnvelope & { kind: "weather_request" } & WeatherRequestLogFields)
   | (LogEnvelope & { kind: "app"; data?: Record<string, unknown> });
 
 const LEVEL_ORDER: Record<LogLevel, number> = {

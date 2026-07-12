@@ -320,3 +320,59 @@ describe("ring buffer", () => {
     expect(buf.snapshot().map((r) => r.message)).toEqual(["m2", "m3", "m4"]);
   });
 });
+
+describe("weather_request logging", () => {
+  it("emits weather_request with requestId from context", async () => {
+    const { logWeatherRequest } = await import("@/runtime/logging/weather-logger");
+    const lines: string[] = [];
+    logger.setConfig(getLoggingConfig({ LOG_REQUESTS: "true", LOG_LEVEL: "info" }));
+    vi.spyOn(console, "log").mockImplementation((line: string) => lines.push(String(line)));
+
+    runWithRequestContext(
+      { requestId: "7c2e1a8b-1234-4abc-9def-0123456789ab", startedAtMs: Date.now() },
+      () =>
+        logWeatherRequest({
+          provider: "open-meteo",
+          cached: false,
+          latencyMs: 42,
+          status: "ok",
+          locationHint: "Delhi",
+        }),
+    );
+
+    const line = lines.find((l) => l.includes('"kind":"weather_request"'));
+    expect(line).toBeTruthy();
+    expect(line).toContain('"provider":"open-meteo"');
+    expect(line).toContain('"requestId":"7c2e1a8b-1234-4abc-9def-0123456789ab"');
+    expect(line).toContain('"latencyMs":42');
+  });
+});
+
+describe("request replay store", () => {
+  it("captures when REPLAY_CAPTURE is enabled outside production", async () => {
+    const { replayStore } = await import("@/runtime/logging/request-replay");
+    const prev = process.env.REPLAY_CAPTURE;
+    try {
+      process.env.REPLAY_CAPTURE = "true";
+      replayStore.clear();
+      // Vitest runs with NODE_ENV=test (not production).
+      expect(replayStore.enabled()).toBe(true);
+      replayStore.capture({
+        requestId: "7c2e1a8b-1234-4abc-9def-0123456789ab",
+        method: "GET",
+        route: "/api/ai/test",
+        statusCode: 200,
+        latencyMs: 10,
+        errorCode: null,
+      });
+      expect(replayStore.list()).toHaveLength(1);
+      expect(replayStore.get("7c2e1a8b-1234-4abc-9def-0123456789ab")?.route).toBe(
+        "/api/ai/test",
+      );
+    } finally {
+      if (prev === undefined) delete process.env.REPLAY_CAPTURE;
+      else process.env.REPLAY_CAPTURE = prev;
+      replayStore.clear();
+    }
+  });
+});

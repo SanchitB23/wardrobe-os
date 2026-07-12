@@ -1,14 +1,12 @@
 "use client";
 
-import {
-  AlertTriangleIcon,
-  CheckCircle2Icon,
-  CircleHelpIcon,
-  LightbulbIcon,
-  XCircleIcon,
-} from "lucide-react";
+import { AlertTriangleIcon, LightbulbIcon } from "lucide-react";
 
-import type { BuyDecision, BuyVsSkipAnalysis, BuyVsSkipInputSource, ProspectiveItem } from "@/features/acquisition/types";
+import type {
+  BuyVsSkipAnalysis,
+  BuyVsSkipInputSource,
+  ProspectiveItem,
+} from "@/features/acquisition/types";
 import {
   Card,
   CardContent,
@@ -18,31 +16,11 @@ import {
 import { cn } from "@/lib/utils";
 import { BuyVsSkipPipelineActions } from "@/features/acquisition/components/BuyVsSkipPipelineActions";
 import { DecisionTraceDebug } from "@/features/acquisition/components/DecisionTraceDebug";
+import { DecisionVerdictBadge } from "@/features/acquisition/components/DecisionVerdictBadge";
 import { PotentialOutfits } from "@/features/acquisition/components/PotentialOutfits";
 import { ScoreBreakdown } from "@/features/acquisition/components/ScoreBreakdown";
 import { SimilarItems } from "@/features/acquisition/components/SimilarItems";
 import type { ImageCandidate } from "@/features/shopping/services/acquisitionPipeline.service";
-
-const DECISION_STYLE: Record<
-  BuyDecision,
-  { label: string; className: string; icon: typeof CheckCircle2Icon }
-> = {
-  buy: {
-    label: "Buy",
-    className: "bg-emerald-600 text-white dark:bg-emerald-500",
-    icon: CheckCircle2Icon,
-  },
-  consider: {
-    label: "Consider",
-    className: "bg-amber-500 text-white dark:bg-amber-500",
-    icon: CircleHelpIcon,
-  },
-  skip: {
-    label: "Skip",
-    className: "bg-destructive text-white",
-    icon: XCircleIcon,
-  },
-};
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
@@ -88,8 +66,6 @@ export function BuyVsSkipResult({
   decisionId?: string | null;
   imageCandidate?: ImageCandidate | null;
 }) {
-  const decision = DECISION_STYLE[analysis.decision];
-  const DecisionIcon = decision.icon;
   const confidencePct = Math.round(analysis.confidence * 100);
   const lowConfidence = analysis.explainabilityCodes.includes("LOW_CONFIDENCE");
 
@@ -97,10 +73,7 @@ export function BuyVsSkipResult({
     <Card>
       <CardHeader>
         <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className={cn("flex items-center gap-2 rounded-full px-3 py-1 text-sm font-semibold", decision.className)}>
-            <DecisionIcon className="size-4" />
-            {decision.label}
-          </div>
+          <DecisionVerdictBadge decision={analysis.decision} size="lg" />
           <div className="flex items-center gap-4">
             <div className="text-right">
               <div className="text-2xl font-semibold tabular-nums">{analysis.score}</div>

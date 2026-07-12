@@ -98,11 +98,61 @@ export interface DecisionCardModel {
   decision: AcquisitionDecisionRecord;
   source: BuyVsSkipInputSource;
   wishlistItemId: string | null;
+  wishlistItemName: string | null;
   inventoryItemId: string | null;
   wishlistStatus: WishlistItem["status"] | null;
   imageUrl: string | null;
+  wears: number;
+  costPerWear: number | null;
   lifecycleStatus: DecisionLifecycleStatus;
   actions: PipelineDecisionAction[];
+}
+
+export type DecisionWearStats = {
+  wears: number;
+  costPerWear: number | null;
+};
+
+function snapshotImageUrl(item: ProspectiveItem): string | null {
+  const url = item.imagePreviewUrl;
+  return typeof url === "string" && url.trim() ? url.trim() : null;
+}
+
+export function buildDecisionCardModel(
+  decision: AcquisitionDecisionRecord,
+  wishlistById: Map<string, WishlistItem>,
+  wearByInventoryId: Map<string, DecisionWearStats> = new Map(),
+): DecisionCardModel {
+  const wishlist = decision.wishlistItemId
+    ? (wishlistById.get(decision.wishlistItemId) ?? null)
+    : null;
+  const inventoryItemId = wishlist?.inventoryItemId ?? null;
+  const wear = inventoryItemId
+    ? (wearByInventoryId.get(inventoryItemId) ?? { wears: 0, costPerWear: null })
+    : { wears: 0, costPerWear: null };
+  const ctx = {
+    wishlistItemId: decision.wishlistItemId,
+    wishlistStatus: wishlist?.status ?? null,
+    inventoryItemId,
+    wears: wear.wears,
+    costPerWear: wear.costPerWear,
+  };
+  return {
+    decision,
+    source: decision.source,
+    wishlistItemId: decision.wishlistItemId,
+    wishlistItemName: wishlist?.item.name ?? null,
+    inventoryItemId,
+    wishlistStatus: wishlist?.status ?? null,
+    imageUrl:
+      wishlist?.imageUrl ??
+      snapshotImageUrl(decision.itemSnapshot) ??
+      null,
+    wears: wear.wears,
+    costPerWear: wear.costPerWear,
+    lifecycleStatus: resolveDecisionLifecycle(ctx),
+    actions: resolveDecisionActions(ctx),
+  };
 }
 
 function todayIsoDate(): string {
@@ -118,6 +168,32 @@ async function uploadWishlistCandidateImage(
     return { data: null, error: toError(validation.message) };
   }
   const storagePath = `wishlist-candidates/${wishlistId}/${Date.now()}-${sanitizeFilename(file.name)}`;
+  const uploadError = await uploadImageToStorage(storagePath, file);
+  if (uploadError) return { data: null, error: uploadError };
+  const signed = await createSignedImageUrl(storagePath);
+  return {
+    data: { storagePath, imageUrl: signed ?? storagePath },
+    error: null,
+  };
+}
+
+/**
+ * Durable preview for Decision History when analysis source is image and the
+ * decision is not yet linked to a wishlist. Stores under decision-previews/.
+ * Does not affect Buy vs Skip scoring.
+ */
+export async function uploadDecisionPreviewImage(
+  file: File,
+): Promise<Result<{ storagePath: string; imageUrl: string }>> {
+  const validation = validateItemImageFile(file);
+  if (!validation.valid) {
+    return { data: null, error: toError(validation.message) };
+  }
+  const id =
+    typeof crypto !== "undefined" && "randomUUID" in crypto
+      ? crypto.randomUUID()
+      : `${Date.now()}`;
+  const storagePath = `decision-previews/${id}/${Date.now()}-${sanitizeFilename(file.name)}`;
   const uploadError = await uploadImageToStorage(storagePath, file);
   if (uploadError) return { data: null, error: uploadError };
   const signed = await createSignedImageUrl(storagePath);
@@ -481,30 +557,6 @@ export async function convertWishlistToInventory(
           `Inventory created, but purchase link failed: ${purchase.error.message}`,
         )
       : patched.error,
-  };
-}
-
-export function buildDecisionCardModel(
-  decision: AcquisitionDecisionRecord,
-  wishlistById: Map<string, WishlistItem>,
-): DecisionCardModel {
-  const wishlist = decision.wishlistItemId
-    ? (wishlistById.get(decision.wishlistItemId) ?? null)
-    : null;
-  const ctx = {
-    wishlistItemId: decision.wishlistItemId,
-    wishlistStatus: wishlist?.status ?? null,
-    inventoryItemId: wishlist?.inventoryItemId ?? null,
-  };
-  return {
-    decision,
-    source: decision.source,
-    wishlistItemId: decision.wishlistItemId,
-    inventoryItemId: wishlist?.inventoryItemId ?? null,
-    wishlistStatus: wishlist?.status ?? null,
-    imageUrl: wishlist?.imageUrl ?? null,
-    lifecycleStatus: resolveDecisionLifecycle(ctx),
-    actions: resolveDecisionActions(ctx),
   };
 }
 

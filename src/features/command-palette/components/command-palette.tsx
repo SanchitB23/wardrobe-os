@@ -54,6 +54,8 @@ export function CommandPalette() {
 
   useEffect(() => {
     if (open) {
+      // Refresh recents from localStorage when the palette opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- external store sync on open
       setRecentItems(getRecentItems());
     }
   }, [open]);

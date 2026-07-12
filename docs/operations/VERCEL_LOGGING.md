@@ -12,6 +12,7 @@ Env flags (see `.env.example`):
 | `LOG_REQUESTS` | `true` | Emit `kind:"api_request"` per API completion |
 | `LOG_ENGINE_TRACES` | `false` | Emit `kind:"engine_trace"` orchestrator summaries |
 | `LOG_REDACTED` | `true` | Enforce redaction (keep `true` in production) |
+| `REPLAY_CAPTURE` | unset | Dev-only: capture sanitized API metadata for `/developer/replay` |
 
 ## How to inspect Vercel logs
 
@@ -65,8 +66,16 @@ capability id lists on engine traces.
    - the `x-request-id` response header, or
    - the JSON error body (`requestId` field on status ≥ 400 when practical).
 3. In Vercel Logs, search that UUID.
-4. Correlate in order: `api_request` → `ai_usage` (and optionally `engine_trace`
-   if `LOG_ENGINE_TRACES=true`).
+4. Correlate in order: `api_request` → `ai_usage` / `weather_request` (and
+   optionally `engine_trace` if `LOG_ENGINE_TRACES=true`).
+5. In Developer Mode, use **Request Trace** on `/developer/observability` or
+   open `/developer/ai-runtime` for process-local cost / fallback aggregates.
 
 Incoming clients may send `x-request-id` when it is UUID-shaped; otherwise the
 server generates one.
+
+## Weather + proxy
+
+- Weather Runtime emits `"kind":"weather_request"` on fetch / cache / error.
+- When `APP_ACCESS_CODE` is set, `proxy.ts` emits `"kind":"api_request"` with
+  `source:"proxy"` for allow / lock / misconfig decisions (no secrets).

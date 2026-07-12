@@ -3,8 +3,9 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@/features/outfits/services/outfits.service", () => ({
   createOutfit: vi.fn(),
 }));
-vi.mock("@/features/wear-logs/repositories/wear-logs.repository", () => ({
-  insertWearLogs: vi.fn(),
+vi.mock("@/features/wear-logs/services/wear-events.service", () => ({
+  createWearLogFromRecommendation: vi.fn(),
+  createWearLogFromOutfit: vi.fn(),
 }));
 vi.mock("@/features/outfits/repositories/outfits.repository", () => ({
   fetchOutfitItemLinks: vi.fn(),
@@ -15,12 +16,16 @@ import {
   wearOutfitToday,
 } from "@/features/recommendations/services/recommendations.service";
 import { createOutfit } from "@/features/outfits/services/outfits.service";
-import { insertWearLogs } from "@/features/wear-logs/repositories/wear-logs.repository";
+import {
+  createWearLogFromOutfit,
+  createWearLogFromRecommendation,
+} from "@/features/wear-logs/services/wear-events.service";
 import { fetchOutfitItemLinks } from "@/features/outfits/repositories/outfits.repository";
 import type { RecommendedOutfitItem } from "@/domain/recommendation";
 
 const createOutfitMock = vi.mocked(createOutfit);
-const insertWearLogsMock = vi.mocked(insertWearLogs);
+const createFromRecMock = vi.mocked(createWearLogFromRecommendation);
+const createFromOutfitMock = vi.mocked(createWearLogFromOutfit);
 const fetchLinksMock = vi.mocked(fetchOutfitItemLinks);
 
 function items(): RecommendedOutfitItem[] {
@@ -91,33 +96,79 @@ describe("saveGeneratedOutfit", () => {
 });
 
 describe("wearOutfitToday", () => {
-  it("logs a wear for each item today (generated combo has no outfit id)", async () => {
-    insertWearLogsMock.mockResolvedValue({
-      data: [],
+  it("logs a recommendation wear for generated combos (no outfit id)", async () => {
+    createFromRecMock.mockResolvedValue({
+      data: {
+        wearLog: {
+          id: "e1",
+          wornOn: "2026-07-12",
+          occasionId: null,
+          outfitId: null,
+          source: "recommendation",
+          notes: null,
+          weather: null,
+          combinationKey: "k",
+          items: [],
+          createdAt: "2026-07-12T00:00:00Z",
+        },
+        suggestion: {
+          combinationKey: "k",
+          count: 1,
+          threshold: 3,
+          itemCount: 3,
+          shouldSuggestPromote: false,
+        },
+      },
       error: null,
-    } as Awaited<ReturnType<typeof insertWearLogs>>);
+    });
 
     const result = await wearOutfitToday(["top1", "bottom1", "shoe1"]);
 
     expect(result.error).toBeNull();
-    const rows = insertWearLogsMock.mock.calls[0][0];
-    expect(rows).toHaveLength(3);
-    expect(rows.every((r) => r.outfit_id === null)).toBe(true);
-    expect(rows.every((r) => /^\d{4}-\d{2}-\d{2}$/.test(r.worn_on))).toBe(true);
+    expect(createFromRecMock).toHaveBeenCalledTimes(1);
+    const arg = createFromRecMock.mock.calls[0][0];
+    expect(arg.items).toHaveLength(3);
+    expect(arg.outfitId).toBeNull();
+    expect(/^\d{4}-\d{2}-\d{2}$/.test(arg.wornOn)).toBe(true);
+    expect(createFromOutfitMock).not.toHaveBeenCalled();
   });
 
-  it("passes the outfit id through for saved outfits", async () => {
-    insertWearLogsMock.mockResolvedValue({
-      data: [],
+  it("uses outfit wear path when outfit id is provided", async () => {
+    createFromOutfitMock.mockResolvedValue({
+      data: {
+        wearLog: {
+          id: "e1",
+          wornOn: "2026-07-12",
+          occasionId: null,
+          outfitId: "outfit-9",
+          source: "outfit",
+          notes: null,
+          weather: null,
+          combinationKey: "k",
+          items: [],
+          createdAt: "2026-07-12T00:00:00Z",
+        },
+        suggestion: {
+          combinationKey: "k",
+          count: 1,
+          threshold: 3,
+          itemCount: 1,
+          shouldSuggestPromote: false,
+        },
+      },
       error: null,
-    } as Awaited<ReturnType<typeof insertWearLogs>>);
+    });
 
     await wearOutfitToday(["top1"], "outfit-9");
-    expect(insertWearLogsMock.mock.calls[0][0][0].outfit_id).toBe("outfit-9");
+    expect(createFromOutfitMock.mock.calls[0][0].outfitId).toBe("outfit-9");
+    expect(createFromRecMock).not.toHaveBeenCalled();
   });
 
   it("surfaces a wear failure", async () => {
-    insertWearLogsMock.mockResolvedValue({ data: null, error: new Error("insert failed") });
+    createFromRecMock.mockResolvedValue({
+      data: null,
+      error: new Error("insert failed"),
+    });
     const result = await wearOutfitToday(["top1"]);
     expect(result.error?.message).toBe("insert failed");
   });
@@ -125,6 +176,6 @@ describe("wearOutfitToday", () => {
   it("rejects when there are no items", async () => {
     const result = await wearOutfitToday([]);
     expect(result.error).toBeTruthy();
-    expect(insertWearLogsMock).not.toHaveBeenCalled();
+    expect(createFromRecMock).not.toHaveBeenCalled();
   });
 });

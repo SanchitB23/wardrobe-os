@@ -19,6 +19,7 @@ import {
   type RequestContext,
 } from "@/runtime/logging/request-context";
 import { getLoggingConfig } from "@/runtime/logging/log-types";
+import { replayStore } from "@/runtime/logging/request-replay";
 
 export interface ApiRequestEventInput {
   requestId: string;
@@ -181,14 +182,23 @@ export function withApiLogging(route: string, handler: ApiHandler): ApiHandler {
         statusCode = 500;
         return response;
       } finally {
+        const latencyMs = Date.now() - startedAtMs;
         logApiRequest({
           requestId,
           method,
           route,
           statusCode,
-          latencyMs: Date.now() - startedAtMs,
+          latencyMs,
           userAgent: ua,
           ip,
+          errorCode,
+        });
+        replayStore.capture({
+          requestId,
+          method,
+          route,
+          statusCode,
+          latencyMs,
           errorCode,
         });
       }

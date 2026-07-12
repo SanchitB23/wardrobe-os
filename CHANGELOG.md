@@ -7,6 +7,73 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.1.0] — 2026-07-12
+
+**Wear Logs, Acquisitions Pipeline & Observability.** Ships ad-hoc wear events
+with outfit promotion (RFC-023), the acquisition-to-inventory handoff and
+Decision History polish (RFC-018C), category optimization (RFC-015A), structured
+logging (RFC-022), and developer observability follow-ups. 640 unit tests green.
+
+### Changed — RFC-018C Recent Decisions UI polish
+
+Finishes Decision History presentation without changing Buy vs Skip scoring or
+conversion guards.
+
+- **Wishlist on cards:** show wishlist item name with deep link
+  (`/acquisitions/wishlist?highlight=…`); View Wishlist / toasts use the same
+  highlight; wishlist rows scroll + ring when highlighted.
+- **Lifecycle:** DecisionCardModel joins hub ROI wears / cost-per-wear so cards
+  reach First Wear and ROI; stepper wording Analyzed → Wishlist → Purchased →
+  Inventory Created → First Wear → ROI.
+- **Images:** snapshot `imagePreviewUrl` + screenshot durable preview upload for
+  unlinked image-source decisions; image placeholder when no URL yet.
+- **Badges:** shared Buy / Consider / Skip styling (`DecisionVerdictBadge`).
+- **Details:** human-readable analysis summary; raw JSON under Developer
+  disclosure.
+- **Convert:** never silently mark purchased — Mark Purchased dialog (then
+  wizard) or wizard when already purchased.
+- **Visual polish:** spacing, icons, hover, empty state CTAs.
+- Tests for card model, lifecycle labels, and wishlist navigation helpers.
+
+### Changed — Developer Observability audit follow-up
+
+Closes remaining gaps from the Developer Observability audit without rewriting
+the Logging Runtime.
+
+- **Production AI → AIRuntime:** recommendation / lifestyle / buy-vs-skip
+  explanations, playground, and `/api/ai/test` call `getServerAIRuntime().run()`.
+  Vision + chat record into shared `aiRuntimeMetrics` so the dashboard reflects
+  real traffic.
+- **Metrics:** fallback counts, cache savings, per-model buckets; cost dashboard
+  shows MTD spend, budget remaining, savings.
+- **Weather:** structured `weather_request` logs (requestId, provider, latency,
+  cache, errors).
+- **Proxy:** access guard emits structured `api_request` lines when enabled.
+- **Developer hub:** Request Trace, Execution Graph, Feature Flags, Runtime
+  Statistics, Request Replay (`REPLAY_CAPTURE`, process-local only).
+- Tests for fallback/savings metrics, weather logs, replay store, feature flags,
+  requestId helpers.
+
+### Added — Ad-hoc Wear Logs & Outfit Promotion (RFC-023)
+
+Separates historical wear events from curated Saved Outfits. Users can log what
+they wore from inventory / recommendations without creating an outfit; repeated
+ad-hoc combinations can be promoted to a saved outfit with explicit confirmation.
+
+- **Domain** (`src/domain/wear-logs`): combination fingerprint, promote threshold
+  (default 3, ≥2 items), outfit draft mapping.
+- **Persistence:** additive `wear_events` + `wear_event_items` + `wear_log_source`
+  enum; legacy `wear_logs` kept and dual-written for analytics continuity.
+  Migration `docs/migrations/RFC-023-ad-hoc-wear-logs.sql`.
+- **Service:** event create (ad-hoc / outfit / recommendation), promote to outfit
+  (name + favorite + tags-in-notes), list/detail/edit/delete.
+- **UI:** `/wear-logs` event cards; `/wear-logs/new` Quick Log (Top/Bottom/
+  Footwear/Accessories); `/wear-logs/[id]` detail + Save as Outfit; inventory
+  multi-select → Log Wear; recommendation + saved-outfit wear paths updated.
+- **Developer:** `/developer/wear-logs` — source counts, combo frequency,
+  promotion candidates.
+- **RFC-023** marked Implemented.
+
 ### Added — Acquisition-to-Inventory Pipeline (RFC-018C)
 
 Connects Buy/Skip → wishlist → purchased → confirmed inventory → image →
@@ -736,7 +803,8 @@ explains and converses — without ever becoming the source of truth.
 
 - Database schema and inventory CRUD.
 
-[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.1...HEAD
+[Unreleased]: https://github.com/SanchitB23/wardrobe-os/compare/v2.1.0...HEAD
+[2.1.0]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.1...v2.1.0
 [2.0.1]: https://github.com/SanchitB23/wardrobe-os/compare/v2.0.0...v2.0.1
 [2.0.0]: https://github.com/SanchitB23/wardrobe-os/compare/v1.1.0...v2.0.0
 [1.1.0]: https://github.com/SanchitB23/wardrobe-os/compare/v1.0.2...v1.1.0

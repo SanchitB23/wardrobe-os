@@ -22,6 +22,7 @@ import {
 import { useBuyVsSkip } from "@/features/acquisition/hooks/useBuyVsSkip";
 import { BuyVsSkipResult } from "@/features/acquisition/components/BuyVsSkipResult";
 import { ProspectiveItemForm } from "@/features/acquisition/components/ProspectiveItemForm";
+import { uploadDecisionPreviewImage } from "@/features/shopping/services/acquisitionPipeline.service";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -110,10 +111,21 @@ export function ScreenshotAdvisorView() {
     setLastItem(null);
   }
 
-  function runBuyVsSkip(item: ProspectiveItem) {
+  async function runBuyVsSkip(item: ProspectiveItem) {
     explain.reset();
-    setLastItem(item);
-    buyVsSkip.mutate({ item, inputSource: "image" });
+    let imagePreviewUrl = item.imagePreviewUrl ?? previewUrl ?? null;
+    if (file) {
+      const uploaded = await uploadDecisionPreviewImage(file);
+      if (uploaded.data?.imageUrl) {
+        imagePreviewUrl = uploaded.data.imageUrl;
+      }
+    }
+    const withPreview: ProspectiveItem = {
+      ...item,
+      imagePreviewUrl,
+    };
+    setLastItem(withPreview);
+    buyVsSkip.mutate({ item: withPreview, inputSource: "image" });
   }
 
   const lowConfidence =

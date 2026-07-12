@@ -78,6 +78,7 @@ export class StructuredLogger {
     if (!levelMeetsThreshold(record.level, this.config.level)) return;
 
     if (record.kind === "api_request" && !this.config.requests) return;
+    if (record.kind === "weather_request" && !this.config.requests) return;
     if (record.kind === "ai_usage" && !this.config.aiUsage) return;
     if (record.kind === "engine_trace" && !this.config.engineTraces) return;
 

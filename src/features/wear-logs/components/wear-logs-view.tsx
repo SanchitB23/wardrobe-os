@@ -1,11 +1,18 @@
 "use client";
 
-import Link from "next/link";
 import { useMemo, useState } from "react";
-import { RefreshCwIcon, Trash2Icon } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Loader2Icon, PlusIcon } from "lucide-react";
 
+import type { WearLogSource } from "@/domain/wear-logs";
 import { PageHeader } from "@/features/layout";
-import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
+import {
+  useDeleteWearLogEventMutation,
+  useWearLogEvents,
+} from "@/features/wear-logs/hooks";
+import { formatWearLogDisplayDate } from "@/features/wear-logs/services/wear-logs.service";
+import type { WearEventListFilters } from "@/features/wear-logs/services/wear-events.service";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -23,337 +30,208 @@ import {
   SelectItem,
   SelectTrigger,
 } from "@/components/ui/select";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { DeleteWearLogDialog } from "@/features/wear-logs/components/delete-wear-log-dialog";
-import { useOccasions, useWearLogs } from "@/features/wear-logs/hooks";
-import { formatWearLogDisplayDate } from "@/features/wear-logs/services/wear-logs.service";
-import type { WearLogFilters, WearLogListRow } from "@/features/wear-logs/types";
-import {
-  useWardrobeItems,
-  useWardrobeLookups,
-} from "@/features/inventory/hooks";
-import {
-  formatRating,
-  UNCATEGORIZED_CATEGORY_ID,
-} from "@/types/wardrobe";
+
+const SOURCE_LABEL: Record<WearLogSource, string> = {
+  ad_hoc: "Ad-hoc",
+  outfit: "Saved outfit",
+  recommendation: "Recommendation",
+  trip: "Trip",
+  ai: "AI",
+};
 
 export function WearLogsView() {
-  const [itemId, setItemId] = useState<string>("");
-  const [categoryId, setCategoryId] = useState<string>("");
-  const [occasionId, setOccasionId] = useState<string>("");
+  const router = useRouter();
+  const [source, setSource] = useState<WearLogSource | "all">("all");
+  const [linkage, setLinkage] = useState<"all" | "linked" | "unlinked">("all");
   const [wornFrom, setWornFrom] = useState("");
   const [wornTo, setWornTo] = useState("");
-  const [logToDelete, setLogToDelete] = useState<WearLogListRow | null>(null);
 
-  const filters = useMemo<WearLogFilters>(
+  const filters: WearEventListFilters = useMemo(
     () => ({
-      itemId: itemId || undefined,
-      categoryId: categoryId || undefined,
-      occasionId: occasionId || undefined,
+      source,
+      linkage,
       wornFrom: wornFrom || undefined,
       wornTo: wornTo || undefined,
     }),
-    [itemId, categoryId, occasionId, wornFrom, wornTo],
+    [source, linkage, wornFrom, wornTo],
   );
 
-  const wearLogsQuery = useWearLogs(filters);
-  const itemsQuery = useWardrobeItems({});
-  const lookupsQuery = useWardrobeLookups();
-  const occasionsQuery = useOccasions();
-
-  const logs = wearLogsQuery.data ?? [];
-  const items = itemsQuery.data ?? [];
-  const lookups = lookupsQuery.data ?? {
-    categories: [],
-    subcategories: [],
-    brands: [],
-    colors: [],
-    seasons: [],
-  };
-  const occasions = occasionsQuery.data ?? [];
-
-  const selectedItemName =
-    items.find((item) => item.id === itemId)?.name ?? null;
-  const selectedCategoryName =
-    categoryId === UNCATEGORIZED_CATEGORY_ID
-      ? "Uncategorized"
-      : (lookups.categories.find((category) => category.id === categoryId)
-          ?.name ?? null);
-  const selectedOccasionName =
-    occasions.find((occasion) => occasion.id === occasionId)?.name ?? null;
-
-  function handleRetry() {
-    void wearLogsQuery.refetch();
-  }
-
-  function clearFilters() {
-    setItemId("");
-    setCategoryId("");
-    setOccasionId("");
-    setWornFrom("");
-    setWornTo("");
-  }
-
-  const hasFilters = Boolean(
-    itemId || categoryId || occasionId || wornFrom || wornTo,
-  );
+  const query = useWearLogEvents(filters);
+  const deleteMutation = useDeleteWearLogEventMutation();
+  const events = query.data ?? [];
 
   return (
-    <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
-        title="Wear logs"
-        badge={
-          !wearLogsQuery.isPending && !wearLogsQuery.error ? (
-            <Badge variant="secondary" className="tabular-nums">
-              {logs.length} entries
-            </Badge>
-          ) : null
-        }
-        description="Track when items were worn, filter by item or occasion, and manage your wear history."
+        title="Wear Logs"
+        badge={<Badge variant="secondary">History</Badge>}
+        description="What you actually wore — separate from curated Saved Outfits."
         actions={
-          <Button
-            variant="outline"
-            onClick={handleRetry}
-            disabled={wearLogsQuery.isFetching}
-          >
-            <RefreshCwIcon
-              className={wearLogsQuery.isFetching ? "animate-spin" : undefined}
-            />
-            Refresh
+          <Button render={<Link href="/wear-logs/new" />}>
+            <PlusIcon className="size-4" />
+            Quick Log Wear
           </Button>
         }
       />
 
       <Card>
-        <CardHeader>
-          <CardTitle>Filters</CardTitle>
-          <CardDescription>Narrow wear logs by item, category, occasion, or date.</CardDescription>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm">Filters</CardTitle>
+          <CardDescription>Source, outfit link, and date range.</CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
-            <div className="space-y-1.5">
-              <Label>Item</Label>
-              <Select
-                value={itemId}
-                onValueChange={(value) => setItemId(value ?? "")}
-              >
-                <SelectTrigger className="w-full">
-                  <span
-                    className={
-                      selectedItemName
-                        ? "flex flex-1 truncate text-left"
-                        : "flex flex-1 truncate text-left text-muted-foreground"
-                    }
-                  >
-                    {selectedItemName ?? "All items"}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All items</SelectItem>
-                  {items.map((item) => (
-                    <SelectItem key={item.id} value={item.id}>
-                      {item.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Category</Label>
-              <Select
-                value={categoryId}
-                onValueChange={(value) => setCategoryId(value ?? "")}
-              >
-                <SelectTrigger className="w-full">
-                  <span
-                    className={
-                      selectedCategoryName
-                        ? "flex flex-1 truncate text-left"
-                        : "flex flex-1 truncate text-left text-muted-foreground"
-                    }
-                  >
-                    {selectedCategoryName ?? "All categories"}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All categories</SelectItem>
-                  <SelectItem value={UNCATEGORIZED_CATEGORY_ID}>
-                    Uncategorized
+        <CardContent className="flex flex-wrap items-end gap-3">
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Source</Label>
+            <Select
+              value={source}
+              onValueChange={(v) =>
+                setSource((v ?? "all") as WearLogSource | "all")
+              }
+            >
+              <SelectTrigger className="w-40 capitalize">
+                <span className="flex flex-1 text-left capitalize">{source}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {(
+                  [
+                    "all",
+                    "ad_hoc",
+                    "outfit",
+                    "recommendation",
+                    "trip",
+                    "ai",
+                  ] as const
+                ).map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s === "all" ? "All" : SOURCE_LABEL[s]}
                   </SelectItem>
-                  {lookups.categories.map((category) => (
-                    <SelectItem key={category.id} value={category.id}>
-                      {category.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label>Occasion</Label>
-              <Select
-                value={occasionId}
-                onValueChange={(value) => setOccasionId(value ?? "")}
-              >
-                <SelectTrigger className="w-full">
-                  <span
-                    className={
-                      selectedOccasionName
-                        ? "flex flex-1 truncate text-left"
-                        : "flex flex-1 truncate text-left text-muted-foreground"
-                    }
-                  >
-                    {selectedOccasionName ?? "All occasions"}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="">All occasions</SelectItem>
-                  {occasions.map((occasion) => (
-                    <SelectItem key={occasion.id} value={occasion.id}>
-                      {occasion.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="wear-from">From</Label>
-              <Input
-                id="wear-from"
-                type="date"
-                value={wornFrom}
-                onChange={(event) => setWornFrom(event.target.value)}
-              />
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="wear-to">To</Label>
-              <Input
-                id="wear-to"
-                type="date"
-                value={wornTo}
-                onChange={(event) => setWornTo(event.target.value)}
-              />
-            </div>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-
-          {hasFilters ? (
-            <div className="mt-4">
-              <Button variant="outline" size="sm" onClick={clearFilters}>
-                Clear filters
-              </Button>
-            </div>
-          ) : null}
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Outfit link</Label>
+            <Select
+              value={linkage}
+              onValueChange={(v) =>
+                setLinkage((v ?? "all") as "all" | "linked" | "unlinked")
+              }
+            >
+              <SelectTrigger className="w-36 capitalize">
+                <span className="flex flex-1 text-left capitalize">{linkage}</span>
+              </SelectTrigger>
+              <SelectContent>
+                {(["all", "linked", "unlinked"] as const).map((s) => (
+                  <SelectItem key={s} value={s} className="capitalize">
+                    {s}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">From</Label>
+            <Input
+              type="date"
+              className="w-40"
+              value={wornFrom}
+              onChange={(e) => setWornFrom(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">To</Label>
+            <Input
+              type="date"
+              className="w-40"
+              value={wornTo}
+              onChange={(e) => setWornTo(e.target.value)}
+            />
+          </div>
         </CardContent>
       </Card>
 
-      {wearLogsQuery.error ? (
-        <InventoryErrorState
-          message={wearLogsQuery.error.message}
-          onRetry={handleRetry}
-          isRetrying={wearLogsQuery.isFetching}
-        />
-      ) : (
+      {query.isPending ? (
         <Card>
-          <CardHeader>
-            <CardTitle>Wear history</CardTitle>
-            <CardDescription>
-              Most recent wears appear first.
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="px-0">
-            <div className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent">
-                    <TableHead>Date</TableHead>
-                    <TableHead>Item</TableHead>
-                    <TableHead>Category</TableHead>
-                    <TableHead>Occasion</TableHead>
-                    <TableHead>Comfort</TableHead>
-                    <TableHead>Notes</TableHead>
-                    <TableHead className="w-[52px] text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {wearLogsQuery.isPending ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                        Loading wear logs…
-                      </TableCell>
-                    </TableRow>
-                  ) : logs.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={7} className="py-10 text-center text-muted-foreground">
-                        No wear logs match these filters.
-                      </TableCell>
-                    </TableRow>
-                  ) : (
-                    logs.map((log) => (
-                      <TableRow key={log.id}>
-                        <TableCell className="whitespace-nowrap tabular-nums">
-                          {formatWearLogDisplayDate(log.worn_on)}
-                        </TableCell>
-                        <TableCell>
-                          {log.item ? (
-                            <Link
-                              href={`/inventory/${log.item.id}`}
-                              className="font-medium hover:underline"
-                            >
-                              {log.item.name}
-                            </Link>
-                          ) : (
-                            "—"
-                          )}
-                        </TableCell>
-                        <TableCell>{log.item?.category?.name ?? "—"}</TableCell>
-                        <TableCell>{log.occasion?.name ?? "—"}</TableCell>
-                        <TableCell className="tabular-nums">
-                          {log.comfort_rating !== null
-                            ? `${formatRating(log.comfort_rating)}/10`
-                            : "—"}
-                        </TableCell>
-                        <TableCell className="max-w-[220px] truncate">
-                          {log.notes?.trim() || "—"}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Button
-                            variant="ghost"
-                            size="icon-sm"
-                            aria-label={`Delete wear log for ${log.item?.name ?? "item"}`}
-                            onClick={() => setLogToDelete(log)}
-                          >
-                            <Trash2Icon />
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))
-                  )}
-                </TableBody>
-              </Table>
-            </div>
+          <CardContent className="flex items-center gap-2 py-12 text-muted-foreground">
+            <Loader2Icon className="size-5 animate-spin" /> Loading wear logs…
           </CardContent>
         </Card>
-      )}
+      ) : null}
 
-      <DeleteWearLogDialog
-        log={logToDelete}
-        open={logToDelete !== null}
-        onOpenChange={(open) => {
-          if (!open) {
-            setLogToDelete(null);
-          }
-        }}
-      />
+      {query.isError ? (
+        <Card className="border-destructive/30">
+          <CardContent className="py-8 text-center text-sm text-destructive">
+            {query.error.message || "Couldn't load wear logs."}
+          </CardContent>
+        </Card>
+      ) : null}
+
+      {query.data && events.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="space-y-3 py-12 text-center text-sm text-muted-foreground">
+            <p>No wear logs yet. Log what you wore without creating an outfit.</p>
+            <Button render={<Link href="/wear-logs/new" />}>
+              Quick Log Wear
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
+
+      <div className="grid gap-3">
+        {events.map((event) => (
+          <Card key={event.id}>
+            <CardContent className="flex flex-wrap items-start justify-between gap-3 py-4">
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="font-medium">
+                    {formatWearLogDisplayDate(event.wornOn)}
+                  </p>
+                  <Badge variant="outline">{SOURCE_LABEL[event.source]}</Badge>
+                  {event.outfitId ? (
+                    <Badge variant="secondary">Linked outfit</Badge>
+                  ) : (
+                    <Badge variant="outline">Unlinked</Badge>
+                  )}
+                  <span className="text-sm text-muted-foreground">
+                    {event.items.length} item
+                    {event.items.length === 1 ? "" : "s"}
+                  </span>
+                </div>
+                {event.notes ? (
+                  <p className="text-sm text-muted-foreground line-clamp-2">
+                    {event.notes}
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => router.push(`/wear-logs/${event.id}`)}
+                >
+                  Open
+                </Button>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  disabled={deleteMutation.isPending}
+                  onClick={() => {
+                    if (
+                      window.confirm(
+                        "Delete this wear log? This does not delete any saved outfit.",
+                      )
+                    ) {
+                      deleteMutation.mutate(event.id);
+                    }
+                  }}
+                >
+                  Delete
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

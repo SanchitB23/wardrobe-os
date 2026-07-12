@@ -16,6 +16,7 @@ import {
 
 import { useAcquisitionsHub } from "@/features/shopping/hooks";
 import { AcquisitionsIntelligenceSummary } from "@/features/shopping/components/acquisitions-intelligence-panels";
+import { DecisionVerdictBadge } from "@/features/acquisition/components/DecisionVerdictBadge";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -26,9 +27,6 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
-const decisionVariant = (d: string) =>
-  d === "buy" ? "default" : d === "consider" ? "secondary" : "outline";
 
 export function AcquisitionsLandingView() {
   const hub = useAcquisitionsHub();
@@ -159,12 +157,7 @@ export function AcquisitionsLandingView() {
                   className="flex items-center justify-between gap-2 text-sm"
                 >
                   <span className="truncate">{d.itemName}</span>
-                  <Badge
-                    variant={decisionVariant(d.decision)}
-                    className="capitalize"
-                  >
-                    {d.decision}
-                  </Badge>
+                  <DecisionVerdictBadge decision={d.decision} />
                 </div>
               ))
             )}

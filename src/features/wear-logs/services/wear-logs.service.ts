@@ -1,5 +1,10 @@
 import * as wearLogsRepository from "@/features/wear-logs/repositories/wear-logs.repository";
 import {
+  createAdHocWearLog,
+  createWearLogEvent,
+  createWearLogFromOutfit,
+} from "@/features/wear-logs/services/wear-events.service";
+import {
   buildItemWearSummary,
   buildWearLogAnalytics,
 } from "@/domain/wardrobe/wear-analytics";
@@ -113,14 +118,39 @@ export async function fetchOccasions(): Promise<{
 export async function createWearLog(
   input: CreateWearLogInput,
 ): Promise<{ data: WearLogRow | null; error: Error | null }> {
-  return wearLogsRepository.insertWearLog({
-    item_id: input.item_id,
-    worn_on: input.worn_on,
-    outfit_id: input.outfit_id ?? null,
-    occasion_id: input.occasion_id ?? null,
-    comfort_rating: input.comfort_rating ?? null,
-    notes: input.notes?.trim() || null,
-  });
+  const result = input.outfit_id
+    ? await createWearLogEvent({
+        wornOn: input.worn_on,
+        items: [{ itemId: input.item_id }],
+        occasionId: input.occasion_id ?? null,
+        notes: input.notes?.trim() || null,
+        source: "outfit",
+        outfitId: input.outfit_id,
+      })
+    : await createAdHocWearLog({
+        wornOn: input.worn_on,
+        items: [{ itemId: input.item_id }],
+        occasionId: input.occasion_id ?? null,
+        notes: input.notes?.trim() || null,
+      });
+
+  if (result.error || !result.data) {
+    return { data: null, error: result.error };
+  }
+
+  return {
+    data: {
+      id: result.data.wearLog.id,
+      item_id: input.item_id,
+      worn_on: result.data.wearLog.wornOn,
+      outfit_id: result.data.wearLog.outfitId,
+      occasion_id: result.data.wearLog.occasionId,
+      comfort_rating: input.comfort_rating ?? null,
+      notes: result.data.wearLog.notes,
+      created_at: result.data.wearLog.createdAt,
+    },
+    error: null,
+  };
 }
 
 export async function createOutfitWearLogs(
@@ -130,16 +160,31 @@ export async function createOutfitWearLogs(
     return { data: [], error: toError("This outfit has no items to log.") };
   }
 
-  return wearLogsRepository.insertWearLogs(
-    input.item_ids.map((itemId) => ({
-      item_id: itemId,
-      outfit_id: input.outfit_id,
-      worn_on: input.worn_on,
-      occasion_id: input.occasion_id ?? null,
+  const result = await createWearLogFromOutfit({
+    outfitId: input.outfit_id,
+    items: input.item_ids.map((itemId) => ({ itemId })),
+    wornOn: input.worn_on,
+    occasionId: input.occasion_id ?? null,
+    notes: input.notes?.trim() || null,
+  });
+
+  if (result.error || !result.data) {
+    return { data: null, error: result.error };
+  }
+
+  return {
+    data: result.data.wearLog.items.map((item) => ({
+      id: result.data!.wearLog.id,
+      item_id: item.itemId,
+      worn_on: result.data!.wearLog.wornOn,
+      outfit_id: result.data!.wearLog.outfitId,
+      occasion_id: result.data!.wearLog.occasionId,
       comfort_rating: input.comfort_rating ?? null,
-      notes: input.notes?.trim() || null,
+      notes: result.data!.wearLog.notes,
+      created_at: result.data!.wearLog.createdAt,
     })),
-  );
+    error: null,
+  };
 }
 
 export async function deleteWearLog(

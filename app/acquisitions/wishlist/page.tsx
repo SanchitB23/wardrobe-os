@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 
 import { WishlistView } from "@/features/shopping/components";
 
@@ -7,5 +8,9 @@ export const metadata: Metadata = {
 };
 
 export default function AcquisitionsWishlistPage() {
-  return <WishlistView />;
+  return (
+    <Suspense fallback={null}>
+      <WishlistView />
+    </Suspense>
+  );
 }

@@ -40,6 +40,14 @@ export const wardrobeKeys = {
     [...wardrobeKeys.all, "recommendation-explanation", cacheKey] as const,
   wearLogs: (filters: WearLogFilters) =>
     [...wardrobeKeys.all, "wear-logs", filters] as const,
+  wearEvents: (filters: unknown) =>
+    [...wardrobeKeys.all, "wear-events", filters] as const,
+  wearEvent: (id: string) =>
+    [...wardrobeKeys.all, "wear-event", id] as const,
+  wearPromotionCandidates: () =>
+    [...wardrobeKeys.all, "wear-promotion-candidates"] as const,
+  wearDeveloperInsights: () =>
+    [...wardrobeKeys.all, "wear-developer-insights"] as const,
   itemWearSummary: (itemId: string) =>
     [...wardrobeKeys.all, "item-wear-summary", itemId] as const,
   occasions: () => [...wardrobeKeys.all, "occasions"] as const,

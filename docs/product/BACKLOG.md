@@ -192,6 +192,16 @@ Mode viewer.
 | ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------- |
 | [RFC-022](../rfc/RFC-022-Logging-and-Observability-Runtime.md)         | Logging & Observability Runtime — correlation IDs, structured API/AI/engine logs, redaction, cost visibility | Done ✅ (Implemented)  |
 
+## Epic 11 — Wear Logging / Outfit Management (v2.x)
+
+Separate curated saved outfits from historical wear logs. Ad-hoc logging from
+inventory / recommendations must not pollute the Outfits list; repeated
+combinations may be promoted to outfits with explicit user confirmation.
+
+| RFC                                                                                    | Title                                                                                          | Status        |
+| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------- |
+| [RFC-023](../rfc/RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md)                     | Ad-hoc Wear Logs & Outfit Promotion — event-centric wear logs, combo detection, outfit promote | Done ✅ (Implemented) |
+
 ## Removed / parked from scope
 
 **Rejected** — low ROI for a single-user product ([FUTURE.md](FUTURE.md) → Rejected):
@@ -205,7 +215,7 @@ Mode viewer.
 Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step Reasoning
 (RFC-021), Laundry Detection. Former Cross-Engine Orchestration topic remains
 cancelled (RFC-005); RFC-020 number is Inventory Image Intelligence (✅ v2.0.1).
-Next free sequential after parked RFC-021 / implemented RFC-022: **RFC-023**.
+Next free sequential after parked RFC-021 / implemented RFC-022 / implemented RFC-023: **RFC-024**.
 
 ---
 

@@ -109,31 +109,43 @@ export interface AIRuntimeResult<T = unknown> extends AIResponse<T> {
 export interface MetricRow {
   capability: AICapability;
   provider: AIProviderId;
+  /** Model that served (or would have served) this bucket. */
+  model: string;
   promptVersion: string;
   requests: number;
   cacheHits: number;
   failures: number;
+  /** Times the fallback provider served this bucket. */
+  fallbacks: number;
   avgLatencyMs: number | null;
   lastLatencyMs: number | null;
   totalTokens: number;
+  /** Estimated spend excluding cache hits (directional). */
   estCostUsd: number;
+  /** Counterfactual spend avoided by cache hits. */
+  cacheSavingsUsd: number;
 }
 
 export interface AIRuntimeMetricsSnapshot {
   byCapabilityProvider: MetricRow[];
   totalRequests: number;
   totalCostUsd: number;
+  totalFallbacks: number;
+  totalCacheSavingsUsd: number;
 }
 
 export interface MetricSample {
   capability: AICapability;
   provider: AIProviderId;
   promptVersion: string;
+  /** Model id when known (defaults to "unknown" in the metrics key). */
+  model?: string;
   latencyMs: number | null;
   usage?: AIUsage;
   costUsd: number;
   cacheHit: boolean;
   ok: boolean;
+  usedFallback?: boolean;
 }
 
 // ---------------------------------------------------------------------------

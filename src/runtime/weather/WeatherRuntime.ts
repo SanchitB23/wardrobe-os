@@ -4,6 +4,10 @@
  * returns `{ data, error }`. NEVER throws. It performs no recommendation and no
  * AI; it only produces weather data.
  *
+ * Emits lightweight `weather_request` JSON lines via console (same shape as
+ * RFC-022) without importing `src/runtime/logging` — this module is shared with
+ * client bundles that cannot pull `async_hooks` / ALS.
+ *
  *   getForecast → full WeatherForecast (for Lifestyle)
  *   getSnapshot → narrow WeatherSnapshot for Recommendation; ALWAYS present
  *                 (seasonal fallback on failure, source: "seasonal_fallback"),
@@ -34,6 +38,55 @@ import type {
 
 export const DEFAULT_WEATHER_PROVIDER: WeatherProviderId = "open-meteo";
 
+export type WeatherRequestObserveEvent = {
+  provider: string;
+  cached: boolean;
+  latencyMs: number;
+  status: "ok" | "error" | "cache_hit";
+  errorCode?: string | null;
+  locationHint?: string | null;
+};
+
+function locationHint(query: WeatherQuery): string {
+  return (query.location || "unknown").slice(0, 48);
+}
+
+function requestsLoggingEnabled(): boolean {
+  const raw = (typeof process !== "undefined" ? process.env.LOG_REQUESTS : undefined) ?? "true";
+  const v = raw.toLowerCase();
+  return !(v === "0" || v === "false" || v === "off" || v === "no");
+}
+
+/**
+ * Structured weather_request emit without importing the Logging Runtime
+ * (keeps this module client-bundle-safe).
+ */
+function emitWeatherRequest(event: WeatherRequestObserveEvent): void {
+  if (!requestsLoggingEnabled()) return;
+  let requestId: string | null = null;
+  try {
+    requestId = globalThis.__wardrobeGetRequestId?.() ?? null;
+  } catch {
+    requestId = null;
+  }
+  const line = JSON.stringify({
+    kind: "weather_request",
+    level: event.status === "error" ? "warn" : "info",
+    message: `weather_request ${event.provider} ${event.status}${event.cached ? " cached" : ""}`,
+    source: "weather_runtime",
+    requestId,
+    timestamp: new Date().toISOString(),
+    provider: event.provider,
+    cached: event.cached,
+    latencyMs: event.latencyMs,
+    status: event.status,
+    errorCode: event.errorCode ?? null,
+    locationHint: event.locationHint ?? null,
+  });
+  if (event.status === "error") console.warn(line);
+  else console.log(line);
+}
+
 function buildProvider(id: string): WeatherProvider {
   switch (id) {
     case "manual":
@@ -53,6 +106,8 @@ export interface WeatherRuntimeOptions {
   cache?: WeatherCache;
   metrics?: WeatherMetrics;
   now?: () => number;
+  /** Optional observer (tests / custom sinks). Default emits console JSON. */
+  onRequest?: (event: WeatherRequestObserveEvent) => void;
 }
 
 export class WeatherRuntime {
@@ -60,12 +115,14 @@ export class WeatherRuntime {
   private readonly cache: WeatherCache;
   private readonly metrics: WeatherMetrics;
   private readonly now: () => number;
+  private readonly onRequest: (event: WeatherRequestObserveEvent) => void;
 
   constructor(options: WeatherRuntimeOptions = {}) {
     const providerId = process.env.WEATHER_PROVIDER ?? DEFAULT_WEATHER_PROVIDER;
     this.provider = options.provider ?? buildProvider(providerId);
     this.metrics = options.metrics ?? sharedMetrics;
     this.now = options.now ?? (() => Date.now());
+    this.onRequest = options.onRequest ?? emitWeatherRequest;
     this.cache =
       options.cache ?? createInMemoryWeatherCache({ now: this.now, metrics: this.metrics });
   }
@@ -78,9 +135,17 @@ export class WeatherRuntime {
   async getForecast(query: WeatherQuery): Promise<WeatherForecastResult> {
     const started = this.now();
     const key = weatherCacheKey(this.provider.id, query.location, query.startDate, query.endDate);
+    const hint = locationHint(query);
 
     const cached = this.cache.get(key);
     if (cached) {
+      this.onRequest({
+        provider: this.provider.id,
+        cached: true,
+        latencyMs: 0,
+        status: "cache_hit",
+        locationHint: hint,
+      });
       return { data: cached, error: null, meta: { provider: this.provider.id, cached: true, latencyMs: 0 } };
     }
 
@@ -89,13 +154,29 @@ export class WeatherRuntime {
       const latencyMs = this.now() - started;
       this.metrics.recordFetch(this.provider.id, latencyMs, true);
       this.cache.set(key, forecast);
+      this.onRequest({
+        provider: this.provider.id,
+        cached: false,
+        latencyMs,
+        status: "ok",
+        locationHint: hint,
+      });
       return { data: forecast, error: null, meta: { provider: this.provider.id, cached: false, latencyMs } };
     } catch (error) {
       const latencyMs = this.now() - started;
       this.metrics.recordFetch(this.provider.id, latencyMs, false);
+      const err = error instanceof Error ? error : new Error(String(error));
+      this.onRequest({
+        provider: this.provider.id,
+        cached: false,
+        latencyMs,
+        status: "error",
+        errorCode: err.name || "weather_error",
+        locationHint: hint,
+      });
       return {
         data: null,
-        error: error instanceof Error ? error : new Error(String(error)),
+        error: err,
         meta: { provider: this.provider.id, cached: false, latencyMs },
       };
     }

@@ -1,7 +1,8 @@
 "use client";
 
-import React, { useId, useState } from "react";
+import React, { useEffect, useId, useState } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import {
   CheckIcon,
   Loader2Icon,
@@ -26,6 +27,10 @@ import {
 } from "@/features/shopping/hooks";
 import { MarkPurchasedDialog } from "@/features/shopping/components/mark-purchased-dialog";
 import { NeedEvolutionPanel } from "@/features/shopping/components/acquisitions-intelligence-panels";
+import {
+  readWishlistHighlight,
+  wishlistRowDomId,
+} from "@/features/shopping/lib/wishlist-navigation";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +50,7 @@ import {
   SelectTrigger,
 } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
 
 const PRIORITIES: WishlistPriority[] = ["high", "medium", "low"];
 const STATUSES: WishlistStatus[] = ["active", "purchased", "dismissed"];
@@ -103,6 +109,8 @@ export function WishlistView() {
   const hub = useAcquisitionsHub();
   const save = useSaveWishlistMutation();
   const status = useWishlistStatusMutation();
+  const searchParams = useSearchParams();
+  const highlightId = readWishlistHighlight(searchParams);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
   const [purchaseTarget, setPurchaseTarget] = useState<WishlistItem | null>(
@@ -116,6 +124,13 @@ export function WishlistView() {
     (hub.data?.intelligence.opportunityQueue ?? []).map((o) => [o.id, o]),
   );
   const intelligence = hub.data?.intelligence;
+
+  useEffect(() => {
+    if (!highlightId || wishlist.isPending) return;
+    const el = document.getElementById(wishlistRowDomId(highlightId));
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [highlightId, wishlist.isPending, items.length]);
 
   function startEdit(w: WishlistItem) {
     setEditingId(w.id);
@@ -201,6 +216,7 @@ export function WishlistView() {
               <WishlistRow
                 key={w.id}
                 item={w}
+                highlighted={highlightId === w.id}
                 opportunityScore={opp?.opportunityScore ?? null}
                 busy={status.isPending || save.isPending}
                 onEdit={() => startEdit(w)}
@@ -227,7 +243,12 @@ export function WishlistView() {
           {archived.map((w) => (
             <div
               key={w.id}
-              className="flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground"
+              id={wishlistRowDomId(w.id)}
+              className={cn(
+                "flex flex-wrap items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm text-muted-foreground transition-shadow",
+                highlightId === w.id &&
+                  "ring-2 ring-foreground/40 ring-offset-2 ring-offset-background",
+              )}
             >
               <span>
                 {w.item.name}{" "}
@@ -463,6 +484,7 @@ function WishlistForm({
 
 function WishlistRow({
   item,
+  highlighted,
   opportunityScore,
   busy,
   onEdit,
@@ -471,6 +493,7 @@ function WishlistRow({
   onDelete,
 }: {
   item: WishlistItem;
+  highlighted?: boolean;
   opportunityScore: number | null;
   busy: boolean;
   onEdit: () => void;
@@ -479,7 +502,14 @@ function WishlistRow({
   onDelete: () => void;
 }) {
   return (
-    <Card>
+    <Card
+      id={wishlistRowDomId(item.id)}
+      className={cn(
+        "transition-shadow",
+        highlighted &&
+          "ring-2 ring-foreground/40 ring-offset-2 ring-offset-background",
+      )}
+    >
       <CardContent className="flex flex-wrap items-center justify-between gap-2 py-3">
         <div>
           <div className="flex flex-wrap items-center gap-2">
