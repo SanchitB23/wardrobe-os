@@ -5,7 +5,12 @@ import type { BulkEditLookups } from "@/features/inventory/types";
 
 type WardrobeItemUpdate = Database["public"]["Tables"]["wardrobe_items"]["Update"];
 
-type RelationTable = "item_tags" | "item_seasons" | "item_styles";
+type RelationTable =
+  | "item_tags"
+  | "item_seasons"
+  | "item_styles"
+  | "item_occasions"
+  | "item_materials";
 
 export async function deleteItemRelations(
   table: RelationTable,
@@ -33,6 +38,32 @@ export async function deleteItemRelations(
       .delete()
       .in("item_id", itemIds)
       .eq("season_id", relationId)
+      .select("item_id");
+    if (error) {
+      return { affected: 0, error: toError(error.message) };
+    }
+    return { affected: data?.length ?? 0, error: null };
+  }
+
+  if (table === "item_occasions") {
+    const { data, error } = await supabase
+      .from("item_occasions")
+      .delete()
+      .in("item_id", itemIds)
+      .eq("occasion_id", relationId)
+      .select("item_id");
+    if (error) {
+      return { affected: 0, error: toError(error.message) };
+    }
+    return { affected: data?.length ?? 0, error: null };
+  }
+
+  if (table === "item_materials") {
+    const { data, error } = await supabase
+      .from("item_materials")
+      .delete()
+      .in("item_id", itemIds)
+      .eq("material_id", relationId)
       .select("item_id");
     if (error) {
       return { affected: 0, error: toError(error.message) };
@@ -115,6 +146,70 @@ export async function insertItemRelations(
 
     const { data, error } = await supabase
       .from("item_seasons")
+      .insert(rowsToInsert)
+      .select("item_id");
+
+    if (error) {
+      return { affected: 0, error: toError(error.message) };
+    }
+
+    return { affected: data?.length ?? 0, error: null };
+  }
+
+  if (table === "item_occasions") {
+    const { data: existingRows, error: existingError } = await supabase
+      .from("item_occasions")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .eq("occasion_id", relationId);
+
+    if (existingError) {
+      return { affected: 0, error: toError(existingError.message) };
+    }
+
+    const existingItemIds = new Set((existingRows ?? []).map((row) => row.item_id));
+    const rowsToInsert = itemIds
+      .filter((itemId) => !existingItemIds.has(itemId))
+      .map((itemId) => ({ item_id: itemId, occasion_id: relationId }));
+
+    if (rowsToInsert.length === 0) {
+      return { affected: 0, error: null };
+    }
+
+    const { data, error } = await supabase
+      .from("item_occasions")
+      .insert(rowsToInsert)
+      .select("item_id");
+
+    if (error) {
+      return { affected: 0, error: toError(error.message) };
+    }
+
+    return { affected: data?.length ?? 0, error: null };
+  }
+
+  if (table === "item_materials") {
+    const { data: existingRows, error: existingError } = await supabase
+      .from("item_materials")
+      .select("item_id")
+      .in("item_id", itemIds)
+      .eq("material_id", relationId);
+
+    if (existingError) {
+      return { affected: 0, error: toError(existingError.message) };
+    }
+
+    const existingItemIds = new Set((existingRows ?? []).map((row) => row.item_id));
+    const rowsToInsert = itemIds
+      .filter((itemId) => !existingItemIds.has(itemId))
+      .map((itemId) => ({ item_id: itemId, material_id: relationId }));
+
+    if (rowsToInsert.length === 0) {
+      return { affected: 0, error: null };
+    }
+
+    const { data, error } = await supabase
+      .from("item_materials")
       .insert(rowsToInsert)
       .select("item_id");
 

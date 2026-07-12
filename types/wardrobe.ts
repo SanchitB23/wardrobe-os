@@ -634,7 +634,11 @@ export type BulkEditAction =
   | { type: "add_season"; seasonId: string }
   | { type: "remove_season"; seasonId: string }
   | { type: "add_style"; styleId: string }
-  | { type: "remove_style"; styleId: string };
+  | { type: "remove_style"; styleId: string }
+  | { type: "add_occasion"; occasionId: string }
+  | { type: "remove_occasion"; occasionId: string }
+  | { type: "add_material"; materialId: string }
+  | { type: "remove_material"; materialId: string };
 
 export type BulkEditInput = {
   itemIds: string[];
@@ -663,6 +667,10 @@ export const BULK_EDIT_ACTION_OPTIONS: {
   { type: "remove_season", label: "Remove season", category: "relation" },
   { type: "add_style", label: "Add style", category: "relation" },
   { type: "remove_style", label: "Remove style", category: "relation" },
+  { type: "add_occasion", label: "Add occasion", category: "relation" },
+  { type: "remove_occasion", label: "Remove occasion", category: "relation" },
+  { type: "add_material", label: "Add material", category: "relation" },
+  { type: "remove_material", label: "Remove material", category: "relation" },
 ];
 
 export const ITEM_STATUSES: ItemStatus[] = ["active", "retired", "returned"];

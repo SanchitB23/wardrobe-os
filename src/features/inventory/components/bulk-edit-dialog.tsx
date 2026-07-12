@@ -251,6 +251,28 @@ function ActionValueFields({
           onChange={(styleId) => onChange({ type: action.type, styleId })}
         />
       );
+    case "add_occasion":
+    case "remove_occasion":
+      return (
+        <LookupSelect
+          label="Occasion"
+          value={action.occasionId}
+          options={lookups.occasions}
+          placeholder="Select an occasion"
+          onChange={(occasionId) => onChange({ type: action.type, occasionId })}
+        />
+      );
+    case "add_material":
+    case "remove_material":
+      return (
+        <LookupSelect
+          label="Material"
+          value={action.materialId}
+          options={lookups.materials}
+          placeholder="Select a material"
+          onChange={(materialId) => onChange({ type: action.type, materialId })}
+        />
+      );
     default: {
       const _exhaustive: never = action;
       return _exhaustive;

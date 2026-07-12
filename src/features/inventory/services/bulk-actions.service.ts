@@ -15,7 +15,12 @@ import type {
 import { toError } from "@/shared/utils/data-result";
 import { formatEnumLabel } from "@/types/wardrobe";
 
-type RelationTable = "item_tags" | "item_seasons" | "item_styles";
+type RelationTable =
+  | "item_tags"
+  | "item_seasons"
+  | "item_styles"
+  | "item_occasions"
+  | "item_materials";
 
 async function removeRelations(
   table: RelationTable,
@@ -68,6 +73,26 @@ async function applyRelationBulkEdit(
         return { affected: 0, error: toError("Style is required.") };
       }
       return removeRelations("item_styles", itemIds, action.styleId);
+    case "add_occasion":
+      if (!action.occasionId) {
+        return { affected: 0, error: toError("Occasion is required.") };
+      }
+      return addRelations("item_occasions", itemIds, action.occasionId);
+    case "remove_occasion":
+      if (!action.occasionId) {
+        return { affected: 0, error: toError("Occasion is required.") };
+      }
+      return removeRelations("item_occasions", itemIds, action.occasionId);
+    case "add_material":
+      if (!action.materialId) {
+        return { affected: 0, error: toError("Material is required.") };
+      }
+      return addRelations("item_materials", itemIds, action.materialId);
+    case "remove_material":
+      if (!action.materialId) {
+        return { affected: 0, error: toError("Material is required.") };
+      }
+      return removeRelations("item_materials", itemIds, action.materialId);
     default:
       return { affected: 0, error: toError("Invalid relation action.") };
   }
@@ -101,6 +126,10 @@ async function applyFieldBulkEdit(
     case "remove_season":
     case "add_style":
     case "remove_style":
+    case "add_occasion":
+    case "remove_occasion":
+    case "add_material":
+    case "remove_material":
       return applyRelationBulkEdit(itemIds, action);
     default: {
       const _exhaustive: never = action;
@@ -170,6 +199,14 @@ export function describeBulkEditAction(
       return `Add style “${lookupName(lookups.styles, action.styleId)}”`;
     case "remove_style":
       return `Remove style “${lookupName(lookups.styles, action.styleId)}”`;
+    case "add_occasion":
+      return `Add occasion “${lookupName(lookups.occasions, action.occasionId)}”`;
+    case "remove_occasion":
+      return `Remove occasion “${lookupName(lookups.occasions, action.occasionId)}”`;
+    case "add_material":
+      return `Add material “${lookupName(lookups.materials, action.materialId)}”`;
+    case "remove_material":
+      return `Remove material “${lookupName(lookups.materials, action.materialId)}”`;
     default: {
       const _exhaustive: never = action;
       return _exhaustive;
@@ -198,6 +235,12 @@ export function isBulkEditActionReady(action: BulkEditAction | null): boolean {
     case "add_style":
     case "remove_style":
       return Boolean(action.styleId);
+    case "add_occasion":
+    case "remove_occasion":
+      return Boolean(action.occasionId);
+    case "add_material":
+    case "remove_material":
+      return Boolean(action.materialId);
     default: {
       const _exhaustive: never = action;
       return _exhaustive;
@@ -228,6 +271,12 @@ export function createDefaultBulkEditAction(
     case "add_style":
     case "remove_style":
       return { type, styleId: "" };
+    case "add_occasion":
+    case "remove_occasion":
+      return { type, occasionId: "" };
+    case "add_material":
+    case "remove_material":
+      return { type, materialId: "" };
     default: {
       const _exhaustive: never = type;
       return _exhaustive;
