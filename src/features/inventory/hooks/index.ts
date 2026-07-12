@@ -36,9 +36,10 @@ import {
   updateWardrobeItem,
 } from "@/features/inventory/services/inventory.service";
 import {
-  buildDuplicateReview,
   bulkCleanupWardrobeItems,
-  fetchAllItemsForReview,
+  dismissCatalogPair,
+  getCatalogReview,
+  markCatalogItemReviewed,
 } from "@/features/inventory/services/review.service";
 import { fetchWardrobeItemRelations } from "@/features/inventory/services/relations.service";
 import {
@@ -515,14 +516,19 @@ export function useBulkImportJsonWardrobeItemsMutation() {
   });
 }
 
-export function useReviewCleanupData() {
+export function useCatalogReviewData(filters: {
+  includeRetired?: boolean;
+  hideReviewedIssues?: boolean;
+} = {}) {
   return useQuery({
-    queryKey: wardrobeKeys.review(),
-    queryFn: async () => {
-      const items = unwrapData(await fetchAllItemsForReview());
-      return buildDuplicateReview(items);
-    },
+    queryKey: [...wardrobeKeys.review(), filters] as const,
+    queryFn: async () => unwrapData(await getCatalogReview(filters)),
   });
+}
+
+/** @deprecated Prefer useCatalogReviewData */
+export function useReviewCleanupData() {
+  return useCatalogReviewData({ includeRetired: true });
 }
 
 type BulkCleanupInput = {
@@ -550,6 +556,39 @@ export function useBulkCleanupMutation() {
     },
     onError: (error: Error) => {
       toast.error(error.message || "Cleanup failed. Please try again.");
+    },
+  });
+}
+
+export function useDismissCatalogPairMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (input: {
+      itemIdA: string;
+      itemIdB: string;
+      kind: "duplicate" | "similar";
+    }) => unwrapData(await dismissCatalogPair(input)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: wardrobeKeys.review() });
+      toast.success("Dismissed from Catalog Review");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Could not dismiss.");
+    },
+  });
+}
+
+export function useMarkCatalogReviewedMutation() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (itemId: string) =>
+      unwrapData(await markCatalogItemReviewed(itemId)),
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: wardrobeKeys.review() });
+      toast.success("Marked reviewed");
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Could not mark reviewed.");
     },
   });
 }

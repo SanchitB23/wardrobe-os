@@ -1,185 +1,114 @@
+/**
+ * Catalog Review service (RFC-024).
+ * Orchestrates repositories + domain classifyCatalogIssues.
+ */
+
+import {
+  classifyCatalogIssues,
+  type CatalogItemView,
+  type CatalogReviewModel,
+  type CatalogVisualStatus,
+} from "@/domain/catalog-review";
 import {
   bulkRetireWardrobeItems,
   hardDeleteWardrobeItems,
+  insertCatalogDismissal,
   selectAllItemsForReview,
+  selectCatalogDismissals,
+  selectPrimaryImageItemIds,
+  selectRelationPresence,
+  selectReviewedItemIds,
+  selectVisualStatusByItemId,
+  upsertCatalogItemReviewed,
 } from "@/features/inventory/repositories/review.repository";
 import type {
   BulkCleanupMode,
   BulkCleanupResult,
-  DuplicateGroup,
-  DuplicateMatchReason,
-  ReviewCleanupResult,
   WardrobeItemRow,
 } from "@/features/inventory/types";
 
-function normalizeKey(value: string): string {
-  return value.trim().toLowerCase().replace(/\s+/g, " ");
+export type CatalogReviewFilters = {
+  includeRetired?: boolean;
+  hideReviewedIssues?: boolean;
+};
+
+export type CatalogReviewResult = CatalogReviewModel & {
+  itemById: Map<string, WardrobeItemRow>;
+  reviewedItemIds: string[];
+};
+
+function toVisualStatus(raw: string | undefined): CatalogVisualStatus {
+  if (!raw) return "none";
+  if (
+    raw === "pending" ||
+    raw === "accepted" ||
+    raw === "rejected" ||
+    raw === "stale"
+  ) {
+    return raw;
+  }
+  return "none";
 }
 
-function levenshteinDistance(a: string, b: string): number {
-  const matrix = Array.from({ length: a.length + 1 }, () =>
-    Array<number>(b.length + 1).fill(0),
-  );
-
-  for (let i = 0; i <= a.length; i += 1) {
-    matrix[i][0] = i;
-  }
-  for (let j = 0; j <= b.length; j += 1) {
-    matrix[0][j] = j;
-  }
-
-  for (let i = 1; i <= a.length; i += 1) {
-    for (let j = 1; j <= b.length; j += 1) {
-      const cost = a[i - 1] === b[j - 1] ? 0 : 1;
-      matrix[i][j] = Math.min(
-        matrix[i - 1][j] + 1,
-        matrix[i][j - 1] + 1,
-        matrix[i - 1][j - 1] + cost,
-      );
-    }
-  }
-
-  return matrix[a.length][b.length];
-}
-
-function areNamesSimilar(a: string, b: string): boolean {
-  const left = normalizeKey(a);
-  const right = normalizeKey(b);
-
-  if (left === right) {
-    return true;
-  }
-
-  if (left.length < 3 || right.length < 3) {
-    return false;
-  }
-
-  if (left.includes(right) || right.includes(left)) {
-    return true;
-  }
-
-  const distance = levenshteinDistance(left, right);
-  const maxLength = Math.max(left.length, right.length);
-  return 1 - distance / maxLength >= 0.85;
-}
-
-function buildGroupsByKey(
-  items: WardrobeItemRow[],
-  reason: DuplicateMatchReason,
-  keyForItem: (item: WardrobeItemRow) => string,
-  labelForKey: (key: string) => string,
-): DuplicateGroup[] {
-  const buckets = new Map<string, WardrobeItemRow[]>();
-
-  for (const item of items) {
-    const key = keyForItem(item);
-    if (!key) {
-      continue;
-    }
-    const bucket = buckets.get(key) ?? [];
-    bucket.push(item);
-    buckets.set(key, bucket);
-  }
-
-  return Array.from(buckets.entries())
-    .filter(([, groupItems]) => groupItems.length > 1)
-    .map(([key, groupItems]) => ({
-      id: `${reason}:${key}`,
-      reason,
-      label: labelForKey(key),
-      items: groupItems.sort((a, b) => a.code.localeCompare(b.code)),
-    }))
-    .sort((a, b) => b.items.length - a.items.length);
-}
-
-function buildSimilarNameGroups(items: WardrobeItemRow[]): DuplicateGroup[] {
-  const parent = items.map((_, index) => index);
-
-  function find(index: number): number {
-    if (parent[index] === index) {
-      return index;
-    }
-    parent[index] = find(parent[index]);
-    return parent[index];
-  }
-
-  function union(a: number, b: number) {
-    const rootA = find(a);
-    const rootB = find(b);
-    if (rootA !== rootB) {
-      parent[rootB] = rootA;
-    }
-  }
-
-  for (let i = 0; i < items.length; i += 1) {
-    for (let j = i + 1; j < items.length; j += 1) {
-      if (areNamesSimilar(items[i].name, items[j].name)) {
-        union(i, j);
-      }
-    }
-  }
-
-  const clusters = new Map<number, WardrobeItemRow[]>();
-
-  for (let index = 0; index < items.length; index += 1) {
-    const root = find(index);
-    const cluster = clusters.get(root) ?? [];
-    cluster.push(items[index]);
-    clusters.set(root, cluster);
-  }
-
-  return Array.from(clusters.values())
-    .filter((groupItems) => groupItems.length > 1)
-    .map((groupItems) => {
-      const sorted = groupItems.sort((a, b) => a.name.localeCompare(b.name));
-      const label = sorted[0]?.name ?? "Similar names";
-      return {
-        id: `similar_name:${normalizeKey(label)}:${sorted.map((item) => item.id).join("-")}`,
-        reason: "similar_name" as const,
-        label,
-        items: sorted,
-      };
-    })
-    .sort((a, b) => b.items.length - a.items.length);
-}
-
-export function buildDuplicateReview(items: WardrobeItemRow[]): ReviewCleanupResult {
-  const codeGroups = buildGroupsByKey(
-    items,
-    "same_code",
-    (item) => normalizeKey(item.code),
-    (key) => key.toUpperCase(),
-  );
-
-  const exactNameGroups = buildGroupsByKey(
-    items,
-    "similar_name",
-    (item) => normalizeKey(item.name),
-    (key) => key.replace(/\b\w/g, (char) => char.toUpperCase()),
-  );
-
-  const similarNameGroups = buildSimilarNameGroups(items).filter(
-    (group) =>
-      !exactNameGroups.some(
-        (exactGroup) =>
-          exactGroup.items.length === group.items.length &&
-          exactGroup.items.every((item, index) => item.id === group.items[index]?.id),
-      ),
-  );
-
-  const groups = [...codeGroups, ...exactNameGroups, ...similarNameGroups];
-  const duplicateIds = new Set<string>();
-
-  for (const group of groups) {
-    for (const item of group.items) {
-      duplicateIds.add(item.id);
-    }
-  }
-
+function toCatalogItemView(
+  row: WardrobeItemRow,
+  images: Set<string>,
+  relations: {
+    materials: Set<string>;
+    seasons: Set<string>;
+    occasions: Set<string>;
+  },
+  visuals: Map<string, string>,
+): CatalogItemView {
   return {
-    groups,
+    id: row.id,
+    code: row.code,
+    name: row.name,
+    status: row.status,
+    categoryId: row.category_id,
+    categoryName: row.category?.name ?? null,
+    subcategoryId: row.subcategory_id,
+    brandId: row.brand_id,
+    brandName: row.brand?.name ?? null,
+    colorId: row.primary_color_id,
+    colorName: row.primary_color?.name ?? null,
+    hasMaterial: relations.materials.has(row.id),
+    hasSeason: relations.seasons.has(row.id),
+    hasOccasion: relations.occasions.has(row.id),
+    hasPrimaryImage: images.has(row.id) || Boolean(row.primary_image_url),
+    visualStatus: toVisualStatus(visuals.get(row.id)),
+  };
+}
+
+/**
+ * Legacy helper kept for callers that only need duplicate groups from rows.
+ * Prefer getCatalogReview for the full Catalog Review surface.
+ */
+export function buildDuplicateReview(items: WardrobeItemRow[]) {
+  const views = items.map((row) =>
+    toCatalogItemView(
+      row,
+      new Set(),
+      {
+        materials: new Set(),
+        seasons: new Set(),
+        occasions: new Set(),
+      },
+      new Map(),
+    ),
+  );
+  const model = classifyCatalogIssues(views, { includeRetired: true });
+  return {
+    groups: model.duplicates.map((g) => ({
+      id: g.id,
+      reason: g.reason === "same_code" ? ("same_code" as const) : ("same_identity" as const),
+      label: g.label,
+      items: g.itemIds
+        .map((id) => items.find((i) => i.id === id))
+        .filter((i): i is WardrobeItemRow => Boolean(i)),
+    })),
     totalItems: items.length,
-    duplicateItemCount: duplicateIds.size,
+    duplicateItemCount: new Set(model.duplicates.flatMap((g) => g.itemIds)).size,
   };
 }
 
@@ -188,6 +117,83 @@ export async function fetchAllItemsForReview(): Promise<{
   error: Error | null;
 }> {
   return selectAllItemsForReview();
+}
+
+export async function getCatalogReview(
+  filters: CatalogReviewFilters = {},
+): Promise<{ data: CatalogReviewResult | null; error: Error | null }> {
+  const [itemsRes, imagesRes, relationsRes, visualsRes, dismissalsRes, reviewedRes] =
+    await Promise.all([
+      selectAllItemsForReview(),
+      selectPrimaryImageItemIds(),
+      selectRelationPresence(),
+      selectVisualStatusByItemId(),
+      selectCatalogDismissals(),
+      selectReviewedItemIds(),
+    ]);
+
+  if (itemsRes.error || !itemsRes.data) {
+    return {
+      data: null,
+      error: itemsRes.error ?? new Error("Failed to load items."),
+    };
+  }
+  if (imagesRes.error || !imagesRes.data) {
+    return { data: null, error: imagesRes.error };
+  }
+  if (relationsRes.error || !relationsRes.data) {
+    return { data: null, error: relationsRes.error };
+  }
+  if (visualsRes.error || !visualsRes.data) {
+    return { data: null, error: visualsRes.error };
+  }
+  if (dismissalsRes.error || !dismissalsRes.data) {
+    return { data: null, error: dismissalsRes.error };
+  }
+  if (reviewedRes.error || !reviewedRes.data) {
+    return { data: null, error: reviewedRes.error };
+  }
+
+  const itemById = new Map(itemsRes.data.map((row) => [row.id, row]));
+  const views = itemsRes.data.map((row) =>
+    toCatalogItemView(
+      row,
+      imagesRes.data!,
+      relationsRes.data!,
+      visualsRes.data!,
+    ),
+  );
+
+  const model = classifyCatalogIssues(views, {
+    includeRetired: filters.includeRetired ?? false,
+    dismissals: dismissalsRes.data,
+    reviewedItemIds: reviewedRes.data,
+    hideReviewedIssues: filters.hideReviewedIssues ?? false,
+  });
+
+  return {
+    data: {
+      ...model,
+      itemById,
+      reviewedItemIds: [...reviewedRes.data],
+    },
+    error: null,
+  };
+}
+
+export async function dismissCatalogPair(input: {
+  itemIdA: string;
+  itemIdB: string;
+  kind: "duplicate" | "similar";
+  reason?: string | null;
+}): Promise<{ data: true | null; error: Error | null }> {
+  return insertCatalogDismissal(input);
+}
+
+export async function markCatalogItemReviewed(
+  itemId: string,
+): Promise<{ data: true | null; error: Error | null }> {
+  return upsertCatalogItemReviewed(itemId);
 }
 
 export async function bulkCleanupWardrobeItems(

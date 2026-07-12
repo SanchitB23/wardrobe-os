@@ -24,10 +24,9 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 
 - ✅ Today Experience & v1.0 Product Polish (RFC-007)
 
-**Current:** **v2.1.0 — Wear Logs, Acquisitions Pipeline & Observability** shipped
-([docs/releases/v2.1.0.md](docs/releases/v2.1.0.md)). Includes RFC-023 wear events,
-RFC-018C acquisition→inventory (+ Decision History polish), RFC-015A category
-optimization, and RFC-022 logging / developer observability.
+**Current:** **v2.2.0 — Catalog Review v2** shipped
+([docs/releases/v2.2.0.md](docs/releases/v2.2.0.md)). Prior: **v2.1.0** Wear Logs,
+Acquisitions Pipeline & Observability.
 
 ## Phases
 
@@ -43,6 +42,7 @@ optimization, and RFC-022 logging / developer observability.
 | **v2.0**   | **Lifestyle Intelligence Platform**   | **✅**    | **Trip Planner (017), Shopping Intelligence (018), Acquisitions hub + 018B, Vision Intelligence v2 (019)**                                               |
 | **v2.0.1** | **Inventory Image Intelligence**      | **✅**    | **RFC-020 — primary image → VisualStyleAttributes → Accept → StyleDNA gap-fill**                                                                        |
 | **v2.1.0** | **Wear Logs, Acquisitions & Ops**     | **✅**    | **RFC-023 wear logs; RFC-018C pipeline + Decision History polish; RFC-015A Optimize; RFC-022 observability**                                           |
+| **v2.2.0** | **Catalog Review v2**                 | **✅**    | **RFC-024 — metadata-aware duplicates, similar items, completeness sections, dismissals, quality score**                                              |
 | ~~v1.2~~   | ~~Wardrobe Intelligence~~             | ⏸️ Parked | Cross-engine orchestration + higher-order reasoning — superseded / absorbed by RFC-005/013/014 (see [FUTURE.md](docs/product/FUTURE.md))                |
 
 ---

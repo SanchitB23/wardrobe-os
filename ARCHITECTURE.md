@@ -114,6 +114,14 @@ in `src/features/wear-logs`; Quick Log at `/wear-logs/new`; detail + promote at
 dual-write flattened rows to legacy `wear_logs` so Usage / ROI / Recommendation /
 Personalization keep working without reader changes.
 
+### Catalog Review (RFC-024)
+`src/domain/catalog-review` classifies wardrobe data quality: duplicates (same
+code or same name + category + color), similar items (never fuzzy-name-only
+duplicates), missing metadata / images / visual analysis, and a deterministic
+catalog quality score. Feature surface `/inventory/review` (Catalog Review);
+dismissals + reviewed flags in additive tables. Cleanup still retires by default
+with explicit hard-delete confirmation. AI never decides catalog correctness.
+
 ### Weather Runtime
 `src/runtime/weather/**` (RFC-011) is the **single deterministic weather source**:
 **weather is data; the engines decide; AI explains.** It is a runtime (I/O)

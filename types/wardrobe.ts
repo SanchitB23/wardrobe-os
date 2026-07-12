@@ -591,7 +591,7 @@ export const EMPTY_WARDROBE_ITEM_RELATIONS: WardrobeItemRelations = {
   care: null,
 };
 
-export type DuplicateMatchReason = "same_code" | "similar_name";
+export type DuplicateMatchReason = "same_code" | "same_identity" | "similar_name";
 
 export type DuplicateGroup = {
   id: string;

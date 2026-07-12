@@ -183,6 +183,51 @@ export type Database = {
           },
         ];
       };
+      catalog_review_dismissals: {
+        Row: {
+          id: string;
+          item_id_a: string;
+          item_id_b: string;
+          kind: string;
+          reason: string | null;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          item_id_a: string;
+          item_id_b: string;
+          kind: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Update: {
+          id?: string;
+          item_id_a?: string;
+          item_id_b?: string;
+          kind?: string;
+          reason?: string | null;
+          created_at?: string;
+        };
+        Relationships: [];
+      };
+      catalog_review_item_state: {
+        Row: {
+          item_id: string;
+          reviewed_at: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          item_id: string;
+          reviewed_at?: string | null;
+          updated_at?: string;
+        };
+        Update: {
+          item_id?: string;
+          reviewed_at?: string | null;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
       wardrobe_items: {
         Row: {
           brand_id: string | null;

@@ -31,7 +31,7 @@ const stubAnalysis = {
   reasonsToBuy: ["Gap in blazers"],
   reasonsToSkip: [],
   tradeoffs: [],
-} as BuyVsSkipAnalysis;
+} as unknown as BuyVsSkipAnalysis;
 
 const prospective = (
   overrides: Partial<ProspectiveItem> = {},

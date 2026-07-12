@@ -3,8 +3,12 @@
 import Link from "next/link";
 import { useMemo, useState } from "react";
 import {
+  CheckIcon,
   CopyIcon,
+  EyeOffIcon,
+  ImagePlusIcon,
   PencilIcon,
+  ScanSearchIcon,
   SearchIcon,
   Trash2Icon,
 } from "lucide-react";
@@ -33,29 +37,35 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
-  useReviewCleanupData,
+  useCatalogReviewData,
+  useDismissCatalogPairMutation,
+  useMarkCatalogReviewedMutation,
   useWardrobeLookups,
 } from "@/features/inventory/hooks";
 import { cn } from "@/lib/utils";
 import {
   formatEnumLabel,
-  type DuplicateGroup,
-  type DuplicateMatchReason,
   type WardrobeItemRow,
 } from "@/types/wardrobe";
 
-function reasonLabel(reason: DuplicateMatchReason) {
-  switch (reason) {
-    case "same_code":
-      return "Same code";
-    case "similar_name":
-      return "Similar name";
-    default: {
-      const _exhaustive: never = reason;
-      return _exhaustive;
-    }
-  }
-}
+type SectionKey =
+  | "duplicates"
+  | "similar"
+  | "missing_metadata"
+  | "unbranded"
+  | "missing_images"
+  | "visual_pending"
+  | "data_quality";
+
+const SECTIONS: { key: SectionKey; label: string }[] = [
+  { key: "duplicates", label: "Duplicates" },
+  { key: "similar", label: "Similar Items" },
+  { key: "missing_metadata", label: "Missing Metadata" },
+  { key: "unbranded", label: "Unbranded" },
+  { key: "missing_images", label: "Missing Images" },
+  { key: "visual_pending", label: "Visual Analysis Pending" },
+  { key: "data_quality", label: "Data Quality Issues" },
+];
 
 function ReviewItemRow({
   item,
@@ -63,12 +73,16 @@ function ReviewItemRow({
   onToggle,
   onEdit,
   onCleanup,
+  onMarkReviewed,
+  onAnalyze,
 }: {
   item: WardrobeItemRow;
   selected: boolean;
   onToggle: (checked: boolean) => void;
   onEdit: () => void;
   onCleanup: () => void;
+  onMarkReviewed: () => void;
+  onAnalyze: () => void;
 }) {
   return (
     <TableRow className={cn(selected && "bg-muted/40")}>
@@ -91,6 +105,7 @@ function ReviewItemRow({
         </Link>
       </TableCell>
       <TableCell>{item.category?.name ?? "—"}</TableCell>
+      <TableCell>{item.primary_color?.name ?? "—"}</TableCell>
       <TableCell>{item.brand?.name ?? "—"}</TableCell>
       <TableCell>
         {item.status ? (
@@ -102,19 +117,47 @@ function ReviewItemRow({
         )}
       </TableCell>
       <TableCell className="text-right">
-        <div className="flex justify-end gap-1">
-          <Button variant="ghost" size="icon-sm" onClick={onEdit}>
+        <div className="flex justify-end gap-0.5">
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Edit"
+            onClick={onEdit}
+          >
             <PencilIcon />
-            <span className="sr-only">Edit {item.name}</span>
           </Button>
           <Button
             variant="ghost"
             size="icon-sm"
+            aria-label="Add or manage image"
+            render={<Link href={`/inventory/${item.id}`} />}
+          >
+            <ImagePlusIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Analyze visual attributes"
+            onClick={onAnalyze}
+          >
+            <ScanSearchIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Mark reviewed"
+            onClick={onMarkReviewed}
+          >
+            <CheckIcon />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon-sm"
+            aria-label="Clean up"
             onClick={onCleanup}
             disabled={item.status === "retired"}
           >
             <Trash2Icon />
-            <span className="sr-only">Clean up {item.name}</span>
           </Button>
         </div>
       </TableCell>
@@ -122,160 +165,75 @@ function ReviewItemRow({
   );
 }
 
-function DuplicateGroupCard({
-  group,
-  selectedIds,
-  onToggleItem,
-  onToggleGroup,
-  onEditItem,
-  onCleanupItem,
-}: {
-  group: DuplicateGroup;
-  selectedIds: Set<string>;
-  onToggleItem: (itemId: string, checked: boolean) => void;
-  onToggleGroup: (checked: boolean) => void;
-  onEditItem: (item: WardrobeItemRow) => void;
-  onCleanupItem: (item: WardrobeItemRow) => void;
-}) {
-  const groupIds = group.items.map((item) => item.id);
-  const selectedInGroup = groupIds.filter((id) => selectedIds.has(id)).length;
-  const allSelected = selectedInGroup === groupIds.length && groupIds.length > 0;
-
-  return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex items-center gap-2">
-              <CopyIcon className="size-4 text-muted-foreground" />
-              <CardTitle className="text-base">{group.label}</CardTitle>
-              <Badge variant="outline">{reasonLabel(group.reason)}</Badge>
-            </div>
-            <CardDescription>
-              {group.items.length} possible duplicate
-              {group.items.length === 1 ? "" : "s"}
-            </CardDescription>
-          </div>
-          <label className="flex items-center gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="size-4 rounded border"
-              checked={allSelected}
-              onChange={(event) => onToggleGroup(event.target.checked)}
-            />
-            Select group
-          </label>
-        </div>
-      </CardHeader>
-      <CardContent className="p-0">
-        <Table>
-          <TableHeader>
-            <TableRow className="hover:bg-transparent">
-              <TableHead className="w-[40px]" />
-              <TableHead>Code</TableHead>
-              <TableHead>Name</TableHead>
-              <TableHead>Category</TableHead>
-              <TableHead>Brand</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {group.items.map((item) => (
-              <ReviewItemRow
-                key={item.id}
-                item={item}
-                selected={selectedIds.has(item.id)}
-                onToggle={(checked) => onToggleItem(item.id, checked)}
-                onEdit={() => onEditItem(item)}
-                onCleanup={() => onCleanupItem(item)}
-              />
-            ))}
-          </TableBody>
-        </Table>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function InventoryReviewView() {
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [includeRetired, setIncludeRetired] = useState(false);
+  const [hideReviewed, setHideReviewed] = useState(false);
+  const [section, setSection] = useState<SectionKey>("duplicates");
   const [search, setSearch] = useState("");
-  const [cleanupOpen, setCleanupOpen] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [cleanupIds, setCleanupIds] = useState<string[]>([]);
-  const [cleanupLabel, setCleanupLabel] = useState<string | undefined>();
+  const [cleanupOpen, setCleanupOpen] = useState(false);
   const [editItem, setEditItem] = useState<WardrobeItemRow | null>(null);
-  const [editOpen, setEditOpen] = useState(false);
 
-  const reviewQuery = useReviewCleanupData();
+  const reviewQuery = useCatalogReviewData({
+    includeRetired,
+    hideReviewedIssues: hideReviewed,
+  });
   const lookupsQuery = useWardrobeLookups();
+  const dismissMutation = useDismissCatalogPairMutation();
+  const reviewedMutation = useMarkCatalogReviewedMutation();
 
-  const allItems = useMemo(() => {
-    const items = new Map<string, WardrobeItemRow>();
-    for (const group of reviewQuery.data?.groups ?? []) {
-      for (const item of group.items) {
-        items.set(item.id, item);
-      }
-    }
-    return Array.from(items.values());
-  }, [reviewQuery.data?.groups]);
+  const review = reviewQuery.data;
 
-  const filteredItems = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) {
-      return allItems;
-    }
-    return allItems.filter(
-      (item) =>
-        item.code.toLowerCase().includes(query) ||
-        item.name.toLowerCase().includes(query) ||
-        item.brand?.name.toLowerCase().includes(query) ||
-        item.category?.name.toLowerCase().includes(query),
+  const matchesSearch = (item: WardrobeItemRow) => {
+    const q = search.trim().toLowerCase();
+    if (!q) return true;
+    return (
+      item.code.toLowerCase().includes(q) ||
+      item.name.toLowerCase().includes(q) ||
+      (item.brand?.name ?? "").toLowerCase().includes(q) ||
+      (item.category?.name ?? "").toLowerCase().includes(q) ||
+      (item.primary_color?.name ?? "").toLowerCase().includes(q)
     );
-  }, [allItems, search]);
+  };
 
-  function toggleSelection(itemId: string, checked: boolean) {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      if (checked) {
-        next.add(itemId);
-      } else {
-        next.delete(itemId);
-      }
+  const itemById = review?.itemById;
+
+  const sectionCounts = useMemo(() => {
+    if (!review) {
+      return {
+        duplicates: 0,
+        similar: 0,
+        missing_metadata: 0,
+        unbranded: 0,
+        missing_images: 0,
+        visual_pending: 0,
+        data_quality: 0,
+      };
+    }
+    return {
+      duplicates: review.duplicates.length,
+      similar: review.similar.length,
+      missing_metadata: review.missingMetadata.length,
+      unbranded: review.unbranded.length,
+      missing_images: review.missingImages.length,
+      visual_pending: review.visualPending.length,
+      data_quality: review.dataQuality.length,
+    };
+  }, [review]);
+
+  function toggleId(id: string, checked: boolean) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
       return next;
     });
   }
 
-  function toggleGroupSelection(itemIds: string[], checked: boolean) {
-    setSelectedIds((current) => {
-      const next = new Set(current);
-      for (const id of itemIds) {
-        if (checked) {
-          next.add(id);
-        } else {
-          next.delete(id);
-        }
-      }
-      return next;
-    });
-  }
-
-  function openCleanup(ids: string[], label?: string) {
+  function openCleanup(ids: string[]) {
     setCleanupIds(ids);
-    setCleanupLabel(label);
     setCleanupOpen(true);
-  }
-
-  function openEdit(item: WardrobeItemRow) {
-    setEditItem(item);
-    setEditOpen(true);
-  }
-
-  function handleCleanupCompleted() {
-    setSelectedIds(new Set());
-    setCleanupIds([]);
-    setCleanupLabel(undefined);
-    void reviewQuery.refetch();
   }
 
   const selectedCount = selectedIds.size;
@@ -302,22 +260,28 @@ export function InventoryReviewView() {
     );
   }
 
-  const review = reviewQuery.data;
-
   return (
-    <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-8 px-6 py-8 pb-28 lg:px-8 lg:py-10">
+    <div className="mx-auto flex w-full max-w-[1400px] flex-1 flex-col gap-6 px-6 py-8 lg:px-8 lg:py-10">
       <PageHeader
         className="border-b pb-6"
-        title="Import review"
-        description="Find duplicate or test items after import, fix metadata quickly, and clean up in bulk. Default cleanup retires items; hard delete requires explicit confirmation."
+        title="Catalog Review"
+        description="Wardrobe data quality — metadata-aware duplicates, similar items, and completeness. Default cleanup retires items; hard delete requires explicit confirmation. AI never decides catalog correctness."
       />
 
-      <div className="grid gap-4 sm:grid-cols-3">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Total catalog items</CardDescription>
+            <CardDescription>Catalog quality</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
-              {review?.totalItems ?? 0}
+              {review?.qualityScore ?? 0}
+            </CardTitle>
+          </CardHeader>
+        </Card>
+        <Card>
+          <CardHeader className="pb-2">
+            <CardDescription>Active items</CardDescription>
+            <CardTitle className="text-2xl tabular-nums">
+              {review?.totalActive ?? 0}
             </CardTitle>
           </CardHeader>
         </Card>
@@ -325,127 +289,440 @@ export function InventoryReviewView() {
           <CardHeader className="pb-2">
             <CardDescription>Duplicate groups</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
-              {review?.groups.length ?? 0}
+              {sectionCounts.duplicates}
             </CardTitle>
           </CardHeader>
         </Card>
         <Card>
           <CardHeader className="pb-2">
-            <CardDescription>Items in duplicate groups</CardDescription>
+            <CardDescription>Open issues</CardDescription>
             <CardTitle className="text-2xl tabular-nums">
-              {review?.duplicateItemCount ?? 0}
+              {sectionCounts.missing_metadata +
+                sectionCounts.unbranded +
+                sectionCounts.missing_images +
+                sectionCounts.visual_pending +
+                sectionCounts.data_quality}
             </CardTitle>
           </CardHeader>
         </Card>
       </div>
 
-      <section className="space-y-4">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-medium">Possible duplicates</h2>
-            <p className="text-sm text-muted-foreground">
-              Matched by same code (case-insensitive) or similar item name.
-            </p>
-          </div>
-          <div className="relative w-full max-w-sm">
-            <SearchIcon className="absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Filter by code, name, brand…"
-              className="pl-9"
-            />
-          </div>
+      <div className="flex flex-wrap items-end gap-4">
+        <div className="relative min-w-[14rem] flex-1">
+          <SearchIcon className="pointer-events-none absolute top-1/2 left-3 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Filter by code, name, brand, color…"
+          />
         </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={includeRetired}
+            onChange={(e) => setIncludeRetired(e.target.checked)}
+          />
+          Include retired
+        </label>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={hideReviewed}
+            onChange={(e) => setHideReviewed(e.target.checked)}
+          />
+          Hide reviewed issues
+        </label>
+      </div>
 
-        {review?.groups.length === 0 ? (
-          <Card>
-            <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              No duplicate groups detected. Your catalog looks clean.
-            </CardContent>
-          </Card>
-        ) : (
-          <div className="space-y-4">
-            {review?.groups
-              .map((group) => ({
-                ...group,
-                items: group.items.filter((item) =>
-                  filteredItems.some((filtered) => filtered.id === item.id),
-                ),
-              }))
-              .filter((group) => group.items.length > 0)
-              .map((group) => (
-              <DuplicateGroupCard
-                key={group.id}
-                group={group}
-                selectedIds={selectedIds}
-                onToggleItem={toggleSelection}
-                onToggleGroup={(checked) =>
-                  toggleGroupSelection(
-                    group.items.map((item) => item.id),
-                    checked,
-                  )
-                }
-                onEditItem={openEdit}
-                onCleanupItem={(item) => openCleanup([item.id], item.name)}
-              />
-            ))}
-          </div>
-        )}
-      </section>
+      <div className="flex flex-wrap gap-2">
+        {SECTIONS.map((s) => (
+          <Button
+            key={s.key}
+            size="sm"
+            variant={section === s.key ? "default" : "outline"}
+            onClick={() => setSection(s.key)}
+          >
+            {s.label}
+            <Badge variant="secondary" className="ml-1 tabular-nums">
+              {sectionCounts[s.key]}
+            </Badge>
+          </Button>
+        ))}
+      </div>
 
-      {selectedCount > 0 && (
+      {section === "duplicates" ? (
+        <SectionCard
+          title="Duplicate groups"
+          description="Same code, or same name + category + color. Fuzzy name alone is never a duplicate."
+          empty={sectionCounts.duplicates === 0}
+          emptyLabel="No duplicate groups."
+        >
+          {review?.duplicates.map((group) => {
+            const items = group.itemIds
+              .map((id) => itemById?.get(id))
+              .filter((i): i is WardrobeItemRow => Boolean(i))
+              .filter(matchesSearch);
+            if (items.length === 0) return null;
+            const allSelected = items.every((i) => selectedIds.has(i.id));
+            return (
+              <Card key={group.id} className="mb-4">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <CopyIcon className="size-4 text-muted-foreground" />
+                        <CardTitle className="text-base">{group.label}</CardTitle>
+                        <Badge variant="outline">
+                          {group.reason === "same_code"
+                            ? "Same code"
+                            : "Same identity"}
+                        </Badge>
+                      </div>
+                      <CardDescription>
+                        {items.length} possible duplicate
+                        {items.length === 1 ? "" : "s"}
+                      </CardDescription>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <label className="flex items-center gap-2 text-sm">
+                        <input
+                          type="checkbox"
+                          className="size-4"
+                          checked={allSelected}
+                          onChange={(e) => {
+                            for (const item of items) {
+                              toggleId(item.id, e.target.checked);
+                            }
+                          }}
+                        />
+                        Select group
+                      </label>
+                      {items.length >= 2 ? (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={dismissMutation.isPending}
+                          onClick={() =>
+                            dismissMutation.mutate({
+                              itemIdA: items[0].id,
+                              itemIdB: items[1].id,
+                              kind: "duplicate",
+                            })
+                          }
+                        >
+                          <EyeOffIcon className="size-4" />
+                          Dismiss
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ItemTable
+                    items={items}
+                    selectedIds={selectedIds}
+                    onToggle={toggleId}
+                    onEdit={setEditItem}
+                    onCleanup={(id) => openCleanup([id])}
+                    onMarkReviewed={(id) => reviewedMutation.mutate(id)}
+                  />
+                </CardContent>
+              </Card>
+            );
+          })}
+        </SectionCard>
+      ) : null}
+
+      {section === "similar" ? (
+        <SectionCard
+          title="Similar items"
+          description="Similar garment names with different color, brand, or category — not duplicates."
+          empty={sectionCounts.similar === 0}
+          emptyLabel="No similar pairs."
+        >
+          {review?.similar.map((pair) => {
+            const a = itemById?.get(pair.itemIdA);
+            const b = itemById?.get(pair.itemIdB);
+            if (!a || !b) return null;
+            if (!matchesSearch(a) && !matchesSearch(b)) return null;
+            return (
+              <Card key={pair.id} className="mb-4">
+                <CardHeader className="pb-3">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div>
+                      <CardTitle className="text-base">{pair.label}</CardTitle>
+                      <CardDescription className="capitalize">
+                        {pair.reason.replaceAll("_", " ")}
+                      </CardDescription>
+                    </div>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      disabled={dismissMutation.isPending}
+                      onClick={() =>
+                        dismissMutation.mutate({
+                          itemIdA: pair.itemIdA,
+                          itemIdB: pair.itemIdB,
+                          kind: "similar",
+                        })
+                      }
+                    >
+                      <EyeOffIcon className="size-4" />
+                      Dismiss
+                    </Button>
+                  </div>
+                </CardHeader>
+                <CardContent>
+                  <ItemTable
+                    items={[a, b]}
+                    selectedIds={selectedIds}
+                    onToggle={toggleId}
+                    onEdit={setEditItem}
+                    onCleanup={(id) => openCleanup([id])}
+                    onMarkReviewed={(id) => reviewedMutation.mutate(id)}
+                  />
+                </CardContent>
+              </Card>
+            );
+          })}
+        </SectionCard>
+      ) : null}
+
+      {section === "missing_metadata" ||
+      section === "unbranded" ||
+      section === "missing_images" ||
+      section === "visual_pending" ||
+      section === "data_quality" ? (
+        <IssueSection
+          section={section}
+          review={review}
+          itemById={itemById}
+          matchesSearch={matchesSearch}
+          selectedIds={selectedIds}
+          onToggle={toggleId}
+          onEdit={setEditItem}
+          onCleanup={(id) => openCleanup([id])}
+          onMarkReviewed={(id) => reviewedMutation.mutate(id)}
+        />
+      ) : null}
+
+      {selectedCount > 0 ? (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur">
-          <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-6 py-4 lg:px-8">
+          <div className="mx-auto flex w-full max-w-[1400px] items-center justify-between gap-3 px-6 py-3">
             <p className="text-sm font-medium">
               {selectedCount} item{selectedCount === 1 ? "" : "s"} selected
             </p>
             <div className="flex gap-2">
-              <Button variant="outline" onClick={() => setSelectedIds(new Set())}>
+              <Button
+                variant="outline"
+                onClick={() => setSelectedIds(new Set())}
+              >
                 Clear selection
               </Button>
-              <Button
-                onClick={() =>
-                  openCleanup(Array.from(selectedIds), `${selectedCount} selected items`)
-                }
-              >
+              <Button onClick={() => openCleanup([...selectedIds])}>
                 <Trash2Icon />
                 Clean up selected
               </Button>
             </div>
           </div>
         </div>
-      )}
+      ) : null}
 
       <ReviewCleanupDialog
         open={cleanupOpen}
         itemIds={cleanupIds}
-        itemLabel={cleanupLabel}
-        onOpenChange={setCleanupOpen}
-        onCompleted={handleCleanupCompleted}
-      />
-
-      <ItemFormDialog
-        mode="edit"
-        open={editOpen}
-        item={editItem}
-        lookups={
-          lookupsQuery.data ?? {
-            categories: [],
-            subcategories: [],
-            brands: [],
-            colors: [],
-            seasons: [],
-          }
-        }
         onOpenChange={(open) => {
-          setEditOpen(open);
-          if (!open) {
-            setEditItem(null);
-            void reviewQuery.refetch();
-          }
+          setCleanupOpen(open);
+          if (!open) setCleanupIds([]);
+        }}
+        onCompleted={() => {
+          setSelectedIds(new Set());
+          void reviewQuery.refetch();
         }}
       />
+
+      {lookupsQuery.data ? (
+        <ItemFormDialog
+          mode="edit"
+          item={editItem}
+          open={editItem != null}
+          lookups={lookupsQuery.data}
+          onOpenChange={(open) => {
+            if (!open) {
+              setEditItem(null);
+              void reviewQuery.refetch();
+            }
+          }}
+        />
+      ) : null}
     </div>
+  );
+}
+
+function SectionCard({
+  title,
+  description,
+  empty,
+  emptyLabel,
+  children,
+}: {
+  title: string;
+  description: string;
+  empty: boolean;
+  emptyLabel: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <section className="space-y-4">
+      <div>
+        <h2 className="text-lg font-medium">{title}</h2>
+        <p className="text-sm text-muted-foreground">{description}</p>
+      </div>
+      {empty ? (
+        <Card>
+          <CardContent className="py-10 text-center text-sm text-muted-foreground">
+            {emptyLabel}
+          </CardContent>
+        </Card>
+      ) : (
+        children
+      )}
+    </section>
+  );
+}
+
+function ItemTable({
+  items,
+  selectedIds,
+  onToggle,
+  onEdit,
+  onCleanup,
+  onMarkReviewed,
+}: {
+  items: WardrobeItemRow[];
+  selectedIds: Set<string>;
+  onToggle: (id: string, checked: boolean) => void;
+  onEdit: (item: WardrobeItemRow) => void;
+  onCleanup: (id: string) => void;
+  onMarkReviewed: (id: string) => void;
+}) {
+  return (
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead className="w-10" />
+          <TableHead>Code</TableHead>
+          <TableHead>Name</TableHead>
+          <TableHead>Category</TableHead>
+          <TableHead>Color</TableHead>
+          <TableHead>Brand</TableHead>
+          <TableHead>Status</TableHead>
+          <TableHead className="text-right">Actions</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {items.map((item) => (
+          <ReviewItemRow
+            key={item.id}
+            item={item}
+            selected={selectedIds.has(item.id)}
+            onToggle={(checked) => onToggle(item.id, checked)}
+            onEdit={() => onEdit(item)}
+            onCleanup={() => onCleanup(item.id)}
+            onMarkReviewed={() => onMarkReviewed(item.id)}
+            onAnalyze={() => {
+              window.location.href = `/inventory/${item.id}`;
+            }}
+          />
+        ))}
+      </TableBody>
+    </Table>
+  );
+}
+
+function IssueSection({
+  section,
+  review,
+  itemById,
+  matchesSearch,
+  selectedIds,
+  onToggle,
+  onEdit,
+  onCleanup,
+  onMarkReviewed,
+}: {
+  section: SectionKey;
+  review: ReturnType<typeof useCatalogReviewData>["data"];
+  itemById: Map<string, WardrobeItemRow> | undefined;
+  matchesSearch: (item: WardrobeItemRow) => boolean;
+  selectedIds: Set<string>;
+  onToggle: (id: string, checked: boolean) => void;
+  onEdit: (item: WardrobeItemRow) => void;
+  onCleanup: (id: string) => void;
+  onMarkReviewed: (id: string) => void;
+}) {
+  const issues =
+    section === "missing_metadata"
+      ? review?.missingMetadata
+      : section === "unbranded"
+        ? review?.unbranded
+        : section === "missing_images"
+          ? review?.missingImages
+          : section === "visual_pending"
+            ? review?.visualPending
+            : review?.dataQuality;
+
+  const byItem = new Map<string, string[]>();
+  for (const iss of issues ?? []) {
+    const labels = byItem.get(iss.itemId) ?? [];
+    labels.push(iss.label);
+    byItem.set(iss.itemId, labels);
+  }
+
+  const items = [...byItem.keys()]
+    .map((id) => itemById?.get(id))
+    .filter((i): i is WardrobeItemRow => Boolean(i))
+    .filter(matchesSearch);
+
+  const title =
+    SECTIONS.find((s) => s.key === section)?.label ?? "Issues";
+
+  return (
+    <SectionCard
+      title={title}
+      description="Deterministic completeness checks. Edit metadata or open the item to add images / run visual analysis."
+      empty={items.length === 0}
+      emptyLabel="Nothing in this section."
+    >
+      <Card>
+        <CardContent className="pt-4">
+          <div className="mb-3 flex flex-wrap gap-2">
+            {[...byItem.entries()].slice(0, 12).map(([id, labels]) => {
+              const item = itemById?.get(id);
+              if (!item || !matchesSearch(item)) return null;
+              return (
+                <Badge key={id} variant="outline" className="gap-1">
+                  {item.name}
+                  <span className="text-muted-foreground">
+                    · {labels.join(", ")}
+                  </span>
+                </Badge>
+              );
+            })}
+          </div>
+          <ItemTable
+            items={items}
+            selectedIds={selectedIds}
+            onToggle={onToggle}
+            onEdit={onEdit}
+            onCleanup={onCleanup}
+            onMarkReviewed={onMarkReviewed}
+          />
+        </CardContent>
+      </Card>
+    </SectionCard>
   );
 }

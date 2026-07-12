@@ -53,6 +53,18 @@ always win; confidence below 0.5 contributes nothing. Perception stays in
 Vision; this module never reimplements detection. Surfaced on item detail +
 `/developer/inventory-images`.
 
+## Catalog Review (data quality)
+**`src/domain/catalog-review/`** → `classifyCatalogIssues`,
+`scoreDuplicatePair`, `findSimilarPairs`, `catalogQualityScore` (RFC-024).
+
+Upgrades `/inventory/review` from name-only duplicate cleanup into **Catalog
+Review**: metadata-aware duplicates (same code, or same name + category + color),
+similar items (similar name + different color/brand/category — not duplicates),
+missing metadata / images / visual pending, dismissals, and a deterministic
+0–100 quality score. Fuzzy name alone is never a duplicate. AI does not decide
+catalog correctness. Surface: Catalog Review UI + additive dismiss/reviewed
+tables.
+
 ## WardrobeHealthEngine
 **`src/domain/analytics/WardrobeHealthEngine.ts`** → `WardrobeHealth`.
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
   CheckCircle2Icon,
@@ -526,6 +527,11 @@ export function InventoryImportView() {
         className="border-b pb-6"
         title="Bulk import"
         description="Import wardrobe items from CSV or JSON. JSON syncs by item code — existing codes are updated and relations replaced; new codes are inserted."
+        actions={
+          <Button variant="outline" render={<Link href="/inventory/review" />}>
+            Catalog Review
+          </Button>
+        }
       />
 
       <Tabs value={mode} onValueChange={(value) => setMode(value as ImportMode)}>

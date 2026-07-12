@@ -7,6 +7,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2.2.0] — 2026-07-12
+
+**Catalog Review v2.** Upgrades `/inventory/review` from name-only duplicate
+cleanup into full wardrobe data-quality review (RFC-024): metadata-aware
+duplicates, similar items (color/brand/category aware), completeness sections,
+dismissals, reviewed flags, and a deterministic catalog quality score. Default
+cleanup still retires; hard delete still requires explicit confirmation. AI
+never decides catalog correctness.
+
+### Added — RFC-024 Catalog Review v2
+
+- **Domain:** `src/domain/catalog-review/` — duplicate / similar detection,
+  metadata quality, catalog quality score, issue classification.
+- **Rules:** same code = duplicate; same normalized name + category + color =
+  duplicate; fuzzy name alone is never a duplicate; similar name + different
+  color/brand/category = similar item; retired excluded by default.
+- **Regression:** Solid White vs Solid Wine Shirt → similar, not duplicate;
+  Olive vs White Activewear T-Shirt → similar, not duplicate.
+- **UI:** Catalog Review with overview cards, section tabs (Duplicates, Similar,
+  Missing Metadata, Unbranded, Missing Images, Visual Analysis Pending, Data
+  Quality), filters, search, dismiss / ignore, mark reviewed, edit, analyze,
+  bulk cleanup.
+- **Persistence (additive):** `catalog_review_dismissals`,
+  `catalog_review_item_state` + anon RLS
+  (`docs/migrations/RFC-024-catalog-review-v2.sql`).
+- **Nav / copy:** Import Review → Catalog Review (route unchanged).
+
+### Changed
+
+- Duplicate logic moved from `review.service` into pure domain engines.
+- Import page CTA links to Catalog Review.
+
 ## [2.1.0] — 2026-07-12
 
 **Wear Logs, Acquisitions Pipeline & Observability.** Ships ad-hoc wear events

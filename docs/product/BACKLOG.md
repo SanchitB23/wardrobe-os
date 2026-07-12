@@ -202,6 +202,17 @@ combinations may be promoted to outfits with explicit user confirmation.
 | -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------- |
 | [RFC-023](../rfc/RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md)                     | Ad-hoc Wear Logs & Outfit Promotion — event-centric wear logs, combo detection, outfit promote | Done ✅ (Implemented) |
 
+## Epic 12 — Inventory / Data Quality (v2.2.0) ✅
+
+Upgrade post-import cleanup into a full **Catalog Review** surface: metadata-aware
+duplicates vs similar items, missing metadata / images / visual analysis, dismissals,
+and a deterministic catalog quality score. Engines stay poisoned less; AI never
+decides catalog correctness.
+
+| RFC                                                                    | Title                                                                                          | Status        |
+| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------- |
+| [RFC-024](../rfc/RFC-024-Catalog-Review-v2.md)                         | Catalog Review v2 — metadata-aware duplicates, similar items, completeness sections, dismissals | ✅ Implemented |
+
 ## Removed / parked from scope
 
 **Rejected** — low ROI for a single-user product ([FUTURE.md](FUTURE.md) → Rejected):
@@ -215,7 +226,7 @@ combinations may be promoted to outfits with explicit user confirmation.
 Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step Reasoning
 (RFC-021), Laundry Detection. Former Cross-Engine Orchestration topic remains
 cancelled (RFC-005); RFC-020 number is Inventory Image Intelligence (✅ v2.0.1).
-Next free sequential after parked RFC-021 / implemented RFC-022 / implemented RFC-023: **RFC-024**.
+Next free sequential after Implemented RFC-024: **RFC-025**.
 
 ---
 

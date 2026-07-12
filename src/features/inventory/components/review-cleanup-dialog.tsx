@@ -18,6 +18,11 @@ import { Label } from "@/components/ui/label";
 import { useBulkCleanupMutation } from "@/features/inventory/hooks";
 import type { BulkCleanupMode } from "@/types/wardrobe";
 
+/** Pure mode resolver — hard delete only when explicitly opted in. */
+export function resolveCleanupMode(hardDeleteOptIn: boolean): BulkCleanupMode {
+  return hardDeleteOptIn ? "hard_delete" : "retire";
+}
+
 type ReviewCleanupDialogProps = {
   open: boolean;
   itemIds: string[];
@@ -37,7 +42,7 @@ export function ReviewCleanupDialog({
   const cleanupMutation = useBulkCleanupMutation();
 
   const count = itemIds.length;
-  const mode: BulkCleanupMode = hardDelete ? "hard_delete" : "retire";
+  const mode = resolveCleanupMode(hardDelete);
 
   async function handleConfirm() {
     if (count === 0) {

@@ -147,7 +147,7 @@ export const NAV_SECTIONS: NavSection[] = [
         icon: SlidersHorizontalIcon,
       },
       { label: "Import", href: "/inventory/import", icon: UploadIcon },
-      { label: "Review", href: "/inventory/review", icon: ClipboardCheckIcon },
+      { label: "Catalog Review", href: "/inventory/review", icon: ClipboardCheckIcon },
       { label: "About", href: "/about", icon: InfoIcon },
     ],
   },
