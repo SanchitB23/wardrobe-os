@@ -5,6 +5,39 @@ All notable changes to Wardrobe OS are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added — RFC-027 Inline Brand Creation
+
+The `brands` lookup gains its first write path — inline creation instead of a
+silent dead end.
+
+- **Item form (create & edit):** the Brand field's `Select` gains a pinned
+  "＋ Add new brand…" item that opens a small dialog (name input +
+  Create/Cancel); creating selects the new brand into the field without a
+  page reload.
+- **Acquisition conversion wizard:** shares the same `ItemFormFields`
+  component, so it inherits the Add-new affordance for free. When
+  `matchLookupId` misses on a captured `brandText`, that text now surfaces in
+  the Brand field and pre-fills the Add-new dialog instead of being silently
+  dropped on promotion.
+- **Dedupe:** case/whitespace-insensitive matching
+  (`normalizeBrandName` / `findBrandByName` in
+  `src/domain/lookups/BrandNormalization.ts`) resolves near-duplicates
+  ("uniqlo ", "UNIQLO") to the existing row — no duplicate insert — while
+  preserving the user's casing on first creation. Empty/whitespace-only input
+  never creates a brand.
+- **Service/repository:** `createBrand()` (normalize → dedupe-check →
+  insert-or-return-existing) and `insertBrand()`, the first write path to the
+  `brands` table.
+- **Schema:** `brands` becomes the first product-writable lookup — additive
+  migration `docs/migrations/RFC-027-brand-insert.sql` adds an anon `INSERT`
+  RLS policy plus a `lower(regexp_replace(btrim(name), '\s+', ' ', 'g'))`
+  unique index as a database-level dedupe backstop.
+- JSON/CSV import is unchanged (unknown brand still errors); AI does not
+  create or choose brands (ADR-005).
+- See [RFC-027](docs/rfc/RFC-027-Inline-Brand-Creation.md).
+
 ## [2.3.0] — 2026-07-12
 
 **Item Relations Editor & Status Page.** Occasions, materials, and seasons

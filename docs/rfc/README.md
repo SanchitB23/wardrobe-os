@@ -111,7 +111,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [024](RFC-024-Catalog-Review-v2.md)                     | Catalog Review v2                                   | Inventory / Data Quality         | Implemented |
 | [025](RFC-025-Similar-Item-Detection-Tightening.md)     | Similar Item Detection Tightening                   | Inventory / Data Quality         | Implemented |
 | [026](RFC-026-Inventory-Item-Occasions-UI.md)           | Item Relations Editor (Occasions/Materials/Seasons) | Inventory / Data Quality         | Implemented |
-| [027](RFC-027-Inline-Brand-Creation.md)                 | Inline Brand Creation                               | Inventory / Data Quality         | Approved    |
+| [027](RFC-027-Inline-Brand-Creation.md)                 | Inline Brand Creation                               | Inventory / Data Quality         | Implemented |
 | [028](RFC-028-Status-Page.md)                           | Status Page                                         | Platform / Observability         | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved

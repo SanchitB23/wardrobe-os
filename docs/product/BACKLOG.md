@@ -214,7 +214,7 @@ decides catalog correctness.
 | [RFC-024](../rfc/RFC-024-Catalog-Review-v2.md)                 | Catalog Review v2 — metadata-aware duplicates, similar items, completeness sections, dismissals      | ✅ Implemented |
 | [RFC-025](../rfc/RFC-025-Similar-Item-Detection-Tightening.md) | Similar Item Detection Tightening — parallel skeleton + category gate; reject suffix false positives | ✅ Implemented |
 | [RFC-026](../rfc/RFC-026-Inventory-Item-Occasions-UI.md)       | Item Relations Editor — occasions + materials + seasons UI, suggest, bulk actions                    | ✅ Implemented |
-| [RFC-027](../rfc/RFC-027-Inline-Brand-Creation.md)             | Inline Brand Creation — Add-new Brand field on item form + conversion wizard; case-insensitive dedupe | RFC approved   |
+| [RFC-027](../rfc/RFC-027-Inline-Brand-Creation.md)             | Inline Brand Creation — Add-new Brand field on item form + conversion wizard; case-insensitive dedupe | ✅ Implemented |
 | [RFC-028](../rfc/RFC-028-Status-Page.md)                       | Status Page — live AI wiring truth, service health (passive + manual probes), budget guard, build    | ✅ Implemented |
 
 ## Removed / parked from scope

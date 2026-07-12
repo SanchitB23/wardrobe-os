@@ -1,6 +1,6 @@
 # RFC-027: Inline Brand Creation
 
-Status: Approved
+Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: Claude Code (approved design: 2026-07-12)
 Target Release: v2.4.0
@@ -203,6 +203,10 @@ existing promotion insert (`brand_id` now set instead of null).
    Insert failures from this index surface as a friendly "brand already
    exists" error and the service re-fetches + selects the existing row.
 
+**Migration applied live (2026-07-12):** both the anon INSERT policy and the
+`lower(regexp_replace(btrim(name), '\s+', ' ', 'g'))` unique index were
+confirmed present on the live `brands` table via `docs/migrations/RFC-027-brand-insert.sql`.
+
 Both are additive; no data migration. **RLS audit (2026-07-12):** all nine
 lookup tables (`brands`, `colors`, `categories`, `materials`, `occasions`,
 `seasons`, `styles`, `subcategories`, `tags`) currently have only
@@ -244,20 +248,41 @@ No route handlers; all client-side via existing Supabase anon client.
 
 ## 10. Acceptance Criteria
 
-- [ ] Typing an unknown brand in the item form's Brand field shows an
+- [x] Typing an unknown brand in the item form's Brand field shows an
       "Add brand ‹name›" option; selecting it creates the brand and selects it.
-- [ ] Creating a brand whose normalized name equals an existing brand
+      **Browser-verified:** creating `"  rfc027 TestLabel  "` persisted as
+      `"rfc027 TestLabel"` (trim + internal-space-collapse, casing preserved);
+      the field selected the new brand without a page reload.
+- [x] Creating a brand whose normalized name equals an existing brand
       (case/whitespace differences) selects the existing brand and inserts no
-      new row.
-- [ ] Empty/whitespace-only input never creates a brand and shows no add option.
-- [ ] The new brand appears without a page reload in: item form selects,
+      new row. **Browser-verified:** creating `"RFC027   testlabel"` resolved
+      to the existing row above with no duplicate insert (confirmed in the DB).
+- [x] Empty/whitespace-only input never creates a brand and shows no add option.
+      **Domain-tested** (`src/domain/lookups/tests/brand-normalization.test.ts`,
+      `create-brand.service.test.ts`); not separately exercised live.
+- [x] The new brand appears without a page reload in: item form selects,
       inventory brand filter, and purchases analytics brand lookups.
-- [ ] Promoting an acquisition with unmatched non-empty `brandText` offers
+      **Browser-verified for the item form select** (see above). Inventory
+      filter and purchases analytics consume the same shared lookups query
+      invalidated by `useCreateBrandMutation`, so they pick up the new row by
+      construction, but those two surfaces were not separately clicked
+      through live.
+- [x] Promoting an acquisition with unmatched non-empty `brandText` offers
       brand creation; confirming yields an inventory item with the new
       `brand_id`; declining preserves today's `brand_id: null` behaviour.
-- [ ] JSON/CSV import behaviour is unchanged (unknown brand still errors).
-- [ ] Insert failure (network/RLS/unique violation) shows an inline error and
-      does not clear the user's typed text.
+      **Browser-verified the surfacing/pre-fill half:** the captured unmatched
+      `brandText` appeared in the wizard's Brand field and pre-filled the
+      Add-new dialog's input (throwaway wishlist row, since deleted). The
+      create-then-promote and decline-preserves-null paths are covered by the
+      acquisition pipeline unit tests, not separately re-driven live in this
+      pass.
+- [x] JSON/CSV import behaviour is unchanged (unknown brand still errors).
+      No import code was touched in this RFC.
+- [x] Insert failure (network/RLS/unique violation) shows an inline error and
+      does not clear the user's typed text. Implemented in
+      `AddBrandDialog`/`useCreateBrandMutation` (error toast, dialog stays
+      open with the typed name intact) and covered by the service-level
+      unique-violation-recovery test; not separately fault-injected live.
 
 ## 11. QA / Testing Plan
 
