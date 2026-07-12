@@ -173,6 +173,7 @@ function WizardBody({ wishlist, lookups }: WizardBodyProps) {
               lookups={lookups}
               filteredSubcategories={filteredSubcategories}
               onChange={handleFormChange}
+              labelFallbacks={{ brand: initial.draft.brandText }}
             />
             {(wishlist.imageUrl || wishlist.imageStoragePath) && (
               <div className="flex items-start gap-3 rounded-lg border p-3">
