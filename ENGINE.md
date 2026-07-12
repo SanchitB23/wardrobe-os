@@ -178,6 +178,16 @@ priority with need + lifecycle urgency), and StrategyEvolution (dynamic rules,
 distinct from 018's static top-N). Reuses 018 outputs; no duplicated Priority /
 Buy vs Skip scoring. Hub panels + `/developer/acquisitions`. AI explains only.
 
+## Acquisition-to-Inventory Pipeline
+**`src/domain/shopping/AcquisitionPipeline.ts` + `AcquisitionTimeline`**
+(RFC-018C) with **`src/features/shopping/services/acquisitionPipeline.service.ts`**.
+
+Lifecycle handoffs only: Buy vs Skip result → wishlist (link
+`wishlist_item_id`) → mark purchased (price/date intent) → confirmed inventory
+conversion wizard → optional image attach → optional RFC-020 Visual StyleDNA.
+Timeline stages: Wishlist → Analysis → Purchased → Inventory Created → First
+Wear → ROI. Never auto-creates inventory; manual edits win; AI explains only.
+
 ---
 
 ## Weather Runtime

@@ -30,10 +30,12 @@ import {
   deleteWishlistRow,
   insertWishlist,
   selectWishlist,
+  selectWishlistById,
   setWishlistPriority,
   setWishlistStatus,
   updateWishlist,
 } from "@/features/shopping/repositories/shopping.repository";
+import { markWishlistPurchased } from "@/features/shopping/services/acquisitionPipeline.service";
 import type {
   AcquisitionsKpis,
   AcquisitionDecisionRecord,
@@ -105,10 +107,26 @@ export function updateWishlistItem(
   });
 }
 
-export function markPurchased(id: string): Promise<Result<void>> {
-  // Flips status only. Adding the piece to inventory + purchase history is the
-  // existing inventory/purchase flow (a purchase row needs a real wardrobe item).
-  return setWishlistStatus(id, "purchased");
+export async function markPurchased(
+  id: string,
+  options?: { purchasePrice?: number; purchaseDate?: string },
+): Promise<Result<WishlistItem>> {
+  // Prefer RFC-018C purchase bridge when price/date provided; otherwise status-only
+  // fallback for legacy callers.
+  if (
+    options?.purchasePrice != null &&
+    options.purchaseDate != null &&
+    options.purchaseDate.trim()
+  ) {
+    return markWishlistPurchased({
+      wishlistId: id,
+      purchasePrice: options.purchasePrice,
+      purchaseDate: options.purchaseDate,
+    });
+  }
+  const statusResult = await setWishlistStatus(id, "purchased");
+  if (statusResult.error) return { data: null, error: statusResult.error };
+  return selectWishlistById(id);
 }
 
 export function dismissWishlistItem(id: string): Promise<Result<void>> {
@@ -210,8 +228,15 @@ function buildTimelineInputs(
   return wishlist.map((w) => {
     const key = w.item.name.trim().toLowerCase();
     const decision = byName.get(key);
-    const purchase = purchaseByName.get(key);
-    const purchased = w.status === "purchased" || Boolean(purchase);
+    const purchase =
+      (w.purchasedId
+        ? purchases.find((p) => p.itemId === w.inventoryItemId)
+        : undefined) ?? purchaseByName.get(key);
+    const purchased =
+      w.status === "purchased" ||
+      Boolean(w.purchasedId) ||
+      Boolean(w.inventoryItemId) ||
+      Boolean(purchase);
     return {
       id: w.id,
       name: w.item.name,
@@ -223,9 +248,13 @@ function buildTimelineInputs(
       latestDecision: (decision?.decision as BuyDecision | undefined) ?? null,
       decisionAt: decision?.createdAt ?? null,
       purchased,
-      purchaseDate: purchase?.purchaseDate ?? null,
+      purchaseDate: w.purchaseDate ?? purchase?.purchaseDate ?? null,
+      inventoryItemId: w.inventoryItemId,
       wears: purchase?.wears ?? 0,
-      costPerWear: costPerWear(purchase?.price ?? null, purchase?.wears ?? 0),
+      costPerWear: costPerWear(
+        w.purchasePrice ?? purchase?.price ?? null,
+        purchase?.wears ?? 0,
+      ),
     };
   });
 }

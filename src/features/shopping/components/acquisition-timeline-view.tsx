@@ -27,7 +27,7 @@ export function AcquisitionTimelineView() {
       <PageHeader
         title="Acquisition Timeline"
         badge={<Badge variant="secondary">Acquisitions</Badge>}
-        description="Hub stages (Wishlist → ROI) plus Purchase Lifecycle learning states (established / low usage / retired)."
+        description="Hub stages (Wishlist → Purchased → Inventory Created → ROI) plus Purchase Lifecycle learning states (established / low usage / retired)."
         actions={
           <Button variant="outline" render={<Link href="/acquisitions" />}>
             Hub

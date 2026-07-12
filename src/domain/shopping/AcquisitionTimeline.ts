@@ -1,6 +1,6 @@
 /**
  * Acquisition timeline composition (product UX) — pure presentation helpers.
- * Stages: Wishlist → Analysis → Purchase → First Wear → ROI.
+ * Stages: Wishlist → Analysis → Purchased → Inventory Created → First Wear → ROI.
  * No ranking / intelligence; just lifecycle stages from persisted data.
  */
 
@@ -10,14 +10,19 @@ import type { WishlistPriority, WishlistStatus } from "@/domain/shopping/types";
 export type TimelineStage =
   | "wishlist"
   | "analysis"
-  | "purchase"
+  | "purchased"
+  | "inventory_created"
   | "first_wear"
   | "roi";
+
+/** @deprecated Use `"purchased"` — kept as alias for transitional call sites. */
+export type LegacyPurchaseStage = "purchase";
 
 export const TIMELINE_STAGE_ORDER: TimelineStage[] = [
   "wishlist",
   "analysis",
-  "purchase",
+  "purchased",
+  "inventory_created",
   "first_wear",
   "roi",
 ];
@@ -25,7 +30,8 @@ export const TIMELINE_STAGE_ORDER: TimelineStage[] = [
 export const TIMELINE_STAGE_LABELS: Record<TimelineStage, string> = {
   wishlist: "Wishlist",
   analysis: "Analysis",
-  purchase: "Purchase",
+  purchased: "Purchased",
+  inventory_created: "Inventory Created",
   first_wear: "First Wear",
   roi: "ROI",
 };
@@ -41,9 +47,11 @@ export interface TimelineSubjectInput {
   /** Latest decision for this name, if any. */
   latestDecision: BuyDecision | null;
   decisionAt: string | null;
-  /** Linked / matched purchase. */
+  /** Linked / matched purchase intent or purchases row. */
   purchased: boolean;
   purchaseDate: string | null;
+  /** FK link to wardrobe item when converted (RFC-018C). */
+  inventoryItemId?: string | null;
   wears: number;
   costPerWear: number | null;
 }
@@ -57,6 +65,7 @@ export interface TimelineSubject {
   stage: TimelineStage;
   stagesReached: TimelineStage[];
   decision: BuyDecision | null;
+  inventoryItemId: string | null;
   wears: number;
   costPerWear: number | null;
   updatedAt: string;
@@ -65,18 +74,36 @@ export interface TimelineSubject {
 export function resolveTimelineStage(
   input: TimelineSubjectInput,
 ): TimelineStage {
-  if (input.purchased || input.status === "purchased") {
+  const hasInventory = Boolean(input.inventoryItemId);
+  const isPurchased =
+    input.purchased || input.status === "purchased" || hasInventory;
+
+  if (isPurchased) {
     if (input.wears >= 1 && input.costPerWear != null) return "roi";
     if (input.wears >= 1) return "first_wear";
-    return "purchase";
+    if (hasInventory) return "inventory_created";
+    return "purchased";
   }
   if (input.latestDecision) return "analysis";
   return "wishlist";
 }
 
-export function stagesReachedUpTo(stage: TimelineStage): TimelineStage[] {
+export function stagesReachedUpTo(
+  stage: TimelineStage,
+  options?: { hasInventory?: boolean },
+): TimelineStage[] {
   const idx = TIMELINE_STAGE_ORDER.indexOf(stage);
-  return TIMELINE_STAGE_ORDER.slice(0, idx + 1);
+  const reached = TIMELINE_STAGE_ORDER.slice(0, idx + 1);
+  // Inventory Created is optional in the path when purchases exist without
+  // conversion; omit it unless inventory exists or it is the current stage.
+  if (
+    options?.hasInventory !== true &&
+    stage !== "inventory_created" &&
+    reached.includes("inventory_created")
+  ) {
+    return reached.filter((s) => s !== "inventory_created");
+  }
+  return reached;
 }
 
 export function buildTimelineSubjects(
@@ -91,8 +118,11 @@ export function buildTimelineSubjects(
         category: input.category,
         priority: input.priority,
         stage,
-        stagesReached: stagesReachedUpTo(stage),
+        stagesReached: stagesReachedUpTo(stage, {
+          hasInventory: Boolean(input.inventoryItemId),
+        }),
         decision: input.latestDecision,
+        inventoryItemId: input.inventoryItemId ?? null,
         wears: input.wears,
         costPerWear: input.costPerWear,
         updatedAt: input.updatedAt,

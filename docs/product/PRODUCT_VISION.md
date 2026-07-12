@@ -154,6 +154,11 @@ scope and the full "will / might / won't" reasoning live in
   `/acquisitions/intelligence`
   duplicate detection, purchase prioritization. _(Budget planning dropped — a
   single owner doesn't need a budgeting tool.)_
+- **Acquisitions Intelligence (RFC-018B)** — purchase lifecycle, recommendation
+  accuracy, opportunity queue, dynamic strategy.
+- **Acquisition-to-Inventory Pipeline (RFC-018C)** — Buy/Skip → wishlist →
+  purchased → confirmed inventory → image → optional Visual StyleDNA; no
+  auto-inventory.
 - **Vision Intelligence v2 (RFC-019)** — closet scan, duplicate detection,
   assisted outfit recognition, review queue at `/vision`. _(Laundry deferred.)_
 - **Inventory Image Intelligence (RFC-020) — v2.0.1.** Primary image → Vision →

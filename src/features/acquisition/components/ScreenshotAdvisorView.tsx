@@ -63,6 +63,8 @@ export function ScreenshotAdvisorView() {
   const [source, setSource] = useState<VisionSource>("shopping_screenshot");
   const [selectedIndex, setSelectedIndex] = useState(0);
 
+  const [lastItem, setLastItem] = useState<ProspectiveItem | null>(null);
+
   const vision = useMutation<VisionAnalysis, Error, void>({
     mutationFn: async () => {
       if (!file) throw new Error("Choose a screenshot first.");
@@ -93,6 +95,7 @@ export function ScreenshotAdvisorView() {
     setFile(next);
     setPreviewUrl(next ? URL.createObjectURL(next) : null);
     setSelectedIndex(0);
+    setLastItem(null);
     vision.reset();
     buyVsSkip.reset();
     explain.reset();
@@ -104,19 +107,23 @@ export function ScreenshotAdvisorView() {
     // A different product means a different verdict — clear stale results.
     buyVsSkip.reset();
     explain.reset();
+    setLastItem(null);
   }
 
   function runBuyVsSkip(item: ProspectiveItem) {
     explain.reset();
-    buyVsSkip.mutate(item);
+    setLastItem(item);
+    buyVsSkip.mutate({ item, inputSource: "image" });
   }
 
   const lowConfidence =
     candidate != null &&
-    (candidate.quality === "poor" || candidate.quality === "fair" || candidate.confidence < 0.6);
+    (candidate.quality === "poor" ||
+      candidate.quality === "fair" ||
+      candidate.confidence < 0.6);
 
   // Local narrows to BuyVsSkipAnalysis inside closures (e.g. the Explain button).
-  const verdict = buyVsSkip.data;
+  const verdict = buyVsSkip.data?.analysis;
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -274,10 +281,21 @@ export function ScreenshotAdvisorView() {
             </Card>
           ) : null}
 
-          {!buyVsSkip.isPending && !buyVsSkip.isError && verdict ? (
+          {!buyVsSkip.isPending && !buyVsSkip.isError && verdict && lastItem ? (
             <>
-              <BuyVsSkipResult analysis={verdict} />
-
+              <BuyVsSkipResult
+                analysis={verdict}
+                item={lastItem}
+                source="image"
+                decisionId={buyVsSkip.data?.decisionId}
+                imageCandidate={
+                  file
+                    ? { file, url: previewUrl }
+                    : previewUrl
+                      ? { url: previewUrl }
+                      : null
+                }
+              />
               <Card>
                 <CardHeader className="pb-3">
                   <div className="flex flex-wrap items-center justify-between gap-2">

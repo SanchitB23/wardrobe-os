@@ -96,8 +96,12 @@ never a provider. Surfaced at `/lifestyle/trip`. See
 `ShoppingDashboard` (priority, ROI, duplicates, static strategy). 
 `src/domain/shopping/v2` (RFC-018B) learns from outcomes — lifecycle, accuracy,
 need/ROI timelines, opportunity queue, dynamic strategy — without replacing 018
-engines. Feature orchestration lives in `src/features/shopping`; product hub at
-`/acquisitions`; Developer debug at `/developer/acquisitions`.
+engines. **RFC-018C** (`AcquisitionPipeline` + `acquisitionPipeline.service`)
+connects analysis → wishlist → purchased → confirmed inventory → image →
+optional Visual StyleDNA (RFC-020), without auto-creating inventory. Feature
+orchestration lives in `src/features/shopping`; product hub at `/acquisitions`;
+conversion wizard at `/acquisitions/convert/[wishlistId]`; Developer debug at
+`/developer/acquisitions`.
 
 ### Weather Runtime
 `src/runtime/weather/**` (RFC-011) is the **single deterministic weather source**:

@@ -100,6 +100,7 @@ describe("analyzeBuyVsSkip silent persist", () => {
     expect(result.error).toBeNull();
     expect(result.data?.decision).toBe("buy");
     expect(result.data?.score).toBe(72);
+    expect(result.decisionId).toBeNull();
     expect(recordDecisionSilentMock).toHaveBeenCalledOnce();
   });
 });

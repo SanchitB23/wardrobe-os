@@ -56,7 +56,7 @@ describe("recommendationAccuracy", () => {
 });
 
 describe("AcquisitionTimeline", () => {
-  it("resolves stages along Wishlist → Analysis → Purchase → First Wear → ROI", () => {
+  it("resolves stages along Wishlist → Analysis → Purchased → Inventory Created → First Wear → ROI", () => {
     expect(
       resolveTimelineStage({
         id: "1",
@@ -109,7 +109,26 @@ describe("AcquisitionTimeline", () => {
         wears: 0,
         costPerWear: null,
       }),
-    ).toBe("purchase");
+    ).toBe("purchased");
+
+    expect(
+      resolveTimelineStage({
+        id: "1",
+        name: "Jacket",
+        category: "outerwear",
+        status: "purchased",
+        priority: "high",
+        createdAt: "2026-01-01",
+        updatedAt: "2026-01-03",
+        latestDecision: "buy",
+        decisionAt: "2026-01-02",
+        purchased: true,
+        purchaseDate: "2026-01-03",
+        inventoryItemId: "inv-1",
+        wears: 0,
+        costPerWear: null,
+      }),
+    ).toBe("inventory_created");
 
     expect(
       resolveTimelineStage({
@@ -124,6 +143,7 @@ describe("AcquisitionTimeline", () => {
         decisionAt: "2026-01-02",
         purchased: true,
         purchaseDate: "2026-01-03",
+        inventoryItemId: "inv-1",
         wears: 2,
         costPerWear: null,
       }),
@@ -142,6 +162,7 @@ describe("AcquisitionTimeline", () => {
         decisionAt: "2026-01-02",
         purchased: true,
         purchaseDate: "2026-01-03",
+        inventoryItemId: "inv-1",
         wears: 3,
         costPerWear: 40,
       }),
@@ -180,7 +201,7 @@ describe("AcquisitionTimeline", () => {
     expect(subjects[0]?.stagesReached).toEqual([
       "wishlist",
       "analysis",
-      "purchase",
+      "purchased",
       "first_wear",
       "roi",
     ]);

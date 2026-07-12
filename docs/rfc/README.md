@@ -6,7 +6,7 @@ written. RFCs are the bridge between the [roadmap/backlog](../product/BACKLOG.md
 and implementation.
 
 > **RFCs are product/architecture specifications — not implementation prompts.**
-> An RFC describes *what* we're building and *how it fits the architecture*, so a
+> An RFC describes _what_ we're building and _how it fits the architecture_, so a
 > human (or an agent) can implement it later against a clear, reviewed contract.
 > It does not contain the implementation, and generating an RFC never changes app
 > code or the database.
@@ -46,13 +46,13 @@ docs/rfc/RFC-<3-digit number>-<kebab-case-title>.md
 
 An RFC moves forward through these statuses (recorded in its `Status:` header):
 
-| Status | Meaning |
-| --- | --- |
-| **Draft** | Being written. Incomplete or still changing. Not ready for review. |
-| **Review** | Complete and open for feedback. Open Questions are being resolved. |
-| **Approved** | Reviewed, Open Questions resolved. **Cleared to implement.** |
-| **Implemented** | The feature has been built and merged to `main`. |
-| **Released** | Shipped in a tagged release (record the version). |
+| Status          | Meaning                                                            |
+| --------------- | ------------------------------------------------------------------ |
+| **Draft**       | Being written. Incomplete or still changing. Not ready for review. |
+| **Review**      | Complete and open for feedback. Open Questions are being resolved. |
+| **Approved**    | Reviewed, Open Questions resolved. **Cleared to implement.**       |
+| **Implemented** | The feature has been built and merged to `main`.                   |
+| **Released**    | Shipped in a tagged release (record the version).                  |
 
 ```
 Draft ──▶ Review ──▶ Approved ──▶ Implemented ──▶ Released
@@ -81,33 +81,34 @@ process is that the design is written down and reviewed before code exists.
 
 _Update this table (and the backlog) as RFCs are created._
 
-| RFC | Title | Epic | Status |
-| --- | --- | --- | --- |
-| [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md) | Acquisition Engine — Buy vs Skip | Acquisition Engine | Implemented |
-| [002](RFC-002-Vision-Engine.md) | Vision Engine | Vision | Implemented |
-| [003](RFC-003-Shopping-Screenshot-Understanding.md) | Shopping Screenshot Understanding | Vision / Acquisition | Implemented |
-| [004](RFC-004-Personalization-Engine.md) | Personalization Engine | Intelligence | Implemented |
-| [005](RFC-005-Intelligence-Orchestrator.md) | Intelligence Orchestrator | Intelligence | Implemented |
-| [006](RFC-006-Lifestyle-Engine.md) | Lifestyle Engine | Lifestyle | Implemented |
-| [007](RFC-007-Today-Experience-and-v1-Polish.md) | Today Experience & v1.0 Product Polish | Product Experience | Implemented |
-| [008](RFC-008-Release-Candidate.md) | v1.0 Release Candidate — Audit Triage & Remediation | Product Experience | Approved |
-| [009](RFC-009-v1-0-1-Stabilization.md) | v1.0.1 Stabilization Release | Product Experience | Implemented |
-| [010](RFC-010-Application-Access-Guard.md) | Application Access Guard | Product Experience | Implemented |
-| [011](RFC-011-Weather-Runtime.md) | Weather Runtime | Runtime | Implemented |
-| [012](RFC-012-Recommendation-Engine-v2.md) | Recommendation Engine v2 | Intelligence Refinement | Implemented |
-| [013](RFC-013-Personalization-Engine-v2.md) | Personalization Engine v2 | Intelligence Refinement | Implemented |
-| [014](RFC-014-AI-Runtime-v2.md) | AI Runtime v2 (+ OpenAI provider, RFC-014A) | Runtime | Implemented |
-| [014B](RFC-014B-Cost-Aware-AI-Runtime.md) | Cost-Aware AI Runtime | Runtime | Implemented |
-| [015](RFC-015-Intelligence-Center.md) | Intelligence Center | Product Intelligence | Implemented |
-| [015A](RFC-015A-Category-Optimization.md) | Category Optimization | Intelligence Center | Implemented |
-| [017](RFC-017-Trip-Planner.md) | Trip Planner | Travel | Implemented |
-| [018](RFC-018-Shopping-Intelligence.md) | Shopping Intelligence | Shopping | Implemented |
-| [018B](RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence | Acquisitions | Implemented |
-| [019](RFC-019-Vision-Intelligence-v2.md) | Vision Intelligence v2 | Vision | Implemented |
-| [020](RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence | Vision / Recommendation | Implemented |
-| [022](RFC-022-Logging-and-Observability-Runtime.md) | Logging & Observability Runtime | Platform / Observability | Draft |
+| RFC                                                   | Title                                               | Epic                     | Status      |
+| ----------------------------------------------------- | --------------------------------------------------- | ------------------------ | ----------- |
+| [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md)      | Acquisition Engine — Buy vs Skip                    | Acquisition Engine       | Implemented |
+| [002](RFC-002-Vision-Engine.md)                       | Vision Engine                                       | Vision                   | Implemented |
+| [003](RFC-003-Shopping-Screenshot-Understanding.md)   | Shopping Screenshot Understanding                   | Vision / Acquisition     | Implemented |
+| [004](RFC-004-Personalization-Engine.md)              | Personalization Engine                              | Intelligence             | Implemented |
+| [005](RFC-005-Intelligence-Orchestrator.md)           | Intelligence Orchestrator                           | Intelligence             | Implemented |
+| [006](RFC-006-Lifestyle-Engine.md)                    | Lifestyle Engine                                    | Lifestyle                | Implemented |
+| [007](RFC-007-Today-Experience-and-v1-Polish.md)      | Today Experience & v1.0 Product Polish              | Product Experience       | Implemented |
+| [008](RFC-008-Release-Candidate.md)                   | v1.0 Release Candidate — Audit Triage & Remediation | Product Experience       | Approved    |
+| [009](RFC-009-v1-0-1-Stabilization.md)                | v1.0.1 Stabilization Release                        | Product Experience       | Implemented |
+| [010](RFC-010-Application-Access-Guard.md)            | Application Access Guard                            | Product Experience       | Implemented |
+| [011](RFC-011-Weather-Runtime.md)                     | Weather Runtime                                     | Runtime                  | Implemented |
+| [012](RFC-012-Recommendation-Engine-v2.md)            | Recommendation Engine v2                            | Intelligence Refinement  | Implemented |
+| [013](RFC-013-Personalization-Engine-v2.md)           | Personalization Engine v2                           | Intelligence Refinement  | Implemented |
+| [014](RFC-014-AI-Runtime-v2.md)                       | AI Runtime v2 (+ OpenAI provider, RFC-014A)         | Runtime                  | Implemented |
+| [014B](RFC-014B-Cost-Aware-AI-Runtime.md)             | Cost-Aware AI Runtime                               | Runtime                  | Implemented |
+| [015](RFC-015-Intelligence-Center.md)                 | Intelligence Center                                 | Product Intelligence     | Implemented |
+| [015A](RFC-015A-Category-Optimization.md)             | Category Optimization                               | Intelligence Center      | Implemented |
+| [017](RFC-017-Trip-Planner.md)                        | Trip Planner                                        | Travel                   | Implemented |
+| [018](RFC-018-Shopping-Intelligence.md)               | Shopping Intelligence                               | Shopping                 | Implemented |
+| [018B](RFC-018B-Acquisitions-Intelligence.md)         | Acquisitions Intelligence                           | Acquisitions             | Implemented |
+| [018C](RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline                   | Acquisitions             | Implemented |
+| [019](RFC-019-Vision-Intelligence-v2.md)              | Vision Intelligence v2                              | Vision                   | Implemented |
+| [020](RFC-020-Inventory-Image-Intelligence.md)        | Inventory Image Intelligence                        | Vision / Recommendation  | Implemented |
+| [022](RFC-022-Logging-and-Observability-Runtime.md)   | Logging & Observability Runtime                     | Platform / Observability | Draft       |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-022; 014B/015A/018B letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-022; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).

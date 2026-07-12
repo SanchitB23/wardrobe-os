@@ -149,6 +149,12 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   purchase lifecycle, shallow+deep recommendation accuracy, need/ROI timelines,
   opportunity queue, and dynamic strategy from outcomes. Composes 018 dashboard
   outputs; never reimplements Buy vs Skip or PriorityEngine.
+- **Acquisition-to-Inventory Pipeline (RFC-018C)** — `AcquisitionPipeline` domain
+  helpers + `acquisitionPipeline.service` + `/acquisitions/convert/[wishlistId]`.
+  Connects Buy/Skip CTAs → wishlist link → purchase intent → confirmed inventory
+  create → image carry-forward → optional RFC-020 Visual StyleDNA. Extends hub
+  timeline with Inventory Created. Never auto-adds inventory; never rewrites
+  BuyVsSkipEngine / Shopping ranking / Inventory CRUD.
 - **Vision Intelligence v2 (RFC-019)** — `src/features/vision` (+ pure
   `src/domain/vision-intelligence`), `/vision`. Workflow layer over the Vision
   Engine (RFC-002): Closet Scan, Assisted Outfit Recognition, Visual Duplicate
