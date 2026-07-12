@@ -1,12 +1,13 @@
 # RFC-027: Inline Brand Creation
 
-Status: Draft
+Status: Approved
 Owner: Sanchit Bhatnagar
-Author: Claude Code
-Target Release: v2.3.0
+Author: Claude Code (approved design: 2026-07-12)
+Target Release: v2.4.0
 Epic: Inventory / Data Quality
 Priority: Medium
 Effort: S
+Design spec: [2026-07-12-rfc-027-inline-brand-creation-design.md](../superpowers/specs/2026-07-12-rfc-027-inline-brand-creation-design.md)
 Dependencies:
 
 - Existing schema: `brands` lookup table (`id`, `name`) — read via
@@ -82,26 +83,31 @@ This should be a small inline affordance — not a management page.
 
 ## 5. UX Flow
 
+**Design decision (2026-07-12):** UI is a **Select + Add-new dialog**, not a
+searchable combobox (no Popover primitive exists; reuse `Select` + `Dialog`).
+Both entry points are served by **one** change because the acquisition
+conversion wizard renders the same `ItemFormFields` component as the item-form
+dialog (`inventory-conversion-wizard.tsx:171`).
+
 **Entry point 1 — Item form (create & edit), primary:**
 
-1. The Brand `LookupSelect` becomes a searchable **combobox**: typing filters
-   the existing brand list.
-2. When the query matches no existing brand (case/whitespace-insensitive), the
-   last option in the list is **“＋ Add brand ‹query›”**.
-3. Selecting it creates the brand, selects it in the field, and shows a brief
-   success toast. On failure, an inline error appears and the field keeps the
-   typed text.
-4. If the query *does* normalize to an existing brand, no add-option is shown —
-   the existing entry is highlighted instead.
+1. The Brand `LookupSelect` keeps its `Select`, plus a pinned
+   **“＋ Add new brand…”** item at the bottom.
+2. Selecting it opens a small `Dialog` with a text input (defaulted to the
+   current typed / fallback text) and Create / Cancel.
+3. Create → the brand is created + selected in the field; a brief success
+   toast shows. On failure, an inline error appears and the typed text is kept.
+4. Case/whitespace-insensitive dedupe: an existing brand is resolved and
+   selected rather than duplicated.
 
 **Entry point 2 — Acquisition promotion (RFC-018C):**
 
-1. During promotion, when `matchLookupId(draft.brandText, lookups.brands)`
-   returns `null` and `brandText` is non-empty, the promotion review UI shows
-   the brand as **“New brand: ‹text› (will be created)”** with the ability to
-   edit the name or clear it.
-2. On confirm, the brand is created first, then the item is inserted with the
-   new `brand_id`. Clearing keeps today's behaviour (`brand_id: null`).
+1. The conversion wizard already renders `ItemFormFields`, so it inherits the
+   same Brand field + Add-new affordance.
+2. When `matchLookupId` misses, the wizard surfaces the captured `brandText`
+   via the existing `labelFallbacks.brand` mechanism and defaults the Add-new
+   dialog's input to it — the captured brand is one click from created instead
+   of silently dropped. Leaving it empty keeps today's `brand_id: null`.
 
 No new pages or routes. Both flows stay inside existing dialogs/views.
 
@@ -197,8 +203,12 @@ existing promotion insert (`brand_id` now set instead of null).
    Insert failures from this index surface as a friendly "brand already
    exists" error and the service re-fetches + selects the existing row.
 
-Both are additive; no data migration. Exact current policies on `brands` to be
-confirmed before implementation (see §14).
+Both are additive; no data migration. **RLS audit (2026-07-12):** all nine
+lookup tables (`brands`, `colors`, `categories`, `materials`, `occasions`,
+`seasons`, `styles`, `subcategories`, `tags`) currently have only
+`mvp_anon_select_*` (SELECT) policies — `brands` becomes the **first writable
+lookup**, consistent with the app's no-auth model (items and other tables are
+already anon-writable). Ships as `docs/migrations/RFC-027-brand-insert.sql`.
 
 ## 9. API / Domain Contracts
 
@@ -288,10 +298,14 @@ No route handlers; all client-side via existing Supabase anon client.
 
 ## 14. Open Questions
 
-1. Confirm current RLS policies on `brands` (audit before implementation —
-   `supabase-rls-auditor`); does any other lookup table already allow anon
-   inserts we should mirror?
-2. Should the acquisition-promotion flow (entry point 2) ship in the same
-   release, or land the item-form combobox first and follow up? (Both are
-   small; default: same release.)
-3. Casing policy: preserve user input exactly (proposed) or title-case on save?
+All resolved in the 2026-07-12 design session (see design spec):
+
+1. **RLS** — audited: all lookups are SELECT-only for anon; `brands` becomes
+   the first writable lookup. Add anon `INSERT` + `lower(trim(name))` unique
+   index. Nothing to mirror.
+2. **Scope** — both entry points ship together (same `ItemFormFields`
+   component serves the item form and the conversion wizard).
+3. **Casing** — preserve user input (trim + whitespace-collapse); dedupe stays
+   case-insensitive.
+4. **UI pattern** — Select + Add-new `Dialog` (not a combobox); no new Popover
+   primitive.
