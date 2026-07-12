@@ -90,6 +90,13 @@ export interface AIRuntimeRequest<T = unknown> {
   cache?: AICacheRequest;
   forceRefresh?: boolean;
   signal?: AbortSignal;
+  /**
+   * Route to the capability's primary provider ONLY — never the fallback. Used
+   * by isolated health probes so, e.g., a Gemini probe reflects Gemini's true
+   * state instead of silently being served (or failing) via OpenAI. Defaults to
+   * false (normal primary → fallback routing).
+   */
+  disableFallback?: boolean;
 }
 
 export interface AIRuntimeResult<T = unknown> extends AIResponse<T> {

@@ -18,6 +18,9 @@ import type {
 
 const costEstimator = new RuntimeCostEstimator();
 
+/** Cap on the logged error cause so a provider stack trace can't bloat a log line. */
+export const ERROR_MESSAGE_MAX_LEN = 600;
+
 export interface AIUsageEventInput {
   capability: string;
   provider: string;
@@ -32,6 +35,8 @@ export interface AIUsageEventInput {
   latencyMs?: number | null;
   status: AIUsageStatus;
   errorCode?: string | null;
+  /** Human-readable failure cause; truncated to `ERROR_MESSAGE_MAX_LEN` when logged. */
+  errorMessage?: string | null;
   route?: string | null;
   requestId?: string | null;
   level?: "info" | "warn" | "error" | "debug";
@@ -95,6 +100,9 @@ export function buildAIUsageFields(input: AIUsageEventInput): AIUsageLogFields {
     latencyMs: input.latencyMs ?? null,
     status: input.status,
     errorCode: input.errorCode ?? null,
+    errorMessage: input.errorMessage
+      ? input.errorMessage.slice(0, ERROR_MESSAGE_MAX_LEN)
+      : null,
   };
 }
 

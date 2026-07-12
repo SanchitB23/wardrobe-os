@@ -109,6 +109,25 @@ describe("AIRuntime — routing, fallback, retry", () => {
     expect(result.usedFallback).toBe(true);
   });
 
+  it("disableFallback pins to the primary and never touches the fallback", async () => {
+    const primary = throwingProvider("gemini");
+    const fallback = fakeProvider("openai");
+    const runtime = new AIRuntime({
+      providers: [primary, fallback],
+      policies: policies({ conversation: { primary: "gemini", fallback: "openai" } }),
+    });
+    // Primary (gemini) throws; without fallback the whole chain fails.
+    await expect(
+      runtime.run({
+        capability: "conversation",
+        request: { prompt: "ok?" },
+        disableFallback: true,
+      }),
+    ).rejects.toThrow(/all providers failed/i);
+    // The fallback provider must never be invoked — the probe measures gemini alone.
+    expect(fallback.generate).not.toHaveBeenCalled();
+  });
+
   it("retries a retryable failure before moving on", async () => {
     let calls = 0;
     const flaky = fakeProvider("gemini", () => {

@@ -29,6 +29,8 @@ export interface RouteOptions {
   resolveModel?: (providerId: AIProviderId) => string | undefined;
   /** Skip a provider that is temporarily unavailable (e.g. budget hard stop). */
   isAvailable?: (providerId: AIProviderId) => boolean;
+  /** Route to the primary only — never append the fallback link (isolated probes). */
+  disableFallback?: boolean;
 }
 
 export interface ProviderRouterConfig {
@@ -71,7 +73,7 @@ export class ProviderRouter {
     const chain: { id: AIProviderId; isFallback: boolean }[] = [
       { id: policy.primary, isFallback: false },
     ];
-    if (policy.fallback && policy.fallback !== policy.primary) {
+    if (!opts.disableFallback && policy.fallback && policy.fallback !== policy.primary) {
       chain.push({ id: policy.fallback, isFallback: true });
     }
 

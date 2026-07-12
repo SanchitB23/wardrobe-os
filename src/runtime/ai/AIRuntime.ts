@@ -184,6 +184,7 @@ export class AIRuntime {
         signal: req.signal,
         resolveModel: route.resolveModel,
         isAvailable: route.isAvailable,
+        disableFallback: req.disableFallback,
       });
     } catch (error) {
       this.metrics.record({
@@ -216,6 +217,9 @@ export class AIRuntime {
         latencyMs: null,
         status: "error",
         errorCode,
+        // The real cause (e.g. the per-provider "gemini: 429 …quota…" chain)
+        // that `errorCode` alone drops — see RFC-022 follow-up.
+        errorMessage: error instanceof Error ? error.message : String(error),
       });
       throw error;
     }
@@ -265,6 +269,7 @@ export class AIRuntime {
           latencyMs: response.latencyMs ?? null,
           status: "error",
           errorCode: "parse_error",
+          errorMessage: outcome.errors.join("; "),
         });
         throw new ParseError(outcome.errors);
       }

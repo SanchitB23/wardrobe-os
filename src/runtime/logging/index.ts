@@ -38,6 +38,7 @@ export {
 export {
   logAIUsage,
   buildAIUsageFields,
+  ERROR_MESSAGE_MAX_LEN,
   type AIUsageEventInput,
 } from "@/runtime/logging/ai-usage-logger";
 

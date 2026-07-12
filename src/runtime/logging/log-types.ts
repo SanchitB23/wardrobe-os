@@ -61,6 +61,12 @@ export interface AIUsageLogFields {
   latencyMs: number | null;
   status: AIUsageStatus;
   errorCode: string | null;
+  /**
+   * Human-readable failure cause (the thrown error's message, truncated). For
+   * `all_providers_failed` this is the per-provider reason chain — e.g. the
+   * Gemini 429 quota text — that `errorCode` alone omits. Null on success.
+   */
+  errorMessage: string | null;
 }
 
 export interface EngineTraceLogFields {

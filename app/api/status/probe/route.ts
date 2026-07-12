@@ -64,25 +64,20 @@ async function probeAI(provider: "gemini" | "openai"): Promise<ProbeResult> {
     }
     return await timed(provider, async () => {
       // `run()` throws (AIError) on failure rather than returning a status
-      // field (see AIRuntime.run / src/ai/types AIResponse) — `timed`
-      // catches it. It can also transparently fall back to another provider
-      // (e.g. OpenAI hard-stop → Gemini serves the call); `servedBy` /
-      // `usedFallback` on the result expose that (src/runtime/ai/types.ts).
-      // A fallback means the TARGET provider never actually answered, so
-      // treat it as a failed probe rather than a false "ok".
-      const result = await getServerAIRuntime().run({
+      // field (see AIRuntime.run / src/ai/types AIResponse) — `timed` catches
+      // it. `disableFallback` pins the call to THIS capability's primary
+      // provider so each probe measures one provider in isolation: a Gemini
+      // probe reflects Gemini's true state and never gets silently served (or
+      // dragged down) by the OpenAI fallback, and vice versa.
+      await getServerAIRuntime().run({
         capability,
+        disableFallback: true,
         request: {
           system: "You are a health check. Reply with the single word: ok",
           prompt: "ok?",
           maxTokens: 4,
         },
       });
-      if (result.servedBy !== provider) {
-        throw new Error(
-          `served by ${result.servedBy} via fallback — ${provider} unavailable`,
-        );
-      }
     });
   } catch (error) {
     return {

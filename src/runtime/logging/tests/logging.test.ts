@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   buildAIUsageFields,
   containsLeakedSecret,
+  ERROR_MESSAGE_MAX_LEN,
   generateRequestId,
   getLoggingConfig,
   isWellFormedRequestId,
@@ -165,6 +166,30 @@ describe("AI usage event shape", () => {
       status: "ok",
       errorCode: null,
     });
+  });
+
+  it("defaults errorMessage to null on success and carries + truncates it on error", () => {
+    const ok = buildAIUsageFields({
+      capability: "conversation",
+      provider: "gemini",
+      model: "gemini-2.5-flash",
+      status: "ok",
+      usage: null,
+    });
+    expect(ok.errorMessage).toBeNull();
+
+    const longCause = `all providers failed: gemini: 429 RESOURCE_EXHAUSTED ${"x".repeat(2000)}`;
+    const errored = buildAIUsageFields({
+      capability: "conversation",
+      provider: "gemini",
+      model: "gemini-2.5-flash",
+      status: "error",
+      errorCode: "all_providers_failed",
+      errorMessage: longCause,
+      usage: null,
+    });
+    expect(errored.errorMessage).toContain("429 RESOURCE_EXHAUSTED");
+    expect(errored.errorMessage?.length).toBe(ERROR_MESSAGE_MAX_LEN);
   });
 
   it("marks tokens unavailable when usage is missing", () => {
