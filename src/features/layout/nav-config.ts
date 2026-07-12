@@ -1,4 +1,5 @@
 import {
+  ActivityIcon,
   CalendarDaysIcon,
   CameraIcon,
   ChartLineIcon,
@@ -177,6 +178,11 @@ export const DEVELOPER_SECTION: NavSection = {
       label: "Acquisitions Debug",
       href: "/developer/acquisitions",
       icon: ShoppingBagIcon,
+    },
+    {
+      label: "Observability",
+      href: "/developer/observability",
+      icon: ActivityIcon,
     },
     {
       label: "AI Test",

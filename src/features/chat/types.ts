@@ -61,4 +61,4 @@ export type ChatStreamEvent =
       steps: number;
       toolTrace: ToolTraceEntry[];
     }
-  | { type: "error"; error: string };
+  | { type: "error"; error: string; requestId?: string };

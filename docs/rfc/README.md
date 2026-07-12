@@ -104,8 +104,9 @@ _Update this table (and the backlog) as RFCs are created._
 | [018B](RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence | Acquisitions | Implemented |
 | [019](RFC-019-Vision-Intelligence-v2.md) | Vision Intelligence v2 | Vision | Implemented |
 | [020](RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence | Vision / Recommendation | Implemented |
+| [022](RFC-022-Logging-and-Observability-Runtime.md) | Logging & Observability Runtime | Platform / Observability | Draft |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-020; 014B/018B letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-022; 014B/018B letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).

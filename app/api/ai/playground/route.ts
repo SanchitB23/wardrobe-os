@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 
 import { runPlayground } from "@/features/playground/playground.service.server";
 import type { PlaygroundRunRequest } from "@/features/playground/types";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -20,7 +21,7 @@ function isRunRequest(value: unknown): value is PlaygroundRunRequest {
   return typeof v.builderId === "string" && "input" in v;
 }
 
-export async function POST(request: Request) {
+async function handlePlayground(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -40,3 +41,5 @@ export async function POST(request: Request) {
   const result = await runPlayground(body);
   return NextResponse.json(result);
 }
+
+export const POST = withApiLogging("/api/ai/playground", handlePlayground);

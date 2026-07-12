@@ -11,6 +11,8 @@ import { NextResponse } from "next/server";
 
 import { analyzeImage, VisionError, type VisionSource } from "@/domain/vision";
 import { getServerVisionProvider } from "@/ai/vision/vision.server";
+import { logAIUsage } from "@/runtime/logging/ai-usage-logger";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -37,7 +39,7 @@ function isVisionRequest(value: unknown): value is VisionRequestBody {
   );
 }
 
-export async function POST(request: Request) {
+async function handleVision(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -51,6 +53,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const model = process.env.GEMINI_MODEL ?? "gemini-2.5-flash";
   try {
     const analysis = await analyzeImage(
       {
@@ -61,11 +64,34 @@ export async function POST(request: Request) {
       },
       { provider: getServerVisionProvider() },
     );
+    logAIUsage({
+      capability: "vision",
+      provider: analysis.metadata.provider || "gemini",
+      model: analysis.metadata.model || model,
+      promptVersion: "vision-engine",
+      cacheHit: false,
+      usage: null,
+      estimatedCostUsd: null,
+      latencyMs: analysis.metadata.latencyMs,
+      status: "ok",
+    });
     return NextResponse.json({ ok: true, data: analysis });
   } catch (error) {
     // Log detail server-side; return a generic message + safe code (RFC-009/M7).
     console.error("[/api/ai/vision] error:", error);
     const isInvalidInput = error instanceof VisionError && error.code === "invalid_input";
+    logAIUsage({
+      capability: "vision",
+      provider: "gemini",
+      model,
+      promptVersion: "vision-engine",
+      cacheHit: false,
+      usage: null,
+      estimatedCostUsd: null,
+      latencyMs: null,
+      status: "error",
+      errorCode: error instanceof VisionError ? error.code : "unknown",
+    });
     return NextResponse.json(
       {
         ok: false,
@@ -76,3 +102,5 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging("/api/ai/vision", handleVision);

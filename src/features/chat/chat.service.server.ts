@@ -26,9 +26,12 @@ import type {
   ChatStreamEvent,
   ToolTraceEntry,
 } from "@/features/chat/types";
+import { logAIUsage } from "@/runtime/logging/ai-usage-logger";
+import { RuntimeCostEstimator } from "@/runtime/ai/RuntimeCostEstimator";
 
 const CHAT_TTL_SECONDS = 60 * 60; // 1 hour
 const DEFAULT_MAX_STEPS = 6;
+const chatCostEstimator = new RuntimeCostEstimator();
 
 const SYSTEM = [
   "You are the Wardrobe OS stylist — a concise, friendly assistant with access to the user's wardrobe ONLY through tools.",
@@ -124,10 +127,27 @@ export async function* streamChat(
     if (cached) {
       const text = cached.response.text;
       for (const chunk of chunkText(text)) yield { type: "token", text: chunk };
+      const latencyMs = now() - startedMs;
+      const costUsd = chatCostEstimator.perCall(
+        cached.response.usage,
+        "gemini",
+        modelId,
+      );
+      logAIUsage({
+        capability: "conversation",
+        provider: "gemini",
+        model: modelId,
+        promptVersion: "v1",
+        cacheHit: true,
+        usage: cached.response.usage,
+        estimatedCostUsd: costUsd,
+        latencyMs,
+        status: "cache_hit",
+      });
       yield {
         type: "done",
         usage: cached.response.usage,
-        latencyMs: now() - startedMs,
+        latencyMs,
         cached: true,
         steps: 0,
         toolTrace: [],
@@ -229,15 +249,41 @@ export async function* streamChat(
       expiresAt: new Date(nowMs + CHAT_TTL_SECONDS * 1000).toISOString(),
     });
 
+    const latencyMs = now() - startedMs;
+    const costUsd = chatCostEstimator.perCall(usage, "gemini", modelId);
+    logAIUsage({
+      capability: "conversation",
+      provider: "gemini",
+      model: modelId,
+      promptVersion: "v1",
+      cacheHit: false,
+      usage,
+      estimatedCostUsd: costUsd,
+      latencyMs,
+      status: "ok",
+    });
+
     yield {
       type: "done",
       usage,
-      latencyMs: now() - startedMs,
+      latencyMs,
       cached: false,
       steps,
       toolTrace,
     };
   } catch (error) {
+    logAIUsage({
+      capability: "conversation",
+      provider: "gemini",
+      model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
+      promptVersion: "v1",
+      cacheHit: false,
+      usage: null,
+      estimatedCostUsd: null,
+      latencyMs: now() - startedMs,
+      status: "error",
+      errorCode: error instanceof Error ? error.name : "unknown",
+    });
     yield {
       type: "error",
       error: error instanceof Error ? error.message : String(error),

@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Logging & Observability Runtime (RFC-022)
+
+Production-grade structured JSON logging for Vercel + AI observability. Observes
+only — does not change routing, scoring, or domain decisions.
+
+- **Runtime** (`src/runtime/logging/`): structured logger, request correlation
+  (`x-request-id` / AsyncLocalStorage), redaction, `AIUsageLogger`,
+  `withApiLogging`, orchestrator `engine_trace`, in-memory ring buffer.
+- **Wiring:** all `app/api/**` routes; `AIRuntime` + legacy `AIService` + chat /
+  vision edges; orchestrator service boundary (`LOG_ENGINE_TRACES`).
+- **Developer:** `/developer/observability` (process-local recent lines).
+- **Docs:** `docs/operations/VERCEL_LOGGING.md`; env flags in `.env.example`.
+- **RFC-022** marked Implemented.
+
 ## [2.0.1] — 2026-07-12
 
 **Inventory Image Intelligence (RFC-020).** Connects owned-item primary photos to

@@ -22,6 +22,12 @@ hand-wired that composition; the **Intelligence Orchestrator**
   budget guard. This is orthogonal to the deterministic graph below — it changes
   *who narrates*, never *what is decided*.
 
+Structured **observability** (RFC-022, `src/runtime/logging`) wraps the service /
+API / AI Runtime edges: correlation IDs, `ai_usage` / `api_request` JSON lines,
+and optional `engine_trace` summaries from an already-built `ExecutionReport`.
+Logging never runs inside pure engines and never changes execution order or
+scores. See [docs/operations/VERCEL_LOGGING.md](docs/operations/VERCEL_LOGGING.md).
+
 ## Capabilities → engines
 
 Each capability is a thin adapter over an existing engine (`src/domain/orchestrator/CapabilityRegistry.ts`):

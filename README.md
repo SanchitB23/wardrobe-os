@@ -45,6 +45,9 @@ never as the source of truth. See [DECISIONS.md](DECISIONS.md) and
 - **AI Stylist** — natural-language explanations, streaming **tool-calling chat**
   (`/chat`), durable AI response cache, cost-aware AI Runtime (Gemini-first;
   optional OpenAI), and a developer **AI Playground** (behind Developer Mode).
+- **Observability** — structured JSON logs for API + AI usage (RFC-022) with
+  `requestId` correlation; inspect in Vercel Runtime Logs or Developer →
+  Observability.
 - **One assistant** — finalized navigation IA, real **Settings** and **About**
   surfaces, **Access Guard**, and a gated **Developer Mode** hub.
 

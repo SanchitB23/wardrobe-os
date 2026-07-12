@@ -28,6 +28,7 @@ import { benchmarkCapability } from "@/runtime/ai/ProviderBenchmark";
 import { ProviderRouter } from "@/runtime/ai/ProviderRouter";
 import { PromptRegistry } from "@/runtime/ai/PromptRegistry";
 import { RuntimeMetrics } from "@/runtime/ai/RuntimeMetrics";
+import { logAIUsage } from "@/runtime/logging/ai-usage-logger";
 import type {
   AICapability,
   AIRuntimeMetricsSnapshot,
@@ -154,11 +155,22 @@ export class AIRuntime {
           })
         : undefined;
 
+    const fallbackProvider = route.policy.fallback ?? null;
+
     if (cacheKey && this.cache && !req.forceRefresh) {
       const entry = await this.cache.get(cacheKey.key);
       if (entry) {
         const response = entry.response as AIResponse<T>;
-        const result = this.finalize(req, response, req.capability, promptVersion, response.provider, false, true);
+        const result = this.finalize(
+          req,
+          response,
+          req.capability,
+          promptVersion,
+          response.provider,
+          false,
+          true,
+          fallbackProvider,
+        );
         return result;
       }
     }
@@ -183,6 +195,26 @@ export class AIRuntime {
         cacheHit: false,
         ok: false,
       });
+      const errorCode =
+        error instanceof AIError
+          ? error.code
+          : error instanceof Error
+            ? error.name
+            : "unknown";
+      logAIUsage({
+        capability: req.capability,
+        provider: route.policy.primary,
+        model: request.model ?? "unknown",
+        fallbackProvider,
+        usedFallback: false,
+        promptVersion,
+        cacheHit: false,
+        usage: null,
+        estimatedCostUsd: null,
+        latencyMs: null,
+        status: "error",
+        errorCode,
+      });
       throw error;
     }
 
@@ -194,6 +226,7 @@ export class AIRuntime {
       outcome.servedBy,
       outcome.usedFallback,
       false,
+      fallbackProvider,
     );
 
     if (cacheKey && this.cache && req.cache) {
@@ -211,11 +244,28 @@ export class AIRuntime {
     servedBy: AIProviderId,
     usedFallback: boolean,
     cached: boolean,
+    fallbackProvider: AIProviderId | null = null,
   ): AIRuntimeResult<T> {
     let parsed = response;
     if (req.parser) {
       const outcome = req.parser.parse(response.text);
-      if (!outcome.ok) throw new ParseError(outcome.errors);
+      if (!outcome.ok) {
+        logAIUsage({
+          capability,
+          provider: servedBy,
+          model: response.model,
+          fallbackProvider,
+          usedFallback,
+          promptVersion,
+          cacheHit: cached,
+          usage: response.usage,
+          estimatedCostUsd: null,
+          latencyMs: response.latencyMs ?? null,
+          status: "error",
+          errorCode: "parse_error",
+        });
+        throw new ParseError(outcome.errors);
+      }
       parsed = { ...response, parsed: outcome.data };
     }
 
@@ -229,6 +279,20 @@ export class AIRuntime {
       costUsd,
       cacheHit: cached,
       ok: true,
+    });
+
+    logAIUsage({
+      capability,
+      provider: servedBy,
+      model: response.model,
+      fallbackProvider,
+      usedFallback,
+      promptVersion,
+      cacheHit: cached,
+      usage: response.usage,
+      estimatedCostUsd: costUsd,
+      latencyMs: response.latencyMs ?? null,
+      status: cached ? "cache_hit" : "ok",
     });
 
     return {

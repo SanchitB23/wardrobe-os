@@ -3,6 +3,7 @@
  * on success, issue a signed HttpOnly session cookie. Not authentication.
  *
  * Excluded from the access proxy so it is reachable while the app is locked.
+ * Never logs the submitted code (RFC-022 redaction).
  */
 
 import { NextResponse } from "next/server";
@@ -13,11 +14,12 @@ import {
   constantTimeEqual,
   signSession,
 } from "@/lib/access/session";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST(request: Request) {
+async function handleUnlock(request: Request): Promise<Response> {
   const accessCode = process.env.APP_ACCESS_CODE;
   const secret = process.env.APP_COOKIE_SECRET;
 
@@ -58,3 +60,5 @@ export async function POST(request: Request) {
   });
   return response;
 }
+
+export const POST = withApiLogging("/api/access/unlock", handleUnlock);
