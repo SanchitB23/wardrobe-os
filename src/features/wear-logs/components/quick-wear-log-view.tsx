@@ -30,11 +30,12 @@ import {
   OUTFIT_SLOT_DEFINITIONS,
   categoryMatchesOutfitSlot,
 } from "@/domain/outfit/slot-matching";
+import { buildWearLogSlotEntries } from "@/domain/wear-logs";
 import type { OutfitSlot } from "@/types/wardrobe";
 
 const QUICK_SLOTS: OutfitSlot[] = ["top", "bottom", "footwear", "accessory"];
 
-type SlotPick = Partial<Record<OutfitSlot, string | null>>;
+type SlotPick = Partial<Record<OutfitSlot, string[]>>;
 
 export function QuickWearLogView({
   initialItemIds = [],
@@ -72,20 +73,9 @@ export function QuickWearLogView({
     return map;
   }, [items]);
 
-  function selectedEntries(): Array<{ itemId: string; slot: string | null }> {
-    const fromSlots = QUICK_SLOTS.flatMap((slot) => {
-      const id = slotPicks[slot];
-      return id ? [{ itemId: id, slot }] : [];
-    });
-    const fromExtra = extraIds
-      .filter((id) => !fromSlots.some((s) => s.itemId === id))
-      .map((id) => ({ itemId: id, slot: null as string | null }));
-    return [...fromSlots, ...fromExtra];
-  }
-
   async function handleSave() {
     setError(null);
-    const selected = selectedEntries();
+    const selected = buildWearLogSlotEntries(slotPicks, QUICK_SLOTS, extraIds);
     if (selected.length === 0) {
       setError("Select at least one item.");
       return;
@@ -138,7 +128,7 @@ export function QuickWearLogView({
                 setOccasionId(!v || v === "__none__" ? "" : v)
               }
             >
-              <SelectTrigger>
+              <SelectTrigger className="w-full">
                 <span className="flex flex-1 text-left">
                   {occasions.find((o) => o.id === occasionId)?.name ?? "None"}
                 </span>
@@ -177,7 +167,7 @@ export function QuickWearLogView({
           {QUICK_SLOTS.map((slot) => {
             const def = OUTFIT_SLOT_DEFINITIONS.find((d) => d.slot === slot);
             const options = itemsBySlot.get(slot) ?? [];
-            const value = slotPicks[slot] ?? "";
+            const value = slotPicks[slot]?.[0] ?? "";
             return (
               <div key={slot} className="space-y-1.5">
                 <Label>{def?.label ?? slot}</Label>
@@ -186,11 +176,11 @@ export function QuickWearLogView({
                   onValueChange={(v) =>
                     setSlotPicks((prev) => ({
                       ...prev,
-                      [slot]: !v || v === "__none__" ? null : v,
+                      [slot]: !v || v === "__none__" ? [] : [v],
                     }))
                   }
                 >
-                  <SelectTrigger>
+                  <SelectTrigger className="w-full">
                     <span className="flex flex-1 text-left">
                       {options.find((i) => i.id === value)?.name ?? "None"}
                     </span>
