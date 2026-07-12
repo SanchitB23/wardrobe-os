@@ -28,6 +28,18 @@ export function AddBrandDialog({
   const [name, setName] = useState(defaultName ?? "");
   const createBrand = useCreateBrandMutation();
 
+  // Reseed the input whenever the dialog transitions to open, so it always
+  // reflects the latest `defaultName` (e.g. a newly selected brand, or a
+  // caller-captured brandText) rather than whatever was left over from a
+  // prior open/close cycle. Adjusting state during render (rather than in
+  // a useEffect) avoids an extra render pass and the
+  // react-hooks/set-state-in-effect lint rule.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open !== prevOpen) {
+    setPrevOpen(open);
+    if (open) setName(defaultName ?? "");
+  }
+
   async function handleCreate() {
     if (!name.trim()) return;
     try {
@@ -41,13 +53,7 @@ export function AddBrandDialog({
   }
 
   return (
-    <Dialog
-      open={open}
-      onOpenChange={(next) => {
-        onOpenChange(next);
-        if (!next) setName(defaultName ?? "");
-      }}
-    >
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-sm">
         <DialogHeader>
           <DialogTitle>Add new brand</DialogTitle>
