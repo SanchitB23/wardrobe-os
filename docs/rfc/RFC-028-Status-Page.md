@@ -96,17 +96,23 @@ None — no Supabase tables involved beyond the probe's trivial read.
 
 ### Route handlers (server)
 
-- `GET /api/status` — assembles `StatusSnapshot` from `loadPolicies()`, model
-  policy, `BudgetGuard`, the RFC-022 log ring buffer, and env-presence checks.
+- No `GET /api/status` route. Per the design spec's refinement, the snapshot
+  is assembled directly by the `/status` server component
+  (`app/status/page.tsx`) from `loadPolicies()`, model policy, `BudgetGuard`,
+  the RFC-022 log ring buffer, and env-presence checks — the same pattern as
+  `app/developer/ai-runtime/page.tsx`.
 - `POST /api/status/probe` — minimal probes: Supabase head-count select,
   Open-Meteo forecast call, 1-token Gemini/OpenAI requests **via the AI
   runtime** (budget guard + cost tracker observe them).
 
 ### UI Layer
 
-`src/features/status/components/status-view.tsx` + hooks
-(`useStatusQuery`, `useRunProbesMutation`); `/status` route; nav/About links;
-About card replacement.
+`src/features/status/components/status-view.tsx`; no `hooks/` module
+(`useStatusQuery`/`useRunProbesMutation` were never created) — the client
+component receives the server-assembled model as props and calls the probe
+via an inline `useMutation` over `runStatusProbes` from
+`src/features/status/services/status.service.ts` (matches existing codebase
+precedent); `/status` route; nav/About links; About card replacement.
 
 ### AI Layer
 
@@ -115,11 +121,12 @@ No AI decisions. Probes are plain runtime calls; AI never interprets status.
 ## 7. Data Flow
 
 ```
-/status page → useStatusQuery → GET /api/status
-  → loadPolicies + ModelPolicy + BudgetGuard + log ring buffer + env presence
-  → buildStatusModel (domain, pure) → StatusSnapshot → cards
+/status server component (app/status/page.tsx)
+  → getServerAIRuntime (policies, budget) + log ring buffer + env presence
+  → buildStatusModel (domain, pure) → StatusView props (cards)
 
-[Run checks] → useRunProbesMutation → POST /api/status/probe
+[Run checks] → inline useMutation over runStatusProbes (status.service.ts)
+  → POST /api/status/probe
   → 4 minimal probes (AI ones via runtime) → ProbeResult[] → health rows update
 ```
 
@@ -134,8 +141,8 @@ existing RLS.
 // domain
 export function buildStatusModel(input: StatusModelInput): StatusModel;
 
-// GET /api/status → StatusSnapshot
-type StatusSnapshot = {
+// Assembled server-side by app/status/page.tsx → StatusModel (domain)
+type StatusModel = {
   aiWiring: {
     capability: string;
     primary: string;
@@ -159,7 +166,7 @@ type StatusSnapshot = {
   build: { version: string; environment: string };
 };
 
-// POST /api/status/probe → { id, ok, latencyMs, error?: string }[]
+// POST /api/status/probe → { id, ok, latencyMs, skipped?: boolean, error?: string }[]
 ```
 
 ## 10. Acceptance Criteria
@@ -205,6 +212,10 @@ type StatusSnapshot = {
       the full `npm test` suite (694 tests passing).
 
 ## 11. QA / Testing Plan
+
+This is the pre-registered plan written before implementation; actual
+execution results (what was and wasn't verified live) are recorded in §10's
+per-criterion annotations.
 
 - **Unit (domain):** buildStatusModel cases — defaults, overrides, budget at
   each threshold, empty/populated log tail.
