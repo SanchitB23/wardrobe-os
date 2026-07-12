@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "next-themes";
 import dynamic from "next/dynamic";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { ThemedToaster } from "@/features/layout/components/themed-toaster";
 
 // Lazy: keeps cmdk + the Supabase-backed inventory query chain out of the shared
@@ -48,9 +49,11 @@ export function AppProviders({ children }: { children: React.ReactNode }) {
       disableTransitionOnChange
     >
       <QueryClientProvider client={queryClient}>
-        {children}
-        <CommandPalette />
-        <ThemedToaster />
+        <TooltipProvider>
+          {children}
+          <CommandPalette />
+          <ThemedToaster />
+        </TooltipProvider>
       </QueryClientProvider>
     </ThemeProvider>
   );

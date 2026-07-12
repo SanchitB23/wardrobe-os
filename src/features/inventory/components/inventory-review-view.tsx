@@ -37,6 +37,11 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import {
   useCatalogReviewData,
   useDismissCatalogPairMutation,
   useMarkCatalogReviewedMutation,
@@ -118,47 +123,82 @@ function ReviewItemRow({
       </TableCell>
       <TableCell className="text-right">
         <div className="flex justify-end gap-0.5">
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Edit"
-            onClick={onEdit}
-          >
-            <PencilIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Add or manage image"
-            render={<Link href={`/inventory/${item.id}`} />}
-          >
-            <ImagePlusIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Analyze visual attributes"
-            onClick={onAnalyze}
-          >
-            <ScanSearchIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Mark reviewed"
-            onClick={onMarkReviewed}
-          >
-            <CheckIcon />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon-sm"
-            aria-label="Clean up"
-            onClick={onCleanup}
-            disabled={item.status === "retired"}
-          >
-            <Trash2Icon />
-          </Button>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Edit"
+                  onClick={onEdit}
+                />
+              }
+            >
+              <PencilIcon />
+            </TooltipTrigger>
+            <TooltipContent>Edit item</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Add or manage image"
+                  render={<Link href={`/inventory/${item.id}`} />}
+                />
+              }
+            >
+              <ImagePlusIcon />
+            </TooltipTrigger>
+            <TooltipContent>Add image</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Analyze visual attributes"
+                  onClick={onAnalyze}
+                />
+              }
+            >
+              <ScanSearchIcon />
+            </TooltipTrigger>
+            <TooltipContent>Analyze visual attributes</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger
+              render={
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Mark reviewed"
+                  onClick={onMarkReviewed}
+                />
+              }
+            >
+              <CheckIcon />
+            </TooltipTrigger>
+            <TooltipContent>Mark reviewed</TooltipContent>
+          </Tooltip>
+          <Tooltip>
+            <TooltipTrigger render={<span className="inline-flex" />}>
+              <Button
+                variant="ghost"
+                size="icon-sm"
+                aria-label="Clean up"
+                onClick={onCleanup}
+                disabled={item.status === "retired"}
+              >
+                <Trash2Icon />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              {item.status === "retired" ? "Already retired" : "Clean up"}
+            </TooltipContent>
+          </Tooltip>
         </div>
       </TableCell>
     </TableRow>
