@@ -18,12 +18,17 @@ function lastCallsFromLogs(): { serviceId: ServiceId; at: string; ok: boolean }[
   const calls: { serviceId: ServiceId; at: string; ok: boolean }[] = [];
   for (const record of logRingBuffer.recent({ limit: 200 })) {
     if (record.kind === "ai_usage") {
-      const provider = record.provider === "openai" ? "openai" : "gemini";
-      calls.push({
-        serviceId: provider,
-        at: record.timestamp,
-        ok: record.level !== "error",
-      });
+      const provider =
+        record.provider === "openai" || record.provider === "gemini"
+          ? record.provider
+          : null;
+      if (provider) {
+        calls.push({
+          serviceId: provider,
+          at: record.timestamp,
+          ok: record.level !== "error",
+        });
+      }
     }
     if (record.kind === "weather_request") {
       calls.push({
