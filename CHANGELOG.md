@@ -7,7 +7,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Fixed — RFC-025 Similar Item Detection Tightening
+### Added — RFC-026 Item Relations Editor
+
+Occasions, materials, and seasons are now editable from the product — the
+first UI write path for these junction tables (previously import-only).
+
+- **Item form (create + edit):** chip multi-selects for Occasions, Materials,
+  Seasons; a deterministic **Suggest** button pre-fills occasions from
+  formality/tags/styles/category via keyword-matched concepts (never
+  auto-saves; user confirms). ADR-005 intact — no AI involved.
+- **Score-preserving saves:** relation edits use diff semantics
+  (`src/domain/inventory-relations/`) — occasion links kept during an edit
+  retain their import-provided score/notes; new links carry no score.
+- **Bulk actions:** Add/Remove occasion and Add/Remove material alongside the
+  existing tag/season/style actions.
+- **Item detail:** Edit entry points on the Style DNA and Occasions cards.
+- **Catalog Review:** `missing_occasion` / `missing_material` /
+  `missing_season` badges now clear through normal editing; rules unchanged.
+
+### Fixed — RFC-025 Similar Item Detection Tightening (incl. Amendment A)
+
+Amendment A adds a **color family gate**: color-swap pairs on the same name
+skeleton are similar only when both colors are in the same family
+(green/olive yes, green/black no). Cross-family or unknown colors are
+distinct garments. Supersedes the White/Wine regression positives; the
+`similar_name_diff_meta` label now reads "different brand or wording".
 
 Catalog Review Similar Items now require an **exact parallel name skeleton**
 (color words stripped from the name) plus a **category gate** when both items

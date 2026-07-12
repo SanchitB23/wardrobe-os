@@ -1,6 +1,6 @@
 # RFC-026: Inventory Item Occasions — UI & Data Model Alignment
 
-Status: Approved  
+Status: Implemented  
 Owner: Sanchit Bhatnagar  
 Author: Cursor (approved design: Claude Code, 2026-07-12)  
 Target Release: v2.3.0  
@@ -272,15 +272,20 @@ export function suggestOccasions(
 
 ## 10. Acceptance Criteria
 
-- [ ] Owner can add/remove ≥1 occasion on item edit; persists to `item_occasions`.
-- [ ] Catalog Review `missing_occasion` clears after save when ≥1 occasion linked.
-- [ ] Item detail Occasions card shows linked occasions with Edit entry point.
-- [ ] **Suggest from formality & tags** pre-fills multi-select without auto-save.
-- [ ] Bulk add/remove occasion works for multi-selected inventory rows.
-- [ ] JSON import behaviour unchanged.
-- [ ] No AI writes to `item_occasions`.
-- [ ] Domain tests for `suggestOccasions()` mapping cases.
-- [ ] Service/repository tests for replace semantics (delete + insert).
+- [x] Owner can add/remove ≥1 occasion on item edit; persists to `item_occasions`.
+- [x] Catalog Review `missing_occasion` clears after save when ≥1 occasion linked.
+- [x] Item detail Occasions card shows linked occasions with Edit entry point
+      (Style DNA card too — materials/seasons).
+- [x] **Suggest from formality & tags** pre-fills multi-select without auto-save.
+- [x] Bulk add/remove occasion works for multi-selected inventory rows
+      (materials too).
+- [x] JSON import behaviour unchanged.
+- [x] No AI writes to `item_occasions`.
+- [x] Domain tests for suggestion concepts + keyword matching (19 tests in
+      `src/domain/inventory-relations/tests/`).
+- [x] Save semantics tested at the domain layer (`diffIds`) and verified live:
+      kept occasion links retain import-provided score/notes (diff semantics,
+      not delete-all + reinsert).
 
 ## 11. QA / Testing Plan
 

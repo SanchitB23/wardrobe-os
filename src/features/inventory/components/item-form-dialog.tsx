@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 
 import {
   EMPTY_ITEM_FORM,
@@ -68,8 +68,8 @@ function ItemFormDialogBody({
     isEdit && item ? item.id : "",
   );
 
-  useEffect(() => {
-    if (selectionsPrefilled || !relationsQuery.data) return;
+  // Prefill once when relations load (render-time state adjustment).
+  if (!selectionsPrefilled && relationsQuery.data) {
     const relations = relationsQuery.data;
     setSelections({
       occasionIds: relations.occasions
@@ -79,7 +79,7 @@ function ItemFormDialogBody({
       seasonIds: relations.seasons.map((season) => season.id),
     });
     setSelectionsPrefilled(true);
-  }, [relationsQuery.data, selectionsPrefilled]);
+  }
 
   const submitting =
     createMutation.isPending ||
