@@ -252,17 +252,24 @@ function StyleDnaCard({
   features,
   seasons,
   tags,
+  onEdit,
 }: {
   styles: LookupOption[];
   materials: LookupOption[];
   features: LookupOption[];
   seasons: LookupOption[];
   tags: LookupOption[];
+  onEdit: () => void;
 }) {
   return (
     <SectionCard
       title="Style DNA"
       description="Aesthetic profile, fabric, construction, and seasonality."
+      action={
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+      }
     >
       <div className="space-y-5">
         <BadgeGroup label="Styles" items={styles} />
@@ -303,11 +310,22 @@ function OccasionRow({ occasion }: { occasion: ItemOccasionRelation }) {
   );
 }
 
-function OccasionsCard({ occasions }: { occasions: ItemOccasionRelation[] }) {
+function OccasionsCard({
+  occasions,
+  onEdit,
+}: {
+  occasions: ItemOccasionRelation[];
+  onEdit: () => void;
+}) {
   return (
     <SectionCard
       title="Occasions"
       description="Suitability scores for different contexts."
+      action={
+        <Button variant="outline" size="sm" onClick={onEdit}>
+          Edit
+        </Button>
+      }
     >
       {occasions.length > 0 ? (
         <div className="grid gap-3 sm:grid-cols-2">
@@ -676,9 +694,13 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
             features={relations.features}
             seasons={relations.seasons}
             tags={relations.tags}
+            onEdit={() => setFormOpen(true)}
           />
 
-          <OccasionsCard occasions={relations.occasions} />
+          <OccasionsCard
+            occasions={relations.occasions}
+            onEdit={() => setFormOpen(true)}
+          />
 
           <PurchaseCard
             item={item}
