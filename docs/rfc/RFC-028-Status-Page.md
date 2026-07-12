@@ -1,6 +1,6 @@
 # RFC-028: Status Page
 
-Status: Draft
+Status: Approved
 Owner: Sanchit Bhatnagar
 Author: Claude Code
 Target Release: v2.4.0

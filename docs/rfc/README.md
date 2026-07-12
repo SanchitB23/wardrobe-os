@@ -112,7 +112,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [025](RFC-025-Similar-Item-Detection-Tightening.md)     | Similar Item Detection Tightening                   | Inventory / Data Quality         | Implemented |
 | [026](RFC-026-Inventory-Item-Occasions-UI.md)           | Item Relations Editor (Occasions/Materials/Seasons) | Inventory / Data Quality         | Implemented |
 | [027](RFC-027-Inline-Brand-Creation.md)                 | Inline Brand Creation                               | Inventory / Data Quality         | Draft       |
-| [028](RFC-028-Status-Page.md)                           | Status Page                                         | Platform / Observability         | Draft       |
+| [028](RFC-028-Status-Page.md)                           | Status Page                                         | Platform / Observability         | Approved    |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
 RFC numbers (RFC-001 … RFC-028; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).

@@ -43,9 +43,16 @@ buffer** (per-process; resets on restart).
 - `services/status.service.ts` — client fetch wrappers returning
   `{ data, error }`.
 
-### Server: route handlers (secrets stay server-side)
+### Server: assembly + probe route (secrets stay server-side)
 
-- `GET /api/status` → `StatusSnapshot`:
+**Refinement (planning, 2026-07-12):** the snapshot is assembled by the
+`/status` **server component** (same pattern as
+`app/developer/ai-runtime/page.tsx`, which already reads
+`resolver.describe()` + `budgetStatus()` server-side) — no `GET /api/status`
+route needed. Only the probe is an API route. The snapshot shape below is
+unchanged; it lives as the domain `StatusModel`.
+
+- Server-side snapshot (`buildStatusModel` input) → `StatusSnapshot`:
   - **aiWiring**: from `loadPolicies()` + model policy — per capability:
     primary/fallback provider, model, `override: boolean` when an
     `AI_POLICY_<CAPABILITY>` env var is active.
