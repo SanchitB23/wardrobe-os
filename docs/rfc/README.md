@@ -110,7 +110,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [023](RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md) | Ad-hoc Wear Logs & Outfit Promotion                 | Wear Logging / Outfit Management | Implemented |
 | [024](RFC-024-Catalog-Review-v2.md)                     | Catalog Review v2                                   | Inventory / Data Quality         | Implemented |
 | [025](RFC-025-Similar-Item-Detection-Tightening.md)     | Similar Item Detection Tightening                   | Inventory / Data Quality         | Implemented |
-| [026](RFC-026-Inventory-Item-Occasions-UI.md)           | Inventory Item Occasions — UI & Data Model          | Inventory / Data Quality         | Draft       |
+| [026](RFC-026-Inventory-Item-Occasions-UI.md)           | Item Relations Editor (Occasions/Materials/Seasons) | Inventory / Data Quality         | Approved    |
 | [027](RFC-027-Inline-Brand-Creation.md)                 | Inline Brand Creation                               | Inventory / Data Quality         | Draft       |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved

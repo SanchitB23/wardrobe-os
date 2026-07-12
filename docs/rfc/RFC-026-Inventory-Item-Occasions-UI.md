@@ -1,12 +1,13 @@
 # RFC-026: Inventory Item Occasions — UI & Data Model Alignment
 
-Status: Draft  
+Status: Approved  
 Owner: Sanchit Bhatnagar  
-Author: Cursor  
+Author: Cursor (approved design: Claude Code, 2026-07-12)  
 Target Release: v2.3.0  
 Epic: Inventory / Data Quality  
 Priority: High  
-Effort: M  
+Effort: L (scope expanded to occasions + materials + seasons)  
+Design spec: [2026-07-12-rfc-026-item-relations-editor-design.md](../superpowers/specs/2026-07-12-rfc-026-item-relations-editor-design.md)  
 Dependencies:
 
 - [RFC-024](RFC-024-Catalog-Review-v2.md) Catalog Review v2 — flags `missing_occasion`
@@ -329,14 +330,18 @@ hybrid minimizes cost while keeping owner in control.
 
 ## 14. Open Questions
 
-1. **Scores required?** Default 7 for all, or hide scores until "Advanced" (match
-   import optional score)?
-2. **Option A fallback?** Should Catalog Review downgrade severity or suppress
-   `missing_occasion` when formality is set, even before UI ships?
-3. **Seed data:** Does production `occasions` table have standard rows (Office, Gym,
-   Travel, …)? If not, include additive seed migration in this RFC or separate chore?
-4. **Scope:** Include seasons + materials in same release (M → L) or occasions-only?
-5. **Create flow:** Add occasions on **new item** create, or edit-only v1?
+All resolved in the 2026-07-12 design session (see design spec for detail):
+
+1. **Scores** — hidden in v1; editor writes `score: null` (import keeps
+   optional scores).
+2. **Option A fallback** — no; Catalog Review rules unchanged, Option D ships.
+3. **Seed data** — production `occasions` has 20 personal rows (Office Daily,
+   Director 1:1, WFH, …); no seed migration. Consequence: the Suggest engine
+   emits canonical **concepts** matched to lookup names by keyword/synonym
+   tokens, not hardcoded names.
+4. **Scope** — all three relations (occasions + materials + seasons) in one
+   shared editor + bulk add/remove for occasions and materials; effort M → L.
+5. **Create flow** — relations section on both create and edit.
 
 ---
 
