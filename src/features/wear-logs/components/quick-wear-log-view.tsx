@@ -2,13 +2,18 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { EyeIcon, Loader2Icon, XIcon } from "lucide-react";
+import { ImageIcon, Loader2Icon, PlusIcon, XIcon } from "lucide-react";
 
 import { PageHeader } from "@/features/layout";
 import { useOccasions, useCreateAdHocWearLogMutation } from "@/features/wear-logs/hooks";
 import { formatWearLogDateInput } from "@/features/wear-logs/services/wear-logs.service";
 import { useWardrobeItems } from "@/features/inventory/hooks";
+import { ItemImage } from "@/features/inventory/components/item-image";
 import { ItemPreviewDialog } from "@/features/inventory/components/item-preview-dialog";
+import {
+  WearLogItemPicker,
+  type WearLogPickerItem,
+} from "@/features/wear-logs/components/wear-log-item-picker";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -39,6 +44,48 @@ const MULTI_SLOTS: OutfitSlot[] = ["top", "accessory"];
 
 type SlotPick = Partial<Record<OutfitSlot, string[]>>;
 
+function SlotThumb({
+  item,
+  onPreview,
+  onRemove,
+}: {
+  item: WearLogPickerItem;
+  onPreview: () => void;
+  onRemove: () => void;
+}) {
+  return (
+    <div className="group relative size-20 shrink-0 overflow-hidden rounded-md border bg-muted/30">
+      <button
+        type="button"
+        aria-label={`Preview ${item.name}`}
+        className="absolute inset-0"
+        onClick={onPreview}
+      >
+        {item.primary_image_url ? (
+          <ItemImage
+            src={item.primary_image_url}
+            alt={item.name}
+            containerClassName="absolute inset-0 size-full"
+            className="size-full object-cover"
+          />
+        ) : (
+          <div className="flex size-full items-center justify-center text-muted-foreground">
+            <ImageIcon className="size-5 opacity-60" />
+          </div>
+        )}
+      </button>
+      <button
+        type="button"
+        aria-label={`Remove ${item.name}`}
+        className="absolute top-1 right-1 flex size-5 items-center justify-center rounded-full bg-background/90 text-muted-foreground shadow-sm hover:text-foreground"
+        onClick={onRemove}
+      >
+        <XIcon className="size-3.5" />
+      </button>
+    </div>
+  );
+}
+
 export function QuickWearLogView({
   initialItemIds = [],
 }: {
@@ -52,6 +99,7 @@ export function QuickWearLogView({
   const [extraIds, setExtraIds] = useState<string[]>(initialItemIds);
   const [error, setError] = useState<string | null>(null);
   const [previewItemId, setPreviewItemId] = useState<string | null>(null);
+  const [activeSlot, setActiveSlot] = useState<OutfitSlot | null>(null);
 
   const itemsQuery = useWardrobeItems({ status: "active" });
   const occasionsQuery = useOccasions();
@@ -62,6 +110,14 @@ export function QuickWearLogView({
     [itemsQuery.data],
   );
   const occasions = occasionsQuery.data ?? [];
+
+  const itemById = useMemo(() => {
+    const map = new Map<string, (typeof items)[number]>();
+    for (const item of items) {
+      map.set(item.id, item);
+    }
+    return map;
+  }, [items]);
 
   const itemsBySlot = useMemo(() => {
     const map = new Map<OutfitSlot, typeof items>();
@@ -80,6 +136,40 @@ export function QuickWearLogView({
     () => new Set(QUICK_SLOTS.flatMap((s) => slotPicks[s] ?? [])),
     [slotPicks],
   );
+
+  function handleToggle(slot: OutfitSlot, item: WearLogPickerItem) {
+    setSlotPicks((prev) => {
+      const current = prev[slot] ?? [];
+      if (MULTI_SLOTS.includes(slot)) {
+        return {
+          ...prev,
+          [slot]: current.includes(item.id)
+            ? current.filter((x) => x !== item.id)
+            : [...current, item.id],
+        };
+      }
+      return { ...prev, [slot]: [item.id] };
+    });
+  }
+
+  function removeFromSlot(slot: OutfitSlot, id: string) {
+    setSlotPicks((prev) => ({
+      ...prev,
+      [slot]: (prev[slot] ?? []).filter((x) => x !== id),
+    }));
+  }
+
+  // Items shown in the picker for the active slot: matching that slot and not
+  // already picked in a different slot (its own picks stay visible/selected).
+  const pickerItems = useMemo(() => {
+    if (!activeSlot) {
+      return [];
+    }
+    const ownPicks = new Set(slotPicks[activeSlot] ?? []);
+    return (itemsBySlot.get(activeSlot) ?? []).filter(
+      (item) => ownPicks.has(item.id) || !pickedAnywhere.has(item.id),
+    );
+  }, [activeSlot, itemsBySlot, pickedAnywhere, slotPicks]);
 
   async function handleSave() {
     setError(null);
@@ -104,6 +194,10 @@ export function QuickWearLogView({
       // toast handled by mutation
     }
   }
+
+  const activeSlotDef = activeSlot
+    ? OUTFIT_SLOT_DEFINITIONS.find((d) => d.slot === activeSlot)
+    : null;
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -171,153 +265,85 @@ export function QuickWearLogView({
             Pick Top, Bottom, Footwear, and Accessories. No outfit is created.
           </CardDescription>
         </CardHeader>
-        <CardContent className="space-y-4">
+        <CardContent className="space-y-3">
           {QUICK_SLOTS.map((slot) => {
             const def = OUTFIT_SLOT_DEFINITIONS.find((d) => d.slot === slot);
-            const options = itemsBySlot.get(slot) ?? [];
+            const label = def?.label ?? slot;
             const picked = slotPicks[slot] ?? [];
             const isMulti = MULTI_SLOTS.includes(slot);
+            const pickedItems = picked
+              .map((id) => itemById.get(id))
+              .filter((item): item is (typeof items)[number] => Boolean(item));
 
-            if (isMulti) {
-              const available = options.filter((i) => !pickedAnywhere.has(i.id));
-              return (
-                <div key={slot} className="space-y-1.5">
-                  <Label>{def?.label ?? slot}</Label>
-                  <Select
-                    value="__none__"
-                    onValueChange={(v) => {
-                      if (!v || v === "__none__") return;
-                      setSlotPicks((prev) => ({
-                        ...prev,
-                        [slot]: [...(prev[slot] ?? []), v],
-                      }));
-                    }}
-                  >
-                    <SelectTrigger className="w-full">
-                      <span className="flex flex-1 text-left text-muted-foreground">
-                        Add {(def?.label ?? slot).toLowerCase()}…
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">Add…</SelectItem>
-                      {available.map((item) => (
-                        <SelectItem key={item.id} value={item.id}>
-                          {item.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  {picked.length > 0 ? (
-                    <ul className="flex flex-wrap gap-2 pt-1">
-                      {picked.map((id) => {
-                        const item = options.find((i) => i.id === id);
-                        return (
-                          <li key={id}>
-                            <Badge variant="outline" className="gap-1.5">
-                              {item?.name ?? id.slice(0, 8)}
-                              <button
-                                type="button"
-                                aria-label={`Preview ${item?.name ?? "item"}`}
-                                className="text-muted-foreground hover:text-foreground"
-                                onClick={() => setPreviewItemId(id)}
-                              >
-                                <EyeIcon className="size-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                aria-label={`Remove ${item?.name ?? "item"}`}
-                                className="text-muted-foreground hover:text-foreground"
-                                onClick={() =>
-                                  setSlotPicks((prev) => ({
-                                    ...prev,
-                                    [slot]: (prev[slot] ?? []).filter(
-                                      (x) => x !== id,
-                                    ),
-                                  }))
-                                }
-                              >
-                                <XIcon className="size-3.5" />
-                              </button>
-                            </Badge>
-                          </li>
-                        );
-                      })}
-                    </ul>
-                  ) : null}
-                </div>
-              );
-            }
-
-            const value = picked[0] ?? "";
             return (
-              <div key={slot} className="space-y-1.5">
-                <Label>{def?.label ?? slot}</Label>
-                <div className="flex items-center gap-2">
-                  <Select
-                    value={value || "__none__"}
-                    onValueChange={(v) =>
-                      setSlotPicks((prev) => ({
-                        ...prev,
-                        [slot]: !v || v === "__none__" ? [] : [v],
-                      }))
-                    }
+              <div key={slot} className="rounded-lg border p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <p className="font-medium">{label}</p>
+                    {isMulti ? (
+                      <Badge variant="outline">Multiple</Badge>
+                    ) : null}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setActiveSlot(slot)}
                   >
-                    <SelectTrigger className="w-full">
-                      <span className="flex flex-1 text-left">
-                        {options.find((i) => i.id === value)?.name ?? "None"}
-                      </span>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">None</SelectItem>
-                      {options
-                        .filter((item) => item.id === value || !pickedAnywhere.has(item.id))
-                        .map((item) => (
-                          <SelectItem key={item.id} value={item.id}>
-                            {item.name}
-                          </SelectItem>
-                        ))}
-                    </SelectContent>
-                  </Select>
-                  {value ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="icon"
-                      aria-label="Preview item"
-                      onClick={() => setPreviewItemId(value)}
-                    >
-                      <EyeIcon className="size-4" />
-                    </Button>
-                  ) : null}
+                    {isMulti ? (
+                      <>
+                        <PlusIcon />
+                        Add
+                      </>
+                    ) : pickedItems.length > 0 ? (
+                      "Change"
+                    ) : (
+                      "Choose"
+                    )}
+                  </Button>
                 </div>
+
+                {pickedItems.length > 0 ? (
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {pickedItems.map((item) => (
+                      <SlotThumb
+                        key={item.id}
+                        item={item}
+                        onPreview={() => setPreviewItemId(item.id)}
+                        onRemove={() => removeFromSlot(slot, item.id)}
+                      />
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-muted-foreground">
+                    No item selected
+                  </p>
+                )}
               </div>
             );
           })}
 
           {extraIds.length > 0 ? (
-            <div className="space-y-2">
-              <Label>Also selected</Label>
-              <ul className="flex flex-wrap gap-2">
+            <div className="space-y-2 rounded-lg border p-3 sm:p-4">
+              <p className="font-medium">Also selected</p>
+              <div className="flex flex-wrap gap-2">
                 {extraIds.map((id) => {
-                  const item = items.find((i) => i.id === id);
+                  const item = itemById.get(id);
+                  if (!item) {
+                    return null;
+                  }
                   return (
-                    <li key={id}>
-                      <Badge variant="outline" className="gap-1">
-                        {item?.name ?? id.slice(0, 8)}
-                        <button
-                          type="button"
-                          className="ml-1 text-muted-foreground"
-                          onClick={() =>
-                            setExtraIds((prev) => prev.filter((x) => x !== id))
-                          }
-                        >
-                          ×
-                        </button>
-                      </Badge>
-                    </li>
+                    <SlotThumb
+                      key={id}
+                      item={item}
+                      onPreview={() => setPreviewItemId(id)}
+                      onRemove={() =>
+                        setExtraIds((prev) => prev.filter((x) => x !== id))
+                      }
+                    />
                   );
                 })}
-              </ul>
+              </div>
             </div>
           ) : null}
         </CardContent>
@@ -339,6 +365,24 @@ export function QuickWearLogView({
           Cancel
         </Button>
       </div>
+
+      <WearLogItemPicker
+        open={activeSlot !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActiveSlot(null);
+          }
+        }}
+        slotLabel={(activeSlotDef?.label ?? activeSlot ?? "item").toString()}
+        items={activeSlot ? pickerItems : []}
+        multiple={activeSlot ? MULTI_SLOTS.includes(activeSlot) : false}
+        selectedItemIds={activeSlot ? (slotPicks[activeSlot] ?? []) : []}
+        onToggle={(item) => {
+          if (activeSlot) {
+            handleToggle(activeSlot, item);
+          }
+        }}
+      />
 
       <ItemPreviewDialog
         itemId={previewItemId}
