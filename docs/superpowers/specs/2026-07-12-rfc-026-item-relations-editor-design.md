@@ -75,14 +75,17 @@ export function matchOccasionsToConcepts(
 ### Repository — `relations.repository.ts`
 
 ```ts
-export async function replaceItemRelations(
+export async function applyItemRelationDiffs(
   itemId: string,
-  input: { occasionIds: string[]; materialIds: string[]; seasonIds: string[] },
-): Promise<{ data: true | null; error: string | null }>;
+  diffs: { table: ...; idColumn: ...; toInsert: string[]; toDelete: string[] }[],
+): Promise<{ data: true | null; error: Error | null }>;
 ```
 
-Delete-all + batch-insert per table, mirroring `json-sync.repository.ts`
-(the proven import write path). Occasion inserts use `score: null`.
+**Diff semantics, not delete-all + reinsert**: delete removed ids, insert added
+ids, leave kept rows untouched — so `item_occasions` score/notes set via JSON
+import survive edits that don't deselect them. The diff itself
+(`diffIds(current, next)`) is a pure domain function. Occasion inserts carry
+no score/notes.
 `bulk-actions.repository.ts`: extend `RelationTable` from
 `item_tags | item_seasons | item_styles` to add `item_occasions` and
 `item_materials`.
