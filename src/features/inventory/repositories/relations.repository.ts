@@ -173,3 +173,74 @@ export function mapCareProfile(
 }
 
 export type ResolvedRelations = WardrobeItemRelations;
+
+type RelationDiffSpec = {
+  table: "item_occasions" | "item_materials" | "item_seasons";
+  idColumn: "occasion_id" | "material_id" | "season_id";
+  toInsert: string[];
+  toDelete: string[];
+};
+
+/**
+ * Applies id diffs to the item's junction tables. Diff semantics keep
+ * untouched rows intact, so item_occasions score/notes from import survive
+ * an edit that doesn't deselect them (RFC-026). Explicit per-table branches
+ * keep the generated Supabase insert types happy.
+ */
+export async function applyItemRelationDiffs(
+  itemId: string,
+  diffs: RelationDiffSpec[],
+): Promise<{ data: true | null; error: Error | null }> {
+  const supabase = createClient();
+
+  for (const diff of diffs) {
+    if (diff.toDelete.length > 0) {
+      const { error } = await supabase
+        .from(diff.table)
+        .delete()
+        .eq("item_id", itemId)
+        .in(diff.idColumn, diff.toDelete);
+      if (error) {
+        return { data: null, error: toError(error.message) };
+      }
+    }
+
+    if (diff.toInsert.length === 0) {
+      continue;
+    }
+
+    const insertError =
+      diff.table === "item_occasions"
+        ? (
+            await supabase.from("item_occasions").insert(
+              diff.toInsert.map((occasionId) => ({
+                item_id: itemId,
+                occasion_id: occasionId,
+              })),
+            )
+          ).error
+        : diff.table === "item_materials"
+          ? (
+              await supabase.from("item_materials").insert(
+                diff.toInsert.map((materialId) => ({
+                  item_id: itemId,
+                  material_id: materialId,
+                })),
+              )
+            ).error
+          : (
+              await supabase.from("item_seasons").insert(
+                diff.toInsert.map((seasonId) => ({
+                  item_id: itemId,
+                  season_id: seasonId,
+                })),
+              )
+            ).error;
+
+    if (insertError) {
+      return { data: null, error: toError(insertError.message) };
+    }
+  }
+
+  return { data: true, error: null };
+}

@@ -1,4 +1,6 @@
+import { diffIds, type RelationSelections } from "@/domain/inventory-relations";
 import {
+  applyItemRelationDiffs,
   mapCareProfile,
   mapOccasions,
   selectItemRelationIds,
@@ -84,4 +86,34 @@ export async function fetchWardrobeItemRelations(
     },
     error: null,
   };
+}
+
+export async function saveItemRelations(
+  itemId: string,
+  selections: RelationSelections,
+): Promise<{ data: true | null; error: Error | null }> {
+  const currentResult = await selectItemRelationIds(itemId);
+  if (currentResult.error || !currentResult.data) {
+    return {
+      data: null,
+      error: currentResult.error ?? new Error("Item relations not found."),
+    };
+  }
+
+  const currentOccasionIds = currentResult.data.occasions
+    .map((row) => row.occasion_id)
+    .filter((id): id is string => Boolean(id));
+
+  const occasionDiff = diffIds(currentOccasionIds, selections.occasionIds);
+  const materialDiff = diffIds(
+    currentResult.data.materialIds,
+    selections.materialIds,
+  );
+  const seasonDiff = diffIds(currentResult.data.seasonIds, selections.seasonIds);
+
+  return applyItemRelationDiffs(itemId, [
+    { table: "item_occasions", idColumn: "occasion_id", ...occasionDiff },
+    { table: "item_materials", idColumn: "material_id", ...materialDiff },
+    { table: "item_seasons", idColumn: "season_id", ...seasonDiff },
+  ]);
 }

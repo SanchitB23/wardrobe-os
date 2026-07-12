@@ -41,7 +41,11 @@ import {
   getCatalogReview,
   markCatalogItemReviewed,
 } from "@/features/inventory/services/review.service";
-import { fetchWardrobeItemRelations } from "@/features/inventory/services/relations.service";
+import {
+  fetchWardrobeItemRelations,
+  saveItemRelations,
+} from "@/features/inventory/services/relations.service";
+import type { RelationSelections } from "@/domain/inventory-relations";
 import {
   acceptItemVisualAttributes,
   analyzeItemPrimaryImage,
@@ -306,6 +310,26 @@ export function useWardrobeItemRelations(itemId: string) {
     queryKey: wardrobeKeys.itemRelations(itemId),
     queryFn: async () => unwrapData(await fetchWardrobeItemRelations(itemId)),
     enabled: Boolean(itemId),
+  });
+}
+
+export function useSaveItemRelationsMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (input: {
+      itemId: string;
+      selections: RelationSelections;
+    }) => unwrapData(await saveItemRelations(input.itemId, input.selections)),
+    onSuccess: async (_result, input) => {
+      await invalidateWardrobeQueries(queryClient);
+      await queryClient.invalidateQueries({
+        queryKey: wardrobeKeys.itemRelations(input.itemId),
+      });
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to save item relations.");
+    },
   });
 }
 
