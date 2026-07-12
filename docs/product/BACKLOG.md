@@ -162,6 +162,7 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 | RFC                                              | Title                                                                                  | Status         |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------- |
 | [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
+| [RFC-015A](../rfc/RFC-015A-Category-Optimization.md) | Category Optimization — turn Replace cards into guided keep/rotate/retire + shopping opportunities | ✅ Implemented |
 
 ## Epic 9 — Lifestyle Intelligence Platform (v2.0) ✅ v2.0.0 + v2.0.1
 

@@ -10,6 +10,7 @@
  * that context becomes available — the domain already supports all eight.
  */
 
+import { clusterCategoryKey } from "@/domain/category-optimization";
 import { buildIntelligenceCenter, type IntelligenceCenterResult, type IntelligenceSources } from "@/domain/intelligence";
 import type { ExploreExploitMode } from "@/domain/personalization/v2";
 import { fetchWardrobeHealth, fetchUsageAnalytics } from "@/features/analytics/services/analytics.service";
@@ -46,12 +47,16 @@ export async function getIntelligenceCenter(
     };
   }
 
-  // Health → Buy (gaps) + Replace (duplicates).
+  // Health → Buy (gaps) + Replace/Optimize (duplicates).
   const health = healthResult.data?.health;
   if (health) {
     sources.health = {
       gaps: health.gaps.map((gap) => ({ label: gap.label, severity: GAP_SEVERITY[gap.priority] ?? 0.5 })),
-      duplicates: health.duplicates.map((dup) => ({ label: dup.label, count: dup.count })),
+      duplicates: health.duplicates.map((dup) => ({
+        label: dup.label,
+        count: dup.count,
+        categoryKey: clusterCategoryKey(dup.bucket, dup.colorFamily, dup.formality),
+      })),
     };
   }
 

@@ -121,6 +121,11 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   `/intelligence`. Aggregates every engine's output into one deduplicated,
   impact-ranked list of typed actions ("what to do next"). It consumes engine
   conclusions and ranks them; it decides nothing new; AI explains.
+- **Category Optimization (RFC-015A)** — `src/domain/category-optimization`,
+  `/intelligence/optimize`. Extends Center `replace` cards into a guided
+  category plan (analysis → comparison → keep/protect/rotate/retire → shopping
+  stubs). Consumes health/usage/ROI/StyleDNA signals; never auto-retires or
+  auto-wishlists; Buy vs Skip still decides purchases.
 - **Trip Planner (RFC-017)** — `src/features/trips` (+ pure `src/domain/trips`
   helpers), `/trips`. A *feature* layer, **not a new engine**: it persists trips
   as data and reuses the Lifestyle Engine (`planTrip`) to derive the plan, so

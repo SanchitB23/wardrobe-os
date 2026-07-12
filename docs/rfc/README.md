@@ -99,6 +99,7 @@ _Update this table (and the backlog) as RFCs are created._
 | [014](RFC-014-AI-Runtime-v2.md) | AI Runtime v2 (+ OpenAI provider, RFC-014A) | Runtime | Implemented |
 | [014B](RFC-014B-Cost-Aware-AI-Runtime.md) | Cost-Aware AI Runtime | Runtime | Implemented |
 | [015](RFC-015-Intelligence-Center.md) | Intelligence Center | Product Intelligence | Implemented |
+| [015A](RFC-015A-Category-Optimization.md) | Category Optimization | Intelligence Center | Implemented |
 | [017](RFC-017-Trip-Planner.md) | Trip Planner | Travel | Implemented |
 | [018](RFC-018-Shopping-Intelligence.md) | Shopping Intelligence | Shopping | Implemented |
 | [018B](RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence | Acquisitions | Implemented |
@@ -107,6 +108,6 @@ _Update this table (and the backlog) as RFCs are created._
 | [022](RFC-022-Logging-and-Observability-Runtime.md) | Logging & Observability Runtime | Platform / Observability | Draft |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-022; 014B/018B letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-022; 014B/015A/018B letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).

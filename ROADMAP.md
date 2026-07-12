@@ -136,6 +136,10 @@ detail behind the engines.
   Intelligence: aggregates every deterministic engine into one deduplicated,
   impact-ranked list of typed actions (`/intelligence`, "Do this next" on Today,
   `getTopActions` stylist tool). Engines decide; the Center ranks; AI explains.
+- **Category Optimization — shipped** (RFC-015A: `src/domain/category-optimization`).
+  Turns Intelligence Center `replace` cards into an Optimize Category workflow
+  (`/intelligence/optimize`): analysis → comparison → keep/protect/rotate/retire
+  plan → shopping opportunities (wishlist confirm only). No auto-retire/delete.
 
 **Target AI Runtime configuration** (future):
 

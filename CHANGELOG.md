@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Category Optimization (RFC-015A)
+
+Guided wardrobe category optimization from Intelligence Center **Optimize**
+(typed `replace`) cards. Plans keep / protect / rotate / retire / ignore —
+never auto-retires or deletes. Shopping opportunities are draft-only until the
+user confirms wishlist add; Buy vs Skip remains the purchase decider.
+
+- **Domain** (`src/domain/category-optimization`, pure):
+  `buildCategoryOptimization` → CategoryAnalysis, ItemComparison[],
+  OptimizationPlan, ReplacementOpportunity[].
+- **Feature** (`src/features/category-optimization`): service, hooks, workflow UI.
+- **Route:** `/intelligence/optimize?category=…&focus=…`
+- **Intelligence Center:** Replace cards deep-link to Optimize; UI label shows
+  “optimize” while `ActionType` stays `replace` for compatibility.
+- **Shopping handoff:** `proposeWishlistFromOpportunity` (draft) + confirm via
+  existing wishlist save path.
+
 ### Added — Logging & Observability Runtime (RFC-022)
 
 Production-grade structured JSON logging for Vercel + AI observability. Observes

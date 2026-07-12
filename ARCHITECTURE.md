@@ -230,6 +230,13 @@ lifestyle/weather/vision) → `buildIntelligenceCenter` (RFC-015: generate → d
 → impact-rank) → prioritised typed action cards. Also led as "Do this next" on
 Today and exposed to the stylist via `getTopActions`.
 
+**Category Optimization (deterministic, RFC-015A):**
+Optimize cards (`ActionType.replace`) → `/intelligence/optimize` →
+`useCategoryOptimization` → `getCategoryOptimization` → inventory + health
+signals → `buildCategoryOptimization` → analysis / comparison / plan /
+replacement opportunities. Wishlist persistence only on explicit confirm;
+retire is an inventory deep-link only.
+
 **Stylist chat (AI + tools):**
 `/chat` → `POST /api/chat` → `streamChat` → `GeminiChatModel` (function calling)
 → on tool calls, `ToolRouter` → wardrobe tools → services → repositories →

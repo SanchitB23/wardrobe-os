@@ -110,9 +110,19 @@ export interface HealthSourceInput {
   /** Coverage gaps (0–1 severity). */
   gaps?: { label: string; severity: number }[];
   /** Redundant clusters (higher count → more redundant). */
-  duplicates?: { label: string; count: number }[];
+  duplicates?: {
+    label: string;
+    count: number;
+    /** RFC-015A — deep-link key for Category Optimization. */
+    categoryKey?: string;
+  }[];
   /** Items past their useful life. */
-  wornOut?: { itemId: string; label: string }[];
+  wornOut?: {
+    itemId: string;
+    label: string;
+    /** RFC-015A — cluster key for Optimize Category + focus. */
+    categoryKey?: string;
+  }[];
 }
 
 export interface UsageSourceInput {
