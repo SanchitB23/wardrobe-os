@@ -105,6 +105,7 @@ async function handleVision(request: Request): Promise<Response> {
       latencyMs: null,
       status: "error",
       errorCode: error instanceof VisionError ? error.code : "unknown",
+      errorMessage: error instanceof Error ? error.message : String(error),
     });
     aiRuntimeMetrics.record({
       capability: "vision",
