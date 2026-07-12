@@ -20,6 +20,9 @@ export type {
 export {
   normalizeKey,
   COLOR_NAME_TOKENS,
+  COLOR_FAMILY_BY_TOKEN,
+  colorFamily,
+  colorsInSameFamily,
   tokenizeName,
   garmentTokens,
   garmentSignature,

@@ -85,7 +85,7 @@ Behaviour change in **Similar Items** at `/inventory/review`:
 | `DuplicateDetection.ts`        | No change                                                     |
 | `tests/catalog-review.test.ts` | RFC-025 negatives + category gate                             |
 
-**Similar-item definition (final):**
+**Similar-item definition (final, incl. Amendment A):**
 
 A pair `(A, B)` is **similar** iff:
 
@@ -93,8 +93,11 @@ A pair `(A, B)` is **similar** iff:
 2. `namesAreSimilar`: normalized names equal OR `parallelSkeletonMatch` (identical
    non-color token sequences — same length, same order).
 3. **Category gate:** if both `categoryId` set, they must match.
-4. Metadata assigns reason: color diff → `similar_name_diff_color`; brand diff or
-   differing full names (same color metadata) → `similar_name_diff_meta`.
+4. **Color family gate (Amendment A):** if colors differ, both must resolve to
+   the **same color family** (`colorsInSameFamily`) — otherwise not similar.
+5. Metadata assigns reason: same-family color diff → `similar_name_diff_color`;
+   brand diff or differing full names (same color metadata) →
+   `similar_name_diff_meta`.
 
 ### Service / Repository / AI
 
@@ -119,15 +122,31 @@ Unchanged from RFC-024; `findSimilarPairs` returns fewer false positives.
 export function parallelSkeletonMatch(a: string, b: string): boolean;
 export function namesAreSimilar(a: string, b: string): boolean;
 export function scoreSimilarPair(a: CatalogItemView, b: CatalogItemView): ...;
+
+// Amendment A
+export const COLOR_FAMILY_BY_TOKEN: Record<string, string>;
+export function colorFamily(value: string | null | undefined): string | null;
+export function colorsInSameFamily(a?: string | null, b?: string | null): boolean;
 ```
 
 Removed export: `SIMILAR_GARMENT_THRESHOLD`.
 
+**Amendment A (2026-07-12) — color family gate.** Second user report: Navy ↔
+Grey Blazer, Black ↔ Green Pajama, Grey ↔ Olive Cargo were still flagged —
+single-token skeletons make every "‹Color› ‹Garment›" pair parallel. Product
+rule tightened: a color-swap pair is only a plausible naming variant when both
+colors are in the **same family** (green/olive yes, green/black no). This
+deliberately supersedes the original White/Wine and Olive/White regression
+positives. Family groupings live in `COLOR_FAMILY_BY_TOKEN` (deterministic,
+editable); unknown or ambiguous colors fail the gate (precision-first).
+
 ## 10. Acceptance Criteria
 
 - [x] Peach Waffle Blazer ↔ Grey Blazer → not similar.
-- [x] Solid White ↔ Solid Wine Shirt → similar (color).
-- [x] Olive ↔ White Activewear T-Shirt → similar (color).
+- [x] ~~Solid White ↔ Solid Wine Shirt → similar (color)~~ → **not similar**
+      (Amendment A: white/wine are different color families).
+- [x] ~~Olive ↔ White Activewear T-Shirt → similar (color)~~ → **not similar**
+      (Amendment A: green/white are different color families).
 - [x] Navy Chinos ↔ Pleated Wool Chinos → not similar.
 - [x] Blue Oxford ↔ White Oxford Shirt → not similar.
 - [x] Different category (both set) + parallel skeleton → not similar.
@@ -136,9 +155,18 @@ Removed export: `SIMILAR_GARMENT_THRESHOLD`.
 - [x] Dismissed pairs still hidden.
 - [x] Human-readable reason labels in UI.
 
+**Amendment A (color family gate, 2026-07-12):**
+
+- [x] Green Pajama ↔ Olive Pajama → similar (same family: green).
+- [x] Black Pajama ↔ Green Pajama → not similar (different family).
+- [x] Navy Blazer ↔ Grey Blazer → not similar (different family).
+- [x] Grey Cargo ↔ Olive Cargo → not similar (different family).
+- [x] Unknown/ambiguous color family → not similar (precision-first).
+- [x] Color diff by id only (no color names) → not similar.
+
 ## 11. QA / Testing Plan
 
-662 unit tests green including new RFC-025 describe blocks.
+669 unit tests green including RFC-025 and Amendment A describe blocks.
 
 ## 12. Risks & Trade-offs
 

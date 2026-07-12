@@ -48,6 +48,80 @@ export const COLOR_NAME_TOKENS = new Set([
   "offwhite",
 ]);
 
+/**
+ * Color family per color token (RFC-025 amendment). Two colors are "related"
+ * only when both resolve to the same family; a color-swap similar pair must be
+ * same-family (green/olive) — cross-family swaps (green/black) are distinct
+ * garments, not naming variants.
+ */
+export const COLOR_FAMILY_BY_TOKEN: Record<string, string> = {
+  white: "white",
+  ivory: "white",
+  cream: "white",
+  ecru: "white",
+  "off-white": "white",
+  offwhite: "white",
+  black: "black",
+  grey: "grey",
+  gray: "grey",
+  silver: "grey",
+  charcoal: "grey",
+  stone: "grey",
+  brown: "brown",
+  tan: "brown",
+  camel: "brown",
+  khaki: "brown",
+  beige: "brown",
+  sand: "brown",
+  green: "green",
+  olive: "green",
+  mint: "green",
+  teal: "green",
+  blue: "blue",
+  navy: "blue",
+  red: "red",
+  maroon: "red",
+  burgundy: "red",
+  wine: "red",
+  pink: "pink",
+  coral: "pink",
+  peach: "pink",
+  orange: "orange",
+  rust: "orange",
+  yellow: "yellow",
+  gold: "yellow",
+  mustard: "yellow",
+  purple: "purple",
+  lavender: "purple",
+  lilac: "purple",
+};
+
+/**
+ * Resolve a color name to its family. Multi-word names (e.g. "Navy Blue")
+ * resolve when all recognized tokens agree on one family; ambiguous or
+ * unrecognized names resolve to null.
+ */
+export function colorFamily(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const direct = COLOR_FAMILY_BY_TOKEN[normalizeKey(value)];
+  if (direct) return direct;
+  const families = new Set(
+    tokenizeName(value)
+      .map((token) => COLOR_FAMILY_BY_TOKEN[token])
+      .filter(Boolean),
+  );
+  return families.size === 1 ? [...families][0] : null;
+}
+
+/** True only when both colors resolve to the same known family. */
+export function colorsInSameFamily(
+  a: string | null | undefined,
+  b: string | null | undefined,
+): boolean {
+  const familyA = colorFamily(a);
+  return familyA !== null && familyA === colorFamily(b);
+}
+
 export function tokenizeName(name: string): string[] {
   return normalizeKey(name)
     .replace(/[^a-z0-9\s-]/g, " ")

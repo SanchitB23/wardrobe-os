@@ -5,6 +5,7 @@
 
 import { scoreDuplicatePair } from "@/domain/catalog-review/DuplicateDetection";
 import {
+  colorsInSameFamily,
   isRetiredStatus,
   normalizeKey,
   orderedPairKey,
@@ -53,6 +54,12 @@ export function scoreSimilarPair(
     );
 
   if (colorDiff) {
+    // RFC-025 amendment: a color-swap pair is only a naming variant when the
+    // colors are in the same family (green/olive); cross-family or unknown
+    // colors mean distinct garments.
+    if (!colorsInSameFamily(a.colorName, b.colorName)) {
+      return { kind: "none" };
+    }
     return { kind: "similar", reason: "similar_name_diff_color" };
   }
 

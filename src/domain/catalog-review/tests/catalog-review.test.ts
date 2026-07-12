@@ -94,7 +94,30 @@ describe("duplicate detection", () => {
 });
 
 describe("similar item detection — color-aware false positives", () => {
-  it("Solid White Shirt vs Solid Wine Shirt → similar, not duplicate", () => {
+  it("Solid White Shirt vs Solid Ivory Shirt → similar (same color family), not duplicate", () => {
+    const a = item({
+      id: "1",
+      name: "Solid White Shirt",
+      code: "W1",
+      colorId: "c-white",
+      colorName: "White",
+    });
+    const b = item({
+      id: "2",
+      name: "Solid Ivory Shirt",
+      code: "W2",
+      colorId: "c-ivory",
+      colorName: "Ivory",
+    });
+    expect(areDuplicates(a, b)).toBe(false);
+    expect(namesAreSimilar(a.name, b.name)).toBe(true);
+    expect(scoreSimilarPair(a, b)).toEqual({
+      kind: "similar",
+      reason: "similar_name_diff_color",
+    });
+  });
+
+  it("Solid White Shirt vs Solid Wine Shirt → not similar (different color family)", () => {
     const a = item({
       id: "1",
       name: "Solid White Shirt",
@@ -111,13 +134,10 @@ describe("similar item detection — color-aware false positives", () => {
     });
     expect(areDuplicates(a, b)).toBe(false);
     expect(namesAreSimilar(a.name, b.name)).toBe(true);
-    expect(scoreSimilarPair(a, b)).toEqual({
-      kind: "similar",
-      reason: "similar_name_diff_color",
-    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
   });
 
-  it("Olive Activewear T-Shirt vs White Activewear T-Shirt → similar, not duplicate", () => {
+  it("Olive Activewear T-Shirt vs White Activewear T-Shirt → not similar (different color family)", () => {
     const a = item({
       id: "1",
       name: "Olive Activewear T-Shirt",
@@ -133,10 +153,7 @@ describe("similar item detection — color-aware false positives", () => {
       colorName: "White",
     });
     expect(areDuplicates(a, b)).toBe(false);
-    expect(scoreSimilarPair(a, b)).toEqual({
-      kind: "similar",
-      reason: "similar_name_diff_color",
-    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
   });
 
   it("similar name + different brand → similar_name_diff_meta", () => {
@@ -228,6 +245,125 @@ describe("similar item detection — generic suffix false positives (RFC-025)", 
   });
 });
 
+describe("similar item detection — color family gate (RFC-025 amendment)", () => {
+  it("Green Pajama vs Olive Pajama → similar (same color family)", () => {
+    const a = item({
+      id: "1",
+      name: "Green Pajama",
+      code: "G1",
+      colorId: "c-green",
+      colorName: "Green",
+    });
+    const b = item({
+      id: "2",
+      name: "Olive Pajama",
+      code: "O1",
+      colorId: "c-olive",
+      colorName: "Olive",
+    });
+    expect(scoreSimilarPair(a, b)).toEqual({
+      kind: "similar",
+      reason: "similar_name_diff_color",
+    });
+  });
+
+  it("Black Pajama vs Green Pajama → not similar (different color family)", () => {
+    const a = item({
+      id: "1",
+      name: "Black Pajama",
+      code: "B1",
+      colorId: "c-black",
+      colorName: "Black",
+    });
+    const b = item({
+      id: "2",
+      name: "Green Pajama",
+      code: "G1",
+      colorId: "c-green",
+      colorName: "Green",
+    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
+    expect(findSimilarPairs([a, b])).toHaveLength(0);
+  });
+
+  it("Navy Blazer vs Grey Blazer → not similar (different color family)", () => {
+    const a = item({
+      id: "1",
+      name: "Navy Blazer",
+      code: "N1",
+      categoryId: "cat-outer",
+      categoryName: "Outerwear",
+      colorId: "c-navy",
+      colorName: "Navy",
+    });
+    const b = item({
+      id: "2",
+      name: "Grey Blazer",
+      code: "G1",
+      categoryId: "cat-outer",
+      categoryName: "Outerwear",
+      colorId: "c-grey",
+      colorName: "Grey",
+    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
+    expect(findSimilarPairs([a, b])).toHaveLength(0);
+  });
+
+  it("Grey Cargo vs Olive Cargo → not similar (different color family)", () => {
+    const a = item({
+      id: "1",
+      name: "Grey Cargo",
+      code: "G1",
+      colorId: "c-grey",
+      colorName: "Grey",
+    });
+    const b = item({
+      id: "2",
+      name: "Olive Cargo",
+      code: "O1",
+      colorId: "c-olive",
+      colorName: "Olive",
+    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
+  });
+
+  it("unknown color family → not similar (precision-first)", () => {
+    const a = item({
+      id: "1",
+      name: "Cotton Pajama",
+      code: "H1",
+      colorId: "c-heather",
+      colorName: "Heather",
+    });
+    const b = item({
+      id: "2",
+      name: "Cotton Pajama",
+      code: "G1",
+      colorId: "c-green",
+      colorName: "Green",
+    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
+  });
+
+  it("color diff by id only (no color names) → not similar", () => {
+    const a = item({
+      id: "1",
+      name: "Cotton Pajama",
+      code: "A1",
+      colorId: "c-1",
+      colorName: null,
+    });
+    const b = item({
+      id: "2",
+      name: "Cotton Pajama",
+      code: "B1",
+      colorId: "c-2",
+      colorName: null,
+    });
+    expect(scoreSimilarPair(a, b)).toEqual({ kind: "none" });
+  });
+});
+
 describe("similar item detection — category gate (RFC-025)", () => {
   it("parallel skeleton + different categoryId (both set) → not similar", () => {
     const a = item({
@@ -264,12 +400,12 @@ describe("similar item detection — category gate (RFC-025)", () => {
     });
     const b = item({
       id: "2",
-      name: "Solid Wine Shirt",
+      name: "Solid Ivory Shirt",
       code: "B",
       categoryId: "cat-tops",
       categoryName: "Tops",
-      colorId: "c-wine",
-      colorName: "Wine",
+      colorId: "c-ivory",
+      colorName: "Ivory",
     });
     expect(scoreSimilarPair(a, b)).toEqual({
       kind: "similar",
@@ -277,7 +413,7 @@ describe("similar item detection — category gate (RFC-025)", () => {
     });
   });
 
-  it("parallel skeleton + same category + color diff → similar", () => {
+  it("parallel skeleton + same category + same-family color diff → similar", () => {
     const a = item({
       id: "1",
       name: "Solid White Shirt",
@@ -288,11 +424,11 @@ describe("similar item detection — category gate (RFC-025)", () => {
     });
     const b = item({
       id: "2",
-      name: "Solid Wine Shirt",
+      name: "Solid Ivory Shirt",
       code: "B",
       categoryId: "cat-tops",
-      colorId: "c-wine",
-      colorName: "Wine",
+      colorId: "c-ivory",
+      colorName: "Ivory",
     });
     expect(scoreSimilarPair(a, b)).toEqual({
       kind: "similar",
@@ -312,9 +448,9 @@ describe("dismissed pairs do not reappear", () => {
     });
     const b = item({
       id: "2",
-      name: "Solid Wine Shirt",
-      colorId: "c-wine",
-      colorName: "Wine",
+      name: "Solid Ivory Shirt",
+      colorId: "c-ivory",
+      colorName: "Ivory",
       code: "B",
     });
     expect(findSimilarPairs([a, b])).toHaveLength(1);
@@ -420,10 +556,10 @@ describe("classifyCatalogIssues", () => {
       }),
       item({
         id: "2",
-        name: "Solid Wine Shirt",
+        name: "Solid Ivory Shirt",
         code: "B",
         colorId: "cn",
-        colorName: "Wine",
+        colorName: "Ivory",
       }),
       item({
         id: "3",
