@@ -135,10 +135,10 @@ multi-step reasoning are absorbed into AI Runtime v2 (RFC-014), Personalization 
 (RFC-013), and the Orchestrator. Full reasoning in
 [FUTURE.md](FUTURE.md) (Parking Lot).
 
-| RFC                  | Title                                        | Status                                        |
-| -------------------- | -------------------------------------------- | --------------------------------------------- |
+| RFC                  | Title                                        | Status                                                          |
+| -------------------- | -------------------------------------------- | --------------------------------------------------------------- |
 | ~~RFC-020~~          | ~~Cross-Engine Orchestration~~               | ⏸️ Number reassigned → Inventory Image Intelligence (✅ v2.0.1) |
-| [RFC-021](FUTURE.md) | Long-Horizon Planning & Multi-Step Reasoning | ⏸️ Parked (absorbed — RFC-013/014/005)        |
+| [RFC-021](FUTURE.md) | Long-Horizon Planning & Multi-Step Reasoning | ⏸️ Parked (absorbed — RFC-013/014/005)                          |
 
 ## Epic 7 — Product Experience & v1.0 Polish (v1.0)
 
@@ -159,9 +159,9 @@ Lead with **prioritised actions**, not analytics. One Intelligence Center
 aggregates every deterministic engine into a single, deduplicated, impact-ranked
 list of typed actions. Engines decide the actions; the Center ranks; AI explains.
 
-| RFC                                              | Title                                                                                  | Status         |
-| ------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------- |
-| [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
+| RFC                                                  | Title                                                                                              | Status         |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------- | -------------- |
+| [RFC-015](../rfc/RFC-015-Intelligence-Center.md)     | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards)             | ✅ Implemented |
 | [RFC-015A](../rfc/RFC-015A-Category-Optimization.md) | Category Optimization — turn Replace cards into guided keep/rotate/retire + shopping opportunities | ✅ Implemented |
 
 ## Epic 9 — Lifestyle Intelligence Platform (v2.0) ✅ v2.0.0 + v2.0.1
@@ -172,15 +172,15 @@ explains. **v2.0.0** ships RFC-017 / 018 / 018B / 019 + the Acquisitions hub;
 RFC-018C Acquisition-to-Inventory Pipeline (lifecycle glue). Full status +
 reasoning in [FUTURE.md](FUTURE.md).
 
-| RFC                                                | Title                                                                                                                                                                                                           | Status                           |
-| -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
-| [RFC-017](../rfc/RFC-017-Trip-Planner.md)          | Trip Planner — reusable/editable trips, templates, history, multi-city, packing checklist + progress, timeline / outfit calendar (**first v2.0 feature**)                                                       | ✅ Implemented                   |
-| [RFC-018](../rfc/RFC-018-Shopping-Intelligence.md) | Shopping Intelligence — wishlist · priority queue · wardrobe ROI · duplicate intelligence · shopping timeline (no budget planning). Product hub: `/acquisitions`; intelligence UI: `/acquisitions/intelligence` | ✅ Implemented                   |
-| [RFC-018B](../rfc/RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence — purchase lifecycle · recommendation accuracy · need/ROI evolution · opportunity queue · dynamic strategy (evolution of RFC-018; no engine replacement) | ✅ Implemented |
-| [RFC-018C](../rfc/RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline — Buy/Skip → wishlist → purchased → confirmed inventory · image carry-forward · Recent Decisions actions · timeline (evolution of RFC-018/018B; no auto-inventory) | ✅ Implemented |
-| [RFC-019](../rfc/RFC-019-Vision-Intelligence-v2.md) | Vision Intelligence v2 — closet scan · assisted outfit recognition · visual duplicate detection · review queue (laundry deferred) | ✅ Implemented                   |
-| [RFC-020](../rfc/RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence — primary image → VisualStyleAttributes → Accept → StyleDNA (v2.0.1) | ✅ Implemented                   |
-| [RFC-016](FUTURE.md)                               | Calendar Intelligence                                                                                                                                                                                           | ⏸️ Parked (low ROI, single-user) |
+| RFC                                                              | Title                                                                                                                                                                                                           | Status                           |
+| ---------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
+| [RFC-017](../rfc/RFC-017-Trip-Planner.md)                        | Trip Planner — reusable/editable trips, templates, history, multi-city, packing checklist + progress, timeline / outfit calendar (**first v2.0 feature**)                                                       | ✅ Implemented                   |
+| [RFC-018](../rfc/RFC-018-Shopping-Intelligence.md)               | Shopping Intelligence — wishlist · priority queue · wardrobe ROI · duplicate intelligence · shopping timeline (no budget planning). Product hub: `/acquisitions`; intelligence UI: `/acquisitions/intelligence` | ✅ Implemented                   |
+| [RFC-018B](../rfc/RFC-018B-Acquisitions-Intelligence.md)         | Acquisitions Intelligence — purchase lifecycle · recommendation accuracy · need/ROI evolution · opportunity queue · dynamic strategy (evolution of RFC-018; no engine replacement)                              | ✅ Implemented                   |
+| [RFC-018C](../rfc/RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline — Buy/Skip → wishlist → purchased → confirmed inventory · image carry-forward · Recent Decisions actions · timeline (evolution of RFC-018/018B; no auto-inventory)            | ✅ Implemented                   |
+| [RFC-019](../rfc/RFC-019-Vision-Intelligence-v2.md)              | Vision Intelligence v2 — closet scan · assisted outfit recognition · visual duplicate detection · review queue (laundry deferred)                                                                               | ✅ Implemented                   |
+| [RFC-020](../rfc/RFC-020-Inventory-Image-Intelligence.md)        | Inventory Image Intelligence — primary image → VisualStyleAttributes → Accept → StyleDNA (v2.0.1)                                                                                                               | ✅ Implemented                   |
+| [RFC-016](FUTURE.md)                                             | Calendar Intelligence                                                                                                                                                                                           | ⏸️ Parked (low ROI, single-user) |
 
 ## Epic 10 — Platform / Observability (v2.0.x)
 
@@ -188,9 +188,9 @@ Production debugging and AI cost visibility without changing product logic or
 deterministic engines. Structured JSON → Vercel Runtime Logs; optional Developer
 Mode viewer.
 
-| RFC                                                                    | Title                                                                                              | Status        |
-| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------- |
-| [RFC-022](../rfc/RFC-022-Logging-and-Observability-Runtime.md)         | Logging & Observability Runtime — correlation IDs, structured API/AI/engine logs, redaction, cost visibility | Done ✅ (Implemented)  |
+| RFC                                                            | Title                                                                                                        | Status                |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ | --------------------- |
+| [RFC-022](../rfc/RFC-022-Logging-and-Observability-Runtime.md) | Logging & Observability Runtime — correlation IDs, structured API/AI/engine logs, redaction, cost visibility | Done ✅ (Implemented) |
 
 ## Epic 11 — Wear Logging / Outfit Management (v2.x)
 
@@ -198,9 +198,9 @@ Separate curated saved outfits from historical wear logs. Ad-hoc logging from
 inventory / recommendations must not pollute the Outfits list; repeated
 combinations may be promoted to outfits with explicit user confirmation.
 
-| RFC                                                                                    | Title                                                                                          | Status        |
-| -------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------- |
-| [RFC-023](../rfc/RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md)                     | Ad-hoc Wear Logs & Outfit Promotion — event-centric wear logs, combo detection, outfit promote | Done ✅ (Implemented) |
+| RFC                                                                | Title                                                                                          | Status                |
+| ------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | --------------------- |
+| [RFC-023](../rfc/RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md) | Ad-hoc Wear Logs & Outfit Promotion — event-centric wear logs, combo detection, outfit promote | Done ✅ (Implemented) |
 
 ## Epic 12 — Inventory / Data Quality (v2.2.0) ✅
 
@@ -209,9 +209,9 @@ duplicates vs similar items, missing metadata / images / visual analysis, dismis
 and a deterministic catalog quality score. Engines stay poisoned less; AI never
 decides catalog correctness.
 
-| RFC                                                                    | Title                                                                                          | Status        |
-| ---------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------- | ------------- |
-| [RFC-024](../rfc/RFC-024-Catalog-Review-v2.md)                         | Catalog Review v2 — metadata-aware duplicates, similar items, completeness sections, dismissals | ✅ Implemented |
+| RFC                                            | Title                                                                                           | Status         |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------- |
+| [RFC-024](../rfc/RFC-024-Catalog-Review-v2.md) | Catalog Review v2 — metadata-aware duplicates, similar items, completeness sections, dismissals | ✅ Implemented |
 
 ## Removed / parked from scope
 
