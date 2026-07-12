@@ -212,7 +212,7 @@ export function fromVision(input: VisionSourceInput | undefined): ActionCandidat
       confidence: clamp01(c.confidence),
       reason: c.decision === "buy" ? `Scanned item worth buying: ${c.label}.` : `Scanned item to skip: ${c.label}.`,
       reasonCodes: [c.decision === "buy" ? "buy_verdict" : "skip_verdict"],
-      href: "/acquisition/screenshot",
+      href: "/acquisition/advisor",
     },
   ];
 }

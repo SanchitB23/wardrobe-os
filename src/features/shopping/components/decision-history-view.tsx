@@ -415,7 +415,7 @@ export function DecisionHistoryView() {
             <div className="space-y-1">
               <p className="text-sm font-medium">No decisions match</p>
               <p className="text-sm text-muted-foreground">
-                Run Buy vs Skip from the advisor or a screenshot to build history.
+                Run Buy vs Skip from the advisor to build history.
               </p>
             </div>
             <div className="flex flex-wrap justify-center gap-2 pt-1">
@@ -425,14 +425,6 @@ export function DecisionHistoryView() {
                 render={<Link href="/acquisition/advisor" />}
               >
                 Open advisor
-              </Button>
-              <Button
-                size="sm"
-                variant="outline"
-                render={<Link href="/acquisition/screenshot" />}
-              >
-                <ScanSearchIcon className="size-4" />
-                Screenshot
               </Button>
             </div>
           </CardContent>
