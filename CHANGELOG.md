@@ -27,6 +27,37 @@ Wishlist ranking, or Inventory CRUD. Never auto-creates inventory.
   wishlist purchase dialog + convert actions.
 - **RFC-018C** marked Implemented.
 
+### Added — Category Optimization (RFC-015A)
+
+Guided wardrobe category optimization from Intelligence Center **Optimize**
+(typed `replace`) cards. Plans keep / protect / rotate / retire / ignore —
+never auto-retires or deletes. Shopping opportunities are draft-only until the
+user confirms wishlist add; Buy vs Skip remains the purchase decider.
+
+- **Domain** (`src/domain/category-optimization`, pure):
+  `buildCategoryOptimization` → CategoryAnalysis, ItemComparison[],
+  OptimizationPlan, ReplacementOpportunity[].
+- **Feature** (`src/features/category-optimization`): service, hooks, workflow UI.
+- **Route:** `/intelligence/optimize?category=…&focus=…`
+- **Intelligence Center:** Replace cards deep-link to Optimize; UI label shows
+  “optimize” while `ActionType` stays `replace` for compatibility.
+- **Shopping handoff:** `proposeWishlistFromOpportunity` (draft) + confirm via
+  existing wishlist save path.
+
+### Added — Logging & Observability Runtime (RFC-022)
+
+Production-grade structured JSON logging for Vercel + AI observability. Observes
+only — does not change routing, scoring, or domain decisions.
+
+- **Runtime** (`src/runtime/logging/`): structured logger, request correlation
+  (`x-request-id` / AsyncLocalStorage), redaction, `AIUsageLogger`,
+  `withApiLogging`, orchestrator `engine_trace`, in-memory ring buffer.
+- **Wiring:** all `app/api/**` routes; `AIRuntime` + legacy `AIService` + chat /
+  vision edges; orchestrator service boundary (`LOG_ENGINE_TRACES`).
+- **Developer:** `/developer/observability` (process-local recent lines).
+- **Docs:** `docs/operations/VERCEL_LOGGING.md`; env flags in `.env.example`.
+- **RFC-022** marked Implemented.
+
 ## [2.0.1] — 2026-07-12
 
 **Inventory Image Intelligence (RFC-020).** Connects owned-item primary photos to

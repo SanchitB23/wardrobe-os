@@ -56,7 +56,9 @@ export function ActionCardRow({ card, debug }: { card: ActionCard; debug?: boole
       </div>
       <div className="min-w-0 flex-1 space-y-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">{card.type}</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            {card.type === "replace" ? "optimize" : card.type}
+          </span>
           <span className="font-medium">{card.subject.label}</span>
           <Badge variant="outline" className={cn("text-[10px] capitalize", PRIORITY_TONE[card.priority])}>
             {card.priority}
@@ -82,7 +84,7 @@ export function ActionCardRow({ card, debug }: { card: ActionCard; debug?: boole
     </div>
   );
   return card.href ? (
-    <Link href={card.href} className="block" aria-label={`${card.type}: ${card.subject.label}`}>
+    <Link href={card.href} className="block" aria-label={`${card.type === "replace" ? "optimize" : card.type}: ${card.subject.label}`}>
       {body}
     </Link>
   ) : (

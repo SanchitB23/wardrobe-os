@@ -8,6 +8,8 @@
 
 import { streamChat } from "@/features/chat/chat.service.server";
 import type { ChatRequestBody, ChatStreamEvent } from "@/features/chat/types";
+import { withApiLogging } from "@/runtime/logging/api-logger";
+import { getRequestId } from "@/runtime/logging/request-context";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -32,7 +34,7 @@ function isChatRequest(value: unknown): value is ChatRequestBody {
   );
 }
 
-export async function POST(request: Request) {
+async function handleChat(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -46,6 +48,7 @@ export async function POST(request: Request) {
     );
   }
 
+  const requestId = getRequestId();
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
     async start(controller) {
@@ -62,6 +65,7 @@ export async function POST(request: Request) {
         write({
           type: "error",
           error: "The stylist is unavailable right now. Please try again.",
+          ...(requestId ? { requestId } : {}),
         });
       } finally {
         controller.close();
@@ -76,3 +80,5 @@ export async function POST(request: Request) {
     },
   });
 }
+
+export const POST = withApiLogging("/api/chat", handleChat);

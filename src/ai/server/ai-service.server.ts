@@ -20,8 +20,12 @@ import { InMemoryAICache } from "@/ai/cache";
 import { SupabaseAICache } from "@/ai/cache/supabase-ai-cache";
 import { createAIOrchestrator } from "@/ai/orchestrator";
 import { GeminiProvider } from "@/ai/providers/gemini-provider";
-import type { AICache, AIService } from "@/ai/types";
+import type { AICache, AICallOptions, AIRequest, AIResponse, AIService } from "@/ai/types";
+import { AIError } from "@/ai/types";
 import { createClient } from "@/lib/supabase/server";
+import { logAIUsage } from "@/runtime/logging/ai-usage-logger";
+import { createStructuredAILogger } from "@/runtime/logging/structured-ai-logger";
+import { RuntimeCostEstimator } from "@/runtime/ai/RuntimeCostEstimator";
 
 function assertServerSide(): void {
   if (typeof window !== "undefined") {
@@ -54,12 +58,108 @@ export function getServerAIService(): AIService {
     );
   }
 
-  cached = createAIOrchestrator({
+  const orchestrator = createAIOrchestrator({
     providers: [new GeminiProvider()],
     retryPolicy: { maxAttempts: 1, initialDelayMs: 0, backoffFactor: 1 },
     cache: createServerAICache(),
+    logger: createStructuredAILogger(),
   });
+  cached = withAIUsageLogging(orchestrator);
   return cached;
+}
+
+const legacyCostEstimator = new RuntimeCostEstimator();
+
+/**
+ * Wrap the legacy AIService so every generate/vision call emits an `ai_usage`
+ * line (RFC-022). Does not alter routing or responses.
+ */
+function withAIUsageLogging(inner: AIService): AIService {
+  return {
+    async generate<T = unknown>(
+      request: AIRequest,
+      options: AICallOptions<T> = {},
+    ): Promise<AIResponse<T>> {
+      const started = Date.now();
+      try {
+        const response = await inner.generate(request, options);
+        const costUsd = legacyCostEstimator.perCall(
+          response.usage,
+          response.provider,
+          response.model,
+        );
+        logAIUsage({
+          capability: "generate",
+          provider: response.provider,
+          model: response.model,
+          fallbackProvider: null,
+          usedFallback: false,
+          promptVersion: options.cache?.promptVersion ?? "adhoc",
+          cacheHit: Boolean(response.cached),
+          usage: response.usage,
+          estimatedCostUsd: costUsd,
+          latencyMs: response.latencyMs ?? Date.now() - started,
+          status: response.cached ? "cache_hit" : "ok",
+        });
+        return response;
+      } catch (error) {
+        logAIUsage({
+          capability: "generate",
+          provider: options.provider ?? "gemini",
+          model: request.model ?? "unknown",
+          promptVersion: options.cache?.promptVersion ?? "adhoc",
+          cacheHit: false,
+          usage: null,
+          estimatedCostUsd: null,
+          latencyMs: Date.now() - started,
+          status: "error",
+          errorCode: error instanceof AIError ? error.code : "unknown",
+        });
+        throw error;
+      }
+    },
+    async vision<T = unknown>(
+      request: AIRequest,
+      options: AICallOptions<T> = {},
+    ): Promise<AIResponse<T>> {
+      const started = Date.now();
+      try {
+        const response = await inner.vision(request, options);
+        const costUsd = legacyCostEstimator.perCall(
+          response.usage,
+          response.provider,
+          response.model,
+        );
+        logAIUsage({
+          capability: "vision",
+          provider: response.provider,
+          model: response.model,
+          promptVersion: options.cache?.promptVersion ?? "adhoc",
+          cacheHit: Boolean(response.cached),
+          usage: response.usage,
+          estimatedCostUsd: costUsd,
+          latencyMs: response.latencyMs ?? Date.now() - started,
+          status: response.cached ? "cache_hit" : "ok",
+        });
+        return response;
+      } catch (error) {
+        logAIUsage({
+          capability: "vision",
+          provider: options.provider ?? "gemini",
+          model: request.model ?? "unknown",
+          promptVersion: options.cache?.promptVersion ?? "adhoc",
+          cacheHit: false,
+          usage: null,
+          estimatedCostUsd: null,
+          latencyMs: Date.now() - started,
+          status: "error",
+          errorCode: error instanceof AIError ? error.code : "unknown",
+        });
+        throw error;
+      }
+    },
+    stream: (request, options) => inner.stream(request, options),
+  };
 }
 
 /**

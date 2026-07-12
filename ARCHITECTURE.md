@@ -179,6 +179,21 @@ surfaces sourcing static release/architecture metadata.
   Inspector at `/developer/ai-runtime`. It routes and measures; it never decides
   (ADR-005).
 
+### Logging & Observability (RFC-022)
+`src/runtime/logging/**` is shared infrastructure (not a domain feature):
+
+- Structured single-line JSON → stdout (Vercel Runtime Logs).
+- `requestId` via `x-request-id` + AsyncLocalStorage; echoed on error responses.
+- AI usage lines (provider / model / tokens / estimated cost / fallback) on every
+  `AIRuntime` call and legacy `AIService` / chat edges.
+- API completion logs via `withApiLogging` on all `app/api/**` routes.
+- Orchestrator `engine_trace` at the service boundary when `LOG_ENGINE_TRACES=true`
+  (domain engines stay pure — no logging I/O in `src/domain/**`).
+- Redaction by default (`LOG_REDACTED=true`): no keys, access codes, raw prompts,
+  or image base64.
+- Developer viewer: `/developer/observability` (process-local ring buffer).
+  Ops guide: [docs/operations/VERCEL_LOGGING.md](docs/operations/VERCEL_LOGGING.md).
+
 AI **explains and converses only** — it is never the source of truth for
 scoring, eligibility, ranking, health, or cost.
 See [ADR-005](docs/adr/ADR-005-ai-does-not-decide.md).
@@ -218,6 +233,13 @@ multi-objective, weather- & preference-aware, diverse, explainable) → ranked l
 lifestyle/weather/vision) → `buildIntelligenceCenter` (RFC-015: generate → dedupe
 → impact-rank) → prioritised typed action cards. Also led as "Do this next" on
 Today and exposed to the stylist via `getTopActions`.
+
+**Category Optimization (deterministic, RFC-015A):**
+Optimize cards (`ActionType.replace`) → `/intelligence/optimize` →
+`useCategoryOptimization` → `getCategoryOptimization` → inventory + health
+signals → `buildCategoryOptimization` → analysis / comparison / plan /
+replacement opportunities. Wishlist persistence only on explicit confirm;
+retire is an inventory deep-link only.
 
 **Stylist chat (AI + tools):**
 `/chat` → `POST /api/chat` → `streamChat` → `GeminiChatModel` (function calling)

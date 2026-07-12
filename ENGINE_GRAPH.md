@@ -22,6 +22,12 @@ hand-wired that composition; the **Intelligence Orchestrator**
   budget guard. This is orthogonal to the deterministic graph below — it changes
   *who narrates*, never *what is decided*.
 
+Structured **observability** (RFC-022, `src/runtime/logging`) wraps the service /
+API / AI Runtime edges: correlation IDs, `ai_usage` / `api_request` JSON lines,
+and optional `engine_trace` summaries from an already-built `ExecutionReport`.
+Logging never runs inside pure engines and never changes execution order or
+scores. See [docs/operations/VERCEL_LOGGING.md](docs/operations/VERCEL_LOGGING.md).
+
 ## Capabilities → engines
 
 Each capability is a thin adapter over an existing engine (`src/domain/orchestrator/CapabilityRegistry.ts`):
@@ -115,6 +121,11 @@ timing aside. Timing is metadata, explicitly outside the determinism guarantee;
   `/intelligence`. Aggregates every engine's output into one deduplicated,
   impact-ranked list of typed actions ("what to do next"). It consumes engine
   conclusions and ranks them; it decides nothing new; AI explains.
+- **Category Optimization (RFC-015A)** — `src/domain/category-optimization`,
+  `/intelligence/optimize`. Extends Center `replace` cards into a guided
+  category plan (analysis → comparison → keep/protect/rotate/retire → shopping
+  stubs). Consumes health/usage/ROI/StyleDNA signals; never auto-retires or
+  auto-wishlists; Buy vs Skip still decides purchases.
 - **Trip Planner (RFC-017)** — `src/features/trips` (+ pure `src/domain/trips`
   helpers), `/trips`. A *feature* layer, **not a new engine**: it persists trips
   as data and reuses the Lifestyle Engine (`planTrip`) to derive the plan, so

@@ -162,6 +162,7 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 | RFC                                              | Title                                                                                  | Status         |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------- | -------------- |
 | [RFC-015](../rfc/RFC-015-Intelligence-Center.md) | Intelligence Center (aggregate all engines → prioritised, typed, deduped action cards) | ✅ Implemented |
+| [RFC-015A](../rfc/RFC-015A-Category-Optimization.md) | Category Optimization — turn Replace cards into guided keep/rotate/retire + shopping opportunities | ✅ Implemented |
 
 ## Epic 9 — Lifestyle Intelligence Platform (v2.0) ✅ v2.0.0 + v2.0.1
 
@@ -181,6 +182,16 @@ reasoning in [FUTURE.md](FUTURE.md).
 | [RFC-020](../rfc/RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence — primary image → VisualStyleAttributes → Accept → StyleDNA (v2.0.1) | ✅ Implemented                   |
 | [RFC-016](FUTURE.md)                               | Calendar Intelligence                                                                                                                                                                                           | ⏸️ Parked (low ROI, single-user) |
 
+## Epic 10 — Platform / Observability (v2.0.x)
+
+Production debugging and AI cost visibility without changing product logic or
+deterministic engines. Structured JSON → Vercel Runtime Logs; optional Developer
+Mode viewer.
+
+| RFC                                                                    | Title                                                                                              | Status        |
+| ---------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------- |
+| [RFC-022](../rfc/RFC-022-Logging-and-Observability-Runtime.md)         | Logging & Observability Runtime — correlation IDs, structured API/AI/engine logs, redaction, cost visibility | Done ✅ (Implemented)  |
+
 ## Removed / parked from scope
 
 **Rejected** — low ROI for a single-user product ([FUTURE.md](FUTURE.md) → Rejected):
@@ -194,6 +205,7 @@ reasoning in [FUTURE.md](FUTURE.md).
 Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step Reasoning
 (RFC-021), Laundry Detection. Former Cross-Engine Orchestration topic remains
 cancelled (RFC-005); RFC-020 number is Inventory Image Intelligence (✅ v2.0.1).
+Next free sequential after parked RFC-021 / implemented RFC-022: **RFC-023**.
 
 ---
 

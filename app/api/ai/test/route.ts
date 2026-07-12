@@ -15,6 +15,7 @@ import { NextResponse } from "next/server";
 import { createJsonResponseParser, objectSchema } from "@/ai/schemas";
 import { getServerAIService } from "@/ai/server/ai-service.server";
 import { AIError } from "@/ai/types";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +37,8 @@ const pingSchema = objectSchema<PingResult>({
   },
 });
 
-export async function GET() {
+async function handleAiTest(request: Request): Promise<Response> {
+  void request;
   const ai = getServerAIService();
 
   try {
@@ -74,3 +76,5 @@ export async function GET() {
     );
   }
 }
+
+export const GET = withApiLogging("/api/ai/test", handleAiTest);

@@ -6,11 +6,13 @@
 import { NextResponse } from "next/server";
 
 import { ACCESS_COOKIE } from "@/lib/access/session";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function POST() {
+async function handleLogout(request: Request): Promise<Response> {
+  void request;
   const response = NextResponse.json({ ok: true });
   response.cookies.set({
     name: ACCESS_COOKIE,
@@ -23,3 +25,5 @@ export async function POST() {
   });
   return response;
 }
+
+export const POST = withApiLogging("/api/access/logout", handleLogout);

@@ -13,6 +13,7 @@ import { NextResponse } from "next/server";
 import { AIError } from "@/ai/types";
 import { explainRecommendation } from "@/features/recommendations/services/recommendation-explanation.service";
 import type { ExplanationInput } from "@/features/recommendations/ai/explanation.types";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -36,7 +37,7 @@ function isExplanationInput(value: unknown): value is ExplanationInput {
   );
 }
 
-export async function POST(request: Request) {
+async function handleExplainRecommendation(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -79,3 +80,8 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(
+  "/api/ai/explain-recommendation",
+  handleExplainRecommendation,
+);

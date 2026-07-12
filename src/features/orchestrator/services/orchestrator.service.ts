@@ -26,6 +26,7 @@ import {
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
 import { toError } from "@/shared/utils/data-result";
+import { logOrchestratorRun } from "@/runtime/logging/orchestrator-logger";
 
 function relatedNames<K extends string>(
   rows: { [key in K]: { name: string } | null }[] | null | undefined,
@@ -145,5 +146,11 @@ export async function runOrchestration(
     inputs: request.inputs ?? {},
   });
 
-  return { data: orchestrate(request, context), error: null };
+  const report = orchestrate(request, context);
+  // Observability at the service boundary — domain stays pure (RFC-022).
+  logOrchestratorRun({
+    report,
+    capability: request.capabilities?.[0] ?? "orchestrate",
+  });
+  return { data: report, error: null };
 }

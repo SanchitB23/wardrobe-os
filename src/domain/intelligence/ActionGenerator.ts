@@ -7,6 +7,7 @@
  * as typed actions. Deterministic; no I/O.
  */
 
+import { toCategoryKey } from "@/domain/category-optimization";
 import type {
   AcquisitionSourceInput,
   ActionCandidate,
@@ -22,6 +23,13 @@ import type {
 
 function clamp01(n: number): number {
   return Math.max(0, Math.min(1, n));
+}
+
+/** RFC-015A — Replace cards open Category Optimization (type stays `replace`). */
+function optimizeHref(categoryKey: string, focusItemId?: string): string {
+  const params = new URLSearchParams({ category: categoryKey });
+  if (focusItemId) params.set("focus", focusItemId);
+  return `/intelligence/optimize?${params.toString()}`;
 }
 
 /** Keep each source from flooding the list; ranking picks the strongest overall. */
@@ -60,25 +68,31 @@ export function fromHealth(input: HealthSourceInput | undefined): ActionCandidat
     });
   }
   for (const worn of (input.wornOut ?? []).slice(0, PER_SOURCE_CAP)) {
+    const categoryKey =
+      worn.categoryKey?.trim() || toCategoryKey(worn.label);
     out.push({
       type: "replace",
       subject: { kind: "item", id: worn.itemId, label: worn.label },
       source: "health",
       provisionalImpact: 0.7,
       confidence: 0.75,
-      reason: `${worn.label} is worn out — consider replacing it.`,
+      reason: `${worn.label} looks worn out — optimize its category.`,
       reasonCodes: ["worn_out"],
+      href: optimizeHref(categoryKey, worn.itemId),
     });
   }
   for (const dup of (input.duplicates ?? []).slice(0, PER_SOURCE_CAP)) {
+    const categoryKey =
+      dup.categoryKey?.trim() || toCategoryKey(dup.label);
     out.push({
       type: "replace",
       subject: { kind: "category", label: dup.label },
       source: "health",
       provisionalImpact: clamp01(dup.count / 5),
       confidence: 0.6,
-      reason: `Several near-duplicate ${dup.label} — rotate or consolidate.`,
+      reason: `Several near-duplicate ${dup.label} — optimize this category.`,
       reasonCodes: ["duplicate"],
+      href: optimizeHref(categoryKey),
     });
   }
   return out;

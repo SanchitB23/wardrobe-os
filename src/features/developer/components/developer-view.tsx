@@ -1,6 +1,7 @@
 "use client";
 
 import {
+  ActivityIcon,
   CloudSunIcon,
   DatabaseIcon,
   FlagIcon,
@@ -54,6 +55,14 @@ const TOOLS: DevTool[] = [
     description: "Capability routing, provider policies, latency + cost metrics, benchmarking (RFC-014).",
     icon: GaugeIcon,
     href: "/developer/ai-runtime",
+    status: "available",
+  },
+  {
+    title: "Observability",
+    description:
+      "Recent structured API / AI / engine log lines from this process (RFC-022). Vercel Logs remain prod truth.",
+    icon: ActivityIcon,
+    href: "/developer/observability",
     status: "available",
   },
   {

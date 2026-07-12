@@ -9,6 +9,7 @@ import { NextResponse } from "next/server";
 import { AIError } from "@/ai/types";
 import type { BuyVsSkipAnalysis } from "@/domain/acquisition";
 import { explainBuyVsSkip } from "@/features/acquisition/services/buy-vs-skip-explanation.service";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -19,7 +20,7 @@ function isAnalysis(value: unknown): value is BuyVsSkipAnalysis {
   return typeof v.decision === "string" && typeof v.score === "number" && "scoreBreakdown" in v;
 }
 
-export async function POST(request: Request) {
+async function handleExplainBuyVsSkip(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -45,3 +46,8 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(
+  "/api/ai/explain-buy-vs-skip",
+  handleExplainBuyVsSkip,
+);

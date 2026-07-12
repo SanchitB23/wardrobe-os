@@ -136,6 +136,8 @@ Sharpen, don't sprawl. This horizon refines the engines that already exist:
 - Personalization v2
 - Insights v2
 - AI Runtime v2 — provider benchmarking, cost analytics, prompt versioning
+- Logging & Observability Runtime (RFC-022) — structured Vercel logs, requestId,
+  AI usage / cost visibility; Developer Observability viewer
 - Performance, accessibility, and search improvements
 - Theme polish
 

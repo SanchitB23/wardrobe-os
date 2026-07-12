@@ -225,6 +225,13 @@ It **invents no verdict** — it aggregates + ranks what engines already decided
 AI only explains (ADR-005). Surfaced at `/intelligence`, as "Do this next" on the
 Today home, and via the `getTopActions` stylist tool. Pure and deterministic.
 
+**Category Optimization (RFC-015A)** — `src/domain/category-optimization/` →
+`buildCategoryOptimization(context, options)`. Extends the Center's `replace`
+actions into a guided Optimize Category workflow (`/intelligence/optimize`):
+CategoryAnalysis, ItemComparison, OptimizationPlan (keep / protect / rotate /
+retire / ignore), and ReplacementOpportunity stubs for Shopping Intelligence.
+No destructive mutations; wishlist add is user-confirmed only.
+
 ---
 
 ## AI Tool Router

@@ -10,6 +10,7 @@ import { NextResponse } from "next/server";
 import type { LifestylePlanExplanationInput } from "@/ai/schemas/LifestylePlanExplanation.schema";
 import { AIError } from "@/ai/types";
 import { explainLifestylePlan } from "@/features/lifestyle/services/LifestyleExplanationService";
+import { withApiLogging } from "@/runtime/logging/api-logger";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -25,7 +26,7 @@ function isExplanationInput(value: unknown): value is LifestylePlanExplanationIn
   );
 }
 
-export async function POST(request: Request) {
+async function handleExplainLifestylePlan(request: Request): Promise<Response> {
   let body: unknown;
   try {
     body = await request.json();
@@ -54,3 +55,8 @@ export async function POST(request: Request) {
     );
   }
 }
+
+export const POST = withApiLogging(
+  "/api/ai/explain-lifestyle-plan",
+  handleExplainLifestylePlan,
+);
