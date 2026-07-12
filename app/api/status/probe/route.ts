@@ -53,22 +53,45 @@ function capabilityFor(provider: "gemini" | "openai"): AICapability | null {
 }
 
 async function probeAI(provider: "gemini" | "openai"): Promise<ProbeResult> {
-  const capability = capabilityFor(provider);
-  if (!capability) {
-    return { id: provider, ok: true, latencyMs: 0, skipped: true };
-  }
-  return timed(provider, async () => {
-    // `run()` throws (AIError) on failure rather than returning a status field
-    // (see AIRuntime.run / src/ai/types AIResponse) — `timed` catches it.
-    await getServerAIRuntime().run({
-      capability,
-      request: {
-        system: "You are a health check. Reply with the single word: ok",
-        prompt: "ok?",
-        maxTokens: 4,
-      },
+  // Everything (including capability resolution) stays inside this try/catch
+  // so a single broken probe degrades to a failed row instead of rejecting
+  // the whole `Promise.all` in handleProbe and 500ing the batch.
+  const start = Date.now();
+  try {
+    const capability = capabilityFor(provider);
+    if (!capability) {
+      return { id: provider, ok: true, latencyMs: 0, skipped: true };
+    }
+    return await timed(provider, async () => {
+      // `run()` throws (AIError) on failure rather than returning a status
+      // field (see AIRuntime.run / src/ai/types AIResponse) — `timed`
+      // catches it. It can also transparently fall back to another provider
+      // (e.g. OpenAI hard-stop → Gemini serves the call); `servedBy` /
+      // `usedFallback` on the result expose that (src/runtime/ai/types.ts).
+      // A fallback means the TARGET provider never actually answered, so
+      // treat it as a failed probe rather than a false "ok".
+      const result = await getServerAIRuntime().run({
+        capability,
+        request: {
+          system: "You are a health check. Reply with the single word: ok",
+          prompt: "ok?",
+          maxTokens: 4,
+        },
+      });
+      if (result.servedBy !== provider) {
+        throw new Error(
+          `served by ${result.servedBy} via fallback — ${provider} unavailable`,
+        );
+      }
     });
-  });
+  } catch (error) {
+    return {
+      id: provider,
+      ok: false,
+      latencyMs: Date.now() - start,
+      error: error instanceof Error ? error.message : "Unknown error",
+    };
+  }
 }
 
 async function probeSupabase(): Promise<ProbeResult> {
