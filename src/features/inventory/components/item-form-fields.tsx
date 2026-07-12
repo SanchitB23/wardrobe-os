@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 import { Label } from "@/components/ui/label";
 import {
   Select,
@@ -10,6 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { AddBrandDialog } from "@/features/inventory/components/add-brand-dialog";
 import {
   FIT_TYPES,
   FORMALITY_LEVELS,
@@ -23,6 +26,8 @@ import {
   type WardrobeLookups,
 } from "@/types/wardrobe";
 
+const ADD_NEW_BRAND_VALUE = "__add_new__";
+
 export type ItemFormState = CreateWardrobeItemInput;
 
 type LookupSelectProps = {
@@ -33,6 +38,7 @@ type LookupSelectProps = {
   placeholder?: string;
   disabled?: boolean;
   fallbackLabel?: string | null;
+  onAddNew?: () => void;
 };
 
 function LookupSelect({
@@ -43,6 +49,7 @@ function LookupSelect({
   placeholder = "None",
   disabled = false,
   fallbackLabel,
+  onAddNew,
 }: LookupSelectProps) {
   const selectedLabel =
     options.find((option) => option.id === value)?.name ??
@@ -54,7 +61,13 @@ function LookupSelect({
       <Label>{label}</Label>
       <Select
         value={value ?? ""}
-        onValueChange={(next) => onChange(next ? next : null)}
+        onValueChange={(next) => {
+          if (next === ADD_NEW_BRAND_VALUE) {
+            onAddNew?.();
+            return; // do not change the field value
+          }
+          onChange(next ? next : null);
+        }}
         disabled={disabled}
       >
         <SelectTrigger className="w-full">
@@ -75,6 +88,11 @@ function LookupSelect({
               {option.name}
             </SelectItem>
           ))}
+          {onAddNew ? (
+            <SelectItem value={ADD_NEW_BRAND_VALUE}>
+              ＋ Add new brand…
+            </SelectItem>
+          ) : null}
         </SelectContent>
       </Select>
     </div>
@@ -147,6 +165,12 @@ export function ItemFormFields({
   ratingInputId = "item-rating",
   labelFallbacks,
 }: ItemFormFieldsProps) {
+  const [addBrandOpen, setAddBrandOpen] = useState(false);
+  const brandSeed =
+    lookups.brands.find((b) => b.id === form.brand_id)?.name ??
+    labelFallbacks?.brand ??
+    "";
+
   return (
     <div className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
@@ -203,6 +227,7 @@ export function ItemFormFields({
           options={lookups.brands}
           fallbackLabel={labelFallbacks?.brand}
           onChange={(brand_id) => onChange({ ...form, brand_id })}
+          onAddNew={() => setAddBrandOpen(true)}
         />
         <LookupSelect
           label="Primary color"
@@ -289,6 +314,13 @@ export function ItemFormFields({
           rows={3}
         />
       </div>
+
+      <AddBrandDialog
+        open={addBrandOpen}
+        defaultName={brandSeed}
+        onOpenChange={setAddBrandOpen}
+        onCreated={(brand_id) => onChange({ ...form, brand_id })}
+      />
     </div>
   );
 }
