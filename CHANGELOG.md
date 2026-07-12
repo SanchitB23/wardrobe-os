@@ -7,6 +7,30 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — RFC-028 Status Page
+
+A new **`/status`** page shows the runtime's real AI wiring instead of the
+formerly hardcoded About-page claim.
+
+- **AI Wiring card:** live capability → provider/model table read from the
+  RFC-014B policy resolver, with an **override badge** when an
+  `AI_POLICY_*` env var is active for a capability.
+- **Service Health card:** passive state (`ok / warn / error / unknown`) for
+  Gemini, OpenAI, Supabase, and Open-Meteo, sourced from the RFC-022 log ring
+  buffer and env-presence checks — no network probe fires on page load; an
+  empty buffer (e.g. right after a restart) renders an honest "no recent
+  calls / unknown" instead of a fake status.
+- **Run checks button:** on-demand minimal probes for all four services,
+  routed through the AI runtime and budget guard so probe calls are visible
+  to cost tracking like any other AI call; a failed probe is reported
+  honestly rather than masked by a fallback provider.
+- **OpenAI Budget card:** spend vs. soft-alert/hard-stop thresholds from
+  `BudgetGuard`.
+- **Build Info card:** version and environment.
+- **About page:** the hardcoded AI Runtime card (previously claiming
+  Text/Vision/Explanations all ran on Gemini) is removed and replaced with a
+  link to `/status`; nav gained a Status entry.
+
 ### Added — RFC-026 Item Relations Editor
 
 Occasions, materials, and seasons are now editable from the product — the

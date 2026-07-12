@@ -1,6 +1,6 @@
 # RFC-028: Status Page
 
-Status: Approved
+Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: Claude Code
 Target Release: v2.4.0
@@ -164,18 +164,45 @@ type StatusSnapshot = {
 
 ## 10. Acceptance Criteria
 
-- [ ] `/status` shows the live capability→provider table; with default env it
+- [x] `/status` shows the live capability→provider table; with default env it
       shows structured/classification → OpenAI primary (not all-Gemini).
-- [ ] Setting an `AI_POLICY_*` env override flags that row as override.
-- [ ] Health rows show configured + last-call state without any network probe
+      **Verified live** in a browser pass: classification/structured/
+      image_generation all resolved to `openai` primary, not all-Gemini.
+- [x] Setting an `AI_POLICY_*` env override flags that row as override.
+      **Not toggled live** in this environment — verified by code review of
+      the override-detection logic and by the `buildStatusModel` domain
+      tests (override cases), not by an actual env-var flip in a running
+      instance.
+- [x] Health rows show configured + last-call state without any network probe
       on page load; empty log buffer → "unknown / no recent calls".
-- [ ] Run checks probes all four services; AI probes appear in cost tracking.
-- [ ] Budget card reflects BudgetGuard numbers and state.
-- [ ] About page no longer contains the hardcoded provider array; it links to
-      `/status`.
-- [ ] No secret values rendered anywhere (presence booleans only).
-- [ ] Domain tests for `buildStatusModel` (override detection, budget
-      thresholds, last-call mapping, unknown states).
+      **Verified live**: after a server restart the ring buffer was empty and
+      the passive rows correctly rendered "no recent calls / unknown" with no
+      probe fired on page load.
+- [x] Run checks probes all four services; AI probes appear in cost tracking.
+      **Partially verified live**: Run checks fired all four probes —
+      Supabase ok (~657ms), Open-Meteo ok (~664ms), Gemini failed honestly
+      (real free-tier 429 quota exhaustion), OpenAI failed honestly
+      (`OPENAI_API_KEY is not set` in this environment — the fallback-masking
+      fix correctly refused to report "ok" via a Gemini fallback), and the
+      batch endpoint returned partial results without a 500. The "AI probes
+      appear in cost tracking" half of this criterion was **not exercised
+      live** — both AI probes failed before incurring any provider cost in
+      this environment — so it is verified by code review only (the probe
+      calls are routed through the same runtime/budget-guard path as normal
+      AI calls, which do observe cost).
+- [x] Budget card reflects BudgetGuard numbers and state. Rendered correctly
+      during the live browser pass (no console errors); values are read
+      directly from `BudgetGuard`.
+- [x] About page no longer contains the hardcoded provider array; it links to
+      `/status`. **Verified live**: the About page's AI Runtime card is gone,
+      replaced by a link to `/status`, and nav shows a Status entry.
+- [x] No secret values rendered anywhere (presence booleans only). Verified
+      by code review — `/api/status` only emits presence booleans for env
+      keys; no key values are read into the response or rendered in the UI.
+- [x] Domain tests for `buildStatusModel` (override detection, budget
+      thresholds, last-call mapping, unknown states). Present in
+      `src/domain/status/tests/status-model.test.ts` and passing as part of
+      the full `npm test` suite (694 tests passing).
 
 ## 11. QA / Testing Plan
 
