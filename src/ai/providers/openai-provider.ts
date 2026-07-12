@@ -60,7 +60,12 @@ export interface OpenAIChatParams {
   model: string;
   messages: { role: string; content: string }[];
   temperature?: number;
-  max_tokens?: number;
+  /**
+   * GPT-5-family models reject the legacy `max_tokens` on chat completions and
+   * require `max_completion_tokens` ("Unsupported parameter: 'max_tokens' … Use
+   * 'max_completion_tokens' instead"). This is the output-token cap.
+   */
+  max_completion_tokens?: number;
   response_format?: { type: "json_object" | "text" };
 }
 
@@ -172,7 +177,7 @@ export class OpenAIProvider extends StubAIProvider {
         model,
         messages: this.buildMessages(request),
         temperature: request.temperature,
-        max_tokens: request.maxTokens,
+        max_completion_tokens: request.maxTokens,
         response_format:
           request.responseFormat === "json" ? { type: "json_object" } : undefined,
       });

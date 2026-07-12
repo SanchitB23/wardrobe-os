@@ -75,7 +75,10 @@ async function probeAI(provider: "gemini" | "openai"): Promise<ProbeResult> {
         request: {
           system: "You are a health check. Reply with the single word: ok",
           prompt: "ok?",
-          maxTokens: 4,
+          // Not 4: GPT-5 / Gemini 2.5 are reasoning models that spend the
+          // output-token budget on internal reasoning first, so too small a cap
+          // yields empty content and a false "empty response" probe failure.
+          maxTokens: 64,
         },
       });
     });

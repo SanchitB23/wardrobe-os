@@ -83,6 +83,15 @@ describe("OpenAIProvider.generate", () => {
     expect(res.finishReason).toBe("stop");
   });
 
+  it("sends maxTokens as max_completion_tokens (GPT-5 models reject max_tokens)", async () => {
+    const { client, calls } = fakeClient([okResult]);
+    const provider = new OpenAIProvider({ client });
+    await provider.generate({ ...req, maxTokens: 4 });
+
+    expect(calls[0].max_completion_tokens).toBe(4);
+    expect((calls[0] as unknown as Record<string, unknown>).max_tokens).toBeUndefined();
+  });
+
   it("uses the structured model + json response_format for structured output", async () => {
     const { client, calls } = fakeClient([
       { choices: [{ message: { content: '{"ok":true}' }, finish_reason: "stop" }] },
