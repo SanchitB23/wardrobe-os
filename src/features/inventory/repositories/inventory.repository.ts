@@ -369,12 +369,16 @@ export async function selectLookups(): Promise<{
     brandsResult,
     colorsResult,
     seasonsResult,
+    occasionsResult,
+    materialsResult,
   ] = await Promise.all([
     supabase.from("categories").select("id, name").order("name"),
     supabase.from("subcategories").select("id, name, category_id").order("name"),
     supabase.from("brands").select("id, name").order("name"),
     supabase.from("colors").select("id, name").order("name"),
     supabase.from("seasons").select("id, name").order("name"),
+    supabase.from("occasions").select("id, name").order("name"),
+    supabase.from("materials").select("id, name").order("name"),
   ]);
 
   const firstError =
@@ -382,7 +386,9 @@ export async function selectLookups(): Promise<{
     subcategoriesResult.error ??
     brandsResult.error ??
     colorsResult.error ??
-    seasonsResult.error;
+    seasonsResult.error ??
+    occasionsResult.error ??
+    materialsResult.error;
 
   if (firstError) {
     return { data: null, error: toError(firstError.message) };
@@ -395,6 +401,8 @@ export async function selectLookups(): Promise<{
       brands: (brandsResult.data ?? []) as LookupOption[],
       colors: (colorsResult.data ?? []) as LookupOption[],
       seasons: (seasonsResult.data ?? []) as LookupOption[],
+      occasions: (occasionsResult.data ?? []) as LookupOption[],
+      materials: (materialsResult.data ?? []) as LookupOption[],
     },
     error: null,
   };

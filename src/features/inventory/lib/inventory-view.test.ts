@@ -43,6 +43,8 @@ const LOOKUPS = {
   brands: [{ id: "b1", name: "Nike" }] as LookupOption[],
   colors: [{ id: "col1", name: "Black" }] as LookupOption[],
   seasons: [] as LookupOption[],
+  occasions: [] as LookupOption[],
+  materials: [] as LookupOption[],
 };
 
 const LOOKUPS_WITH_SEASON = {

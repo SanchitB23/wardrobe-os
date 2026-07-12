@@ -274,7 +274,14 @@ export function BulkEditDialog({
   const bulkEditMutation = useBulkEditMutation();
 
   const lookups = useMemo(
-    () => lookupsQuery.data ?? { tags: [], seasons: [], styles: [] },
+    () =>
+      lookupsQuery.data ?? {
+        tags: [],
+        seasons: [],
+        styles: [],
+        occasions: [],
+        materials: [],
+      },
     [lookupsQuery.data],
   );
   const itemCount = itemIds.length;

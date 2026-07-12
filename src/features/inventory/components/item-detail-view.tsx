@@ -611,6 +611,8 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
     brands: [],
     colors: [],
     seasons: [],
+    occasions: [],
+    materials: [],
   };
 
   if (detailQuery.isPending) {

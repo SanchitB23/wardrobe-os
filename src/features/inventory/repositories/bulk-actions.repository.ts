@@ -162,13 +162,21 @@ export async function selectBulkEditLookups(): Promise<{
 }> {
   const supabase = createClient();
 
-  const [tagsResult, seasonsResult, stylesResult] = await Promise.all([
-    supabase.from("tags").select("id, name").order("name"),
-    supabase.from("seasons").select("id, name").order("name"),
-    supabase.from("styles").select("id, name").order("name"),
-  ]);
+  const [tagsResult, seasonsResult, stylesResult, occasionsResult, materialsResult] =
+    await Promise.all([
+      supabase.from("tags").select("id, name").order("name"),
+      supabase.from("seasons").select("id, name").order("name"),
+      supabase.from("styles").select("id, name").order("name"),
+      supabase.from("occasions").select("id, name").order("name"),
+      supabase.from("materials").select("id, name").order("name"),
+    ]);
 
-  const firstError = tagsResult.error ?? seasonsResult.error ?? stylesResult.error;
+  const firstError =
+    tagsResult.error ??
+    seasonsResult.error ??
+    stylesResult.error ??
+    occasionsResult.error ??
+    materialsResult.error;
   if (firstError) {
     return { data: null, error: toError(firstError.message) };
   }
@@ -178,6 +186,8 @@ export async function selectBulkEditLookups(): Promise<{
       tags: tagsResult.data ?? [],
       seasons: seasonsResult.data ?? [],
       styles: stylesResult.data ?? [],
+      occasions: occasionsResult.data ?? [],
+      materials: materialsResult.data ?? [],
     },
     error: null,
   };

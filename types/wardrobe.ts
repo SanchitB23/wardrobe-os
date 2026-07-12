@@ -22,6 +22,8 @@ export type WardrobeLookups = {
   brands: LookupOption[];
   colors: LookupOption[];
   seasons: LookupOption[];
+  occasions: LookupOption[];
+  materials: LookupOption[];
 };
 
 export type WardrobeImportLookups = WardrobeLookups & {
@@ -617,6 +619,8 @@ export type BulkEditLookups = {
   tags: LookupOption[];
   seasons: LookupOption[];
   styles: LookupOption[];
+  occasions: LookupOption[];
+  materials: LookupOption[];
 };
 
 export type BulkEditAction =
