@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — RFC-025 Similar Item Detection Tightening
+
+Catalog Review Similar Items now require an **exact parallel name skeleton**
+(color words stripped from the name) plus a **category gate** when both items
+have a category. Removes suffix-only false positives (e.g. Peach Waffle Blazer ↔
+Grey Blazer). Human-readable similar-pair reason labels in the UI.
+
+- **Domain:** `parallelSkeletonMatch`; removed substring/Levenshtein similar-name fallback.
+- **Category:** when both `categoryId` set, must match; if either missing, name gate alone applies.
+- **UI:** `formatSimilarReason` — "Same name pattern, different color/brand".
+
 ## [2.2.0] — 2026-07-12
 
 **Catalog Review v2.** Upgrades `/inventory/review` from name-only duplicate

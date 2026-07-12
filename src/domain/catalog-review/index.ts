@@ -23,6 +23,7 @@ export {
   tokenizeName,
   garmentTokens,
   garmentSignature,
+  parallelSkeletonMatch,
   levenshteinDistance,
   stringSimilarity,
   orderedPairKey,
@@ -38,7 +39,6 @@ export {
 } from "@/domain/catalog-review/DuplicateDetection";
 
 export {
-  SIMILAR_GARMENT_THRESHOLD,
   namesAreSimilar,
   scoreSimilarPair,
   findSimilarPairs,

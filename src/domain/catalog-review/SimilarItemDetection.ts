@@ -1,15 +1,14 @@
 /**
- * Similar-item detection (RFC-024).
- * Similar name + different color/brand/category → similar, NOT duplicate.
+ * Similar-item detection (RFC-024, tightened RFC-025).
+ * Parallel name skeleton + category gate when both set; NOT duplicate.
  */
 
 import { scoreDuplicatePair } from "@/domain/catalog-review/DuplicateDetection";
 import {
-  garmentSignature,
   isRetiredStatus,
   normalizeKey,
   orderedPairKey,
-  stringSimilarity,
+  parallelSkeletonMatch,
 } from "@/domain/catalog-review/ReviewIssueTypes";
 import type {
   CatalogDismissal,
@@ -18,23 +17,17 @@ import type {
   SimilarReason,
 } from "@/domain/catalog-review/types";
 
-/** Similarity on garment signature (color tokens stripped). */
-export const SIMILAR_GARMENT_THRESHOLD = 0.88;
-
 export function namesAreSimilar(a: string, b: string): boolean {
   const left = normalizeKey(a);
   const right = normalizeKey(b);
   if (!left || !right) return false;
   if (left === right) return true;
+  return parallelSkeletonMatch(a, b);
+}
 
-  const sigA = garmentSignature(a);
-  const sigB = garmentSignature(b);
-  if (!sigA || !sigB) return false;
-  if (sigA === sigB) return true;
-  if (sigA.length >= 3 && sigB.length >= 3) {
-    if (sigA.includes(sigB) || sigB.includes(sigA)) return true;
-  }
-  return stringSimilarity(sigA, sigB) >= SIMILAR_GARMENT_THRESHOLD;
+function categoriesCompatible(a: CatalogItemView, b: CatalogItemView): boolean {
+  if (!a.categoryId || !b.categoryId) return true;
+  return a.categoryId === b.categoryId;
 }
 
 export function scoreSimilarPair(
@@ -47,30 +40,28 @@ export function scoreSimilarPair(
   if (!namesAreSimilar(a.name, b.name)) {
     return { kind: "none" };
   }
+  if (!categoriesCompatible(a, b)) {
+    return { kind: "none" };
+  }
 
   const colorDiff =
     Boolean(a.colorId && b.colorId && a.colorId !== b.colorId) ||
     Boolean(
       a.colorName &&
-        b.colorName &&
-        normalizeKey(a.colorName) !== normalizeKey(b.colorName),
+      b.colorName &&
+      normalizeKey(a.colorName) !== normalizeKey(b.colorName),
     );
 
   if (colorDiff) {
     return { kind: "similar", reason: "similar_name_diff_color" };
   }
 
-  const brandDiff =
-    (a.brandId || b.brandId) && a.brandId !== b.brandId;
-  const categoryDiff =
-    (a.categoryId || b.categoryId) && a.categoryId !== b.categoryId;
+  const brandDiff = (a.brandId || b.brandId) && a.brandId !== b.brandId;
 
-  if (brandDiff || categoryDiff) {
+  if (brandDiff) {
     return { kind: "similar", reason: "similar_name_diff_meta" };
   }
 
-  // Same color (or both null) and same brand/category but names only similar
-  // via garment signature with different full names — still similar, not dup.
   if (normalizeKey(a.name) !== normalizeKey(b.name)) {
     return { kind: "similar", reason: "similar_name_diff_meta" };
   }

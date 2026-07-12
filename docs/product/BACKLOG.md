@@ -209,9 +209,10 @@ duplicates vs similar items, missing metadata / images / visual analysis, dismis
 and a deterministic catalog quality score. Engines stay poisoned less; AI never
 decides catalog correctness.
 
-| RFC                                            | Title                                                                                           | Status         |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | -------------- |
-| [RFC-024](../rfc/RFC-024-Catalog-Review-v2.md) | Catalog Review v2 — metadata-aware duplicates, similar items, completeness sections, dismissals | ✅ Implemented |
+| RFC                                                            | Title                                                                                                                | Status         |
+| -------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | -------------- |
+| [RFC-024](../rfc/RFC-024-Catalog-Review-v2.md)                 | Catalog Review v2 — metadata-aware duplicates, similar items, completeness sections, dismissals                      | ✅ Implemented |
+| [RFC-025](../rfc/RFC-025-Similar-Item-Detection-Tightening.md) | Similar Item Detection Tightening — parallel skeleton + category gate; reject suffix false positives | ✅ Implemented |
 
 ## Removed / parked from scope
 
@@ -226,7 +227,7 @@ decides catalog correctness.
 Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step Reasoning
 (RFC-021), Laundry Detection. Former Cross-Engine Orchestration topic remains
 cancelled (RFC-005); RFC-020 number is Inventory Image Intelligence (✅ v2.0.1).
-Next free sequential after Implemented RFC-024: **RFC-025**.
+Next free sequential after Implemented RFC-025: **RFC-026**.
 
 ---
 

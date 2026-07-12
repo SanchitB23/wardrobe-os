@@ -47,11 +47,9 @@ import {
   useMarkCatalogReviewedMutation,
   useWardrobeLookups,
 } from "@/features/inventory/hooks";
+import { formatSimilarReason } from "@/features/inventory/lib/similar-reason-labels";
 import { cn } from "@/lib/utils";
-import {
-  formatEnumLabel,
-  type WardrobeItemRow,
-} from "@/types/wardrobe";
+import { formatEnumLabel, type WardrobeItemRow } from "@/types/wardrobe";
 
 type SectionKey =
   | "duplicates"
@@ -414,7 +412,9 @@ export function InventoryReviewView() {
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
                         <CopyIcon className="size-4 text-muted-foreground" />
-                        <CardTitle className="text-base">{group.label}</CardTitle>
+                        <CardTitle className="text-base">
+                          {group.label}
+                        </CardTitle>
                         <Badge variant="outline">
                           {group.reason === "same_code"
                             ? "Same code"
@@ -494,8 +494,8 @@ export function InventoryReviewView() {
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <CardTitle className="text-base">{pair.label}</CardTitle>
-                      <CardDescription className="capitalize">
-                        {pair.reason.replaceAll("_", " ")}
+                      <CardDescription>
+                        {formatSimilarReason(pair.reason)}
                       </CardDescription>
                     </div>
                     <Button
@@ -727,8 +727,7 @@ function IssueSection({
     .filter((i): i is WardrobeItemRow => Boolean(i))
     .filter(matchesSearch);
 
-  const title =
-    SECTIONS.find((s) => s.key === section)?.label ?? "Issues";
+  const title = SECTIONS.find((s) => s.key === section)?.label ?? "Issues";
 
   return (
     <SectionCard

@@ -64,6 +64,17 @@ export function garmentSignature(name: string): string {
   return garmentTokens(name).join(" ");
 }
 
+/**
+ * RFC-025: exact parallel name skeleton — same non-color token count and order.
+ */
+export function parallelSkeletonMatch(a: string, b: string): boolean {
+  const tokensA = garmentTokens(a);
+  const tokensB = garmentTokens(b);
+  if (tokensA.length === 0 || tokensB.length === 0) return false;
+  if (tokensA.length !== tokensB.length) return false;
+  return tokensA.every((t, i) => t === tokensB[i]);
+}
+
 export function levenshteinDistance(a: string, b: string): number {
   const matrix = Array.from({ length: a.length + 1 }, () =>
     Array<number>(b.length + 1).fill(0),

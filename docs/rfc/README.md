@@ -81,36 +81,37 @@ process is that the design is written down and reviewed before code exists.
 
 _Update this table (and the backlog) as RFCs are created._
 
-| RFC                                                   | Title                                               | Epic                     | Status      |
-| ----------------------------------------------------- | --------------------------------------------------- | ------------------------ | ----------- |
-| [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md)      | Acquisition Engine — Buy vs Skip                    | Acquisition Engine       | Implemented |
-| [002](RFC-002-Vision-Engine.md)                       | Vision Engine                                       | Vision                   | Implemented |
-| [003](RFC-003-Shopping-Screenshot-Understanding.md)   | Shopping Screenshot Understanding                   | Vision / Acquisition     | Implemented |
-| [004](RFC-004-Personalization-Engine.md)              | Personalization Engine                              | Intelligence             | Implemented |
-| [005](RFC-005-Intelligence-Orchestrator.md)           | Intelligence Orchestrator                           | Intelligence             | Implemented |
-| [006](RFC-006-Lifestyle-Engine.md)                    | Lifestyle Engine                                    | Lifestyle                | Implemented |
-| [007](RFC-007-Today-Experience-and-v1-Polish.md)      | Today Experience & v1.0 Product Polish              | Product Experience       | Implemented |
-| [008](RFC-008-Release-Candidate.md)                   | v1.0 Release Candidate — Audit Triage & Remediation | Product Experience       | Approved    |
-| [009](RFC-009-v1-0-1-Stabilization.md)                | v1.0.1 Stabilization Release                        | Product Experience       | Implemented |
-| [010](RFC-010-Application-Access-Guard.md)            | Application Access Guard                            | Product Experience       | Implemented |
-| [011](RFC-011-Weather-Runtime.md)                     | Weather Runtime                                     | Runtime                  | Implemented |
-| [012](RFC-012-Recommendation-Engine-v2.md)            | Recommendation Engine v2                            | Intelligence Refinement  | Implemented |
-| [013](RFC-013-Personalization-Engine-v2.md)           | Personalization Engine v2                           | Intelligence Refinement  | Implemented |
-| [014](RFC-014-AI-Runtime-v2.md)                       | AI Runtime v2 (+ OpenAI provider, RFC-014A)         | Runtime                  | Implemented |
-| [014B](RFC-014B-Cost-Aware-AI-Runtime.md)             | Cost-Aware AI Runtime                               | Runtime                  | Implemented |
-| [015](RFC-015-Intelligence-Center.md)                 | Intelligence Center                                 | Product Intelligence     | Implemented |
-| [015A](RFC-015A-Category-Optimization.md)             | Category Optimization                               | Intelligence Center      | Implemented |
-| [017](RFC-017-Trip-Planner.md)                        | Trip Planner                                        | Travel                   | Implemented |
-| [018](RFC-018-Shopping-Intelligence.md)               | Shopping Intelligence                               | Shopping                 | Implemented |
-| [018B](RFC-018B-Acquisitions-Intelligence.md)         | Acquisitions Intelligence                           | Acquisitions             | Implemented |
-| [018C](RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline                   | Acquisitions             | Implemented |
-| [019](RFC-019-Vision-Intelligence-v2.md)              | Vision Intelligence v2                              | Vision                   | Implemented |
-| [020](RFC-020-Inventory-Image-Intelligence.md)        | Inventory Image Intelligence                        | Vision / Recommendation  | Implemented |
-| [022](RFC-022-Logging-and-Observability-Runtime.md)   | Logging & Observability Runtime                     | Platform / Observability | Implemented |
-| [023](RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md) | Ad-hoc Wear Logs & Outfit Promotion               | Wear Logging / Outfit Management | Implemented |
-| [024](RFC-024-Catalog-Review-v2.md)                     | Catalog Review v2                                 | Inventory / Data Quality         | Implemented |
+| RFC                                                     | Title                                               | Epic                             | Status      |
+| ------------------------------------------------------- | --------------------------------------------------- | -------------------------------- | ----------- |
+| [001](RFC-001-Acquisition-Engine-Buy-vs-Skip.md)        | Acquisition Engine — Buy vs Skip                    | Acquisition Engine               | Implemented |
+| [002](RFC-002-Vision-Engine.md)                         | Vision Engine                                       | Vision                           | Implemented |
+| [003](RFC-003-Shopping-Screenshot-Understanding.md)     | Shopping Screenshot Understanding                   | Vision / Acquisition             | Implemented |
+| [004](RFC-004-Personalization-Engine.md)                | Personalization Engine                              | Intelligence                     | Implemented |
+| [005](RFC-005-Intelligence-Orchestrator.md)             | Intelligence Orchestrator                           | Intelligence                     | Implemented |
+| [006](RFC-006-Lifestyle-Engine.md)                      | Lifestyle Engine                                    | Lifestyle                        | Implemented |
+| [007](RFC-007-Today-Experience-and-v1-Polish.md)        | Today Experience & v1.0 Product Polish              | Product Experience               | Implemented |
+| [008](RFC-008-Release-Candidate.md)                     | v1.0 Release Candidate — Audit Triage & Remediation | Product Experience               | Approved    |
+| [009](RFC-009-v1-0-1-Stabilization.md)                  | v1.0.1 Stabilization Release                        | Product Experience               | Implemented |
+| [010](RFC-010-Application-Access-Guard.md)              | Application Access Guard                            | Product Experience               | Implemented |
+| [011](RFC-011-Weather-Runtime.md)                       | Weather Runtime                                     | Runtime                          | Implemented |
+| [012](RFC-012-Recommendation-Engine-v2.md)              | Recommendation Engine v2                            | Intelligence Refinement          | Implemented |
+| [013](RFC-013-Personalization-Engine-v2.md)             | Personalization Engine v2                           | Intelligence Refinement          | Implemented |
+| [014](RFC-014-AI-Runtime-v2.md)                         | AI Runtime v2 (+ OpenAI provider, RFC-014A)         | Runtime                          | Implemented |
+| [014B](RFC-014B-Cost-Aware-AI-Runtime.md)               | Cost-Aware AI Runtime                               | Runtime                          | Implemented |
+| [015](RFC-015-Intelligence-Center.md)                   | Intelligence Center                                 | Product Intelligence             | Implemented |
+| [015A](RFC-015A-Category-Optimization.md)               | Category Optimization                               | Intelligence Center              | Implemented |
+| [017](RFC-017-Trip-Planner.md)                          | Trip Planner                                        | Travel                           | Implemented |
+| [018](RFC-018-Shopping-Intelligence.md)                 | Shopping Intelligence                               | Shopping                         | Implemented |
+| [018B](RFC-018B-Acquisitions-Intelligence.md)           | Acquisitions Intelligence                           | Acquisitions                     | Implemented |
+| [018C](RFC-018C-Acquisition-to-Inventory-Pipeline.md)   | Acquisition-to-Inventory Pipeline                   | Acquisitions                     | Implemented |
+| [019](RFC-019-Vision-Intelligence-v2.md)                | Vision Intelligence v2                              | Vision                           | Implemented |
+| [020](RFC-020-Inventory-Image-Intelligence.md)          | Inventory Image Intelligence                        | Vision / Recommendation          | Implemented |
+| [022](RFC-022-Logging-and-Observability-Runtime.md)     | Logging & Observability Runtime                     | Platform / Observability         | Implemented |
+| [023](RFC-023-Ad-hoc-Wear-Logs-and-Outfit-Promotion.md) | Ad-hoc Wear Logs & Outfit Promotion                 | Wear Logging / Outfit Management | Implemented |
+| [024](RFC-024-Catalog-Review-v2.md)                     | Catalog Review v2                                   | Inventory / Data Quality         | Implemented |
+| [025](RFC-025-Similar-Item-Detection-Tightening.md)     | Similar Item Detection Tightening                   | Inventory / Data Quality         | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-024; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-025; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).
