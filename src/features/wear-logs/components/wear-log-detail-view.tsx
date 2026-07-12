@@ -14,6 +14,7 @@ import {
 } from "@/features/wear-logs/hooks";
 import type { WearLogEventDetail } from "@/features/wear-logs/services/wear-events.service";
 import { formatWearLogDisplayDate } from "@/features/wear-logs/services/wear-logs.service";
+import { ItemPreviewDialog } from "@/features/inventory/components/item-preview-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -94,6 +95,7 @@ function WearLogDetailLoaded({
   const [promoteName, setPromoteName] = useState("");
   const [promoteFavorite, setPromoteFavorite] = useState(false);
   const [promoteTags, setPromoteTags] = useState("");
+  const [previewItemId, setPreviewItemId] = useState<string | null>(null);
 
   return (
     <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -129,12 +131,13 @@ function WearLogDetailLoaded({
                 className="flex items-center justify-between gap-2 rounded-md border px-3 py-2 text-sm"
               >
                 <div>
-                  <Link
-                    href={`/inventory/${item.itemId}`}
-                    className="font-medium hover:underline"
+                  <button
+                    type="button"
+                    className="text-left font-medium hover:underline"
+                    onClick={() => setPreviewItemId(item.itemId)}
                   >
                     {item.name}
-                  </Link>
+                  </button>
                   <p className="text-xs text-muted-foreground">
                     {[item.slot, item.categoryName].filter(Boolean).join(" · ") ||
                       item.code}
@@ -295,6 +298,14 @@ function WearLogDetailLoaded({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      <ItemPreviewDialog
+        itemId={previewItemId}
+        open={previewItemId !== null}
+        onOpenChange={(open) => {
+          if (!open) setPreviewItemId(null);
+        }}
+      />
     </div>
   );
 }
