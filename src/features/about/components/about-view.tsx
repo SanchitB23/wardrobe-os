@@ -9,6 +9,8 @@ import {
   SparklesIcon,
 } from "lucide-react";
 
+import Link from "next/link";
+
 import pkg from "@/package.json";
 
 import { PageHeader } from "@/features/layout";
@@ -29,12 +31,6 @@ const REPO_URL = "https://github.com/sanchitbhatnagar/wardrobe-os";
 const ENGINES = [
   "Inventory", "Outfit", "Analytics", "Recommendation", "Acquisition",
   "Vision", "Personalization", "Intelligence Orchestrator", "Lifestyle",
-];
-
-const AI_RUNTIME = [
-  { capability: "Text", provider: "Gemini" },
-  { capability: "Vision", provider: "Gemini" },
-  { capability: "Explanations", provider: "Gemini" },
 ];
 
 const CREDITS = [
@@ -94,13 +90,14 @@ export function AboutView() {
           </CardTitle>
           <CardDescription>The current provider wiring (interchangeable).</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-1.5">
-          {AI_RUNTIME.map((r) => (
-            <div key={r.capability} className="flex items-center justify-between text-sm">
-              <span className="text-muted-foreground">{r.capability}</span>
-              <Badge variant="secondary">{r.provider}</Badge>
-            </div>
-          ))}
+        <CardContent>
+          <p className="text-sm text-muted-foreground">
+            Provider wiring is shown live on the{" "}
+            <Link href="/status" className="underline underline-offset-2">
+              Status page
+            </Link>
+            .
+          </p>
         </CardContent>
       </Card>
 

@@ -148,6 +148,7 @@ export const NAV_SECTIONS: NavSection[] = [
       },
       { label: "Import", href: "/inventory/import", icon: UploadIcon },
       { label: "Catalog Review", href: "/inventory/review", icon: ClipboardCheckIcon },
+      { label: "Status", href: "/status", icon: ActivityIcon },
       { label: "About", href: "/about", icon: InfoIcon },
     ],
   },
