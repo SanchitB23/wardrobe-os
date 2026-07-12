@@ -1,10 +1,13 @@
 import { buildInventorySummary } from "@/domain/wardrobe/inventory-summary";
+import { findBrandByName, normalizeBrandName } from "@/domain/lookups";
 import type { CategoryCountFilters } from "@/shared/query/wardrobe-keys";
 import {
   bulkInsertWardrobeItems,
+  insertBrand,
   insertWardrobeItem,
   retireWardrobeItemById,
   selectAllCategoriesOrdered,
+  selectBrands,
   selectCategoryCountRows,
   selectInventorySummaryRows,
   selectLookups,
@@ -169,4 +172,35 @@ export async function bulkCreateWardrobeItems(
   }
 
   return bulkInsertWardrobeItems(inputs.map((input) => buildItemPayload(input)));
+}
+
+export async function createBrand(
+  name: string,
+): Promise<{ data: LookupOption | null; error: Error | null }> {
+  const normalized = normalizeBrandName(name);
+  if (!normalized) {
+    return { data: null, error: new Error("Brand name is required.") };
+  }
+
+  const existing = await selectBrands();
+  if (existing.error) {
+    return { data: null, error: existing.error };
+  }
+  const match = findBrandByName(normalized, existing.data ?? []);
+  if (match) {
+    return { data: match, error: null };
+  }
+
+  const inserted = await insertBrand(normalized);
+  if (inserted.error) {
+    // Unique-index race: someone/thing created the normalized-equal brand
+    // between our fetch and insert. Recover by re-fetching + resolving.
+    const refetch = await selectBrands();
+    const recovered = findBrandByName(normalized, refetch.data ?? []);
+    if (recovered) {
+      return { data: recovered, error: null };
+    }
+    return { data: null, error: new Error(inserted.error) };
+  }
+  return { data: inserted.data, error: null };
 }

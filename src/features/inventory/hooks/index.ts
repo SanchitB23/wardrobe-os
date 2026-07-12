@@ -25,6 +25,7 @@ import {
 } from "@/features/inventory/services/json-sync.service";
 import {
   bulkCreateWardrobeItems,
+  createBrand,
   createWardrobeItem,
   fetchCategoryCounts,
   fetchInventorySummary,
@@ -59,6 +60,7 @@ import type {
   BulkEditInput,
   CreateWardrobeItemInput,
   InventoryFilters,
+  LookupOption,
   UpdateWardrobeItemInput,
   WardrobeItemRow,
 } from "@/features/inventory/types";
@@ -393,6 +395,21 @@ export function useImportLookups() {
     queryKey: [...wardrobeKeys.all, "import-lookups"] as const,
     queryFn: async () => unwrapData(await fetchImportLookups()),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useCreateBrandMutation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (name: string) => unwrapData(await createBrand(name)),
+    onSuccess: async (brand: LookupOption) => {
+      await invalidateWardrobeQueries(queryClient);
+      toast.success(`Added brand ${brand.name}`);
+    },
+    onError: (error: Error) => {
+      toast.error(error.message || "Failed to add brand.");
+    },
   });
 }
 

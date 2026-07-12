@@ -517,3 +517,33 @@ export async function bulkInsertWardrobeItems(
 
   return { data: (data ?? []) as WardrobeItemRow[], error: null };
 }
+
+export async function selectBrands(): Promise<{
+  data: LookupOption[] | null;
+  error: Error | null;
+}> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("brands")
+    .select("id, name")
+    .order("name");
+  if (error) {
+    return { data: null, error: toError(error.message) };
+  }
+  return { data: (data ?? []) as LookupOption[], error: null };
+}
+
+export async function insertBrand(
+  name: string,
+): Promise<{ data: LookupOption | null; error: string | null }> {
+  const supabase = createClient();
+  const { data, error } = await supabase
+    .from("brands")
+    .insert({ name })
+    .select("id, name")
+    .single();
+  if (error) {
+    return { data: null, error: error.message };
+  }
+  return { data: data as LookupOption, error: null };
+}
