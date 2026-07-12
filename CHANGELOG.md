@@ -5,7 +5,22 @@ All notable changes to Wardrobe OS are documented here.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [2.3.0] — 2026-07-12
+
+**Item Relations Editor & Status Page.** Occasions, materials, and seasons
+become editable across the product (RFC-026), a `/status` page replaces the
+stale hardcoded About-page AI card with live wiring and service health
+(RFC-028), similar-item detection gains a color-family gate (RFC-025
+Amendment A), and wear logging gets item previews and Quick Log UX polish
+(RFC-023 follow-up). 699 unit tests green.
+
+### Changed — Wear-log item preview & Quick Log UX (RFC-023 follow-up)
+
+- **Domain** (`src/domain/wear-logs/quick-log-selection.ts`): pure helper
+  mapping Quick Log slot picks to wear-event entries, with tests.
+- **Inventory:** read-only `ItemPreviewDialog` with swap-to-edit.
+- **Wear logs:** preview worn items in a modal from the detail view; Quick Log
+  selection UX refinements.
 
 ### Added — RFC-028 Status Page
 

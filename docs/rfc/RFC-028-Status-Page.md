@@ -3,7 +3,7 @@
 Status: Implemented
 Owner: Sanchit Bhatnagar
 Author: Claude Code
-Target Release: v2.4.0
+Target Release: v2.3.0
 Epic: Platform / Observability
 Priority: Medium
 Effort: S
