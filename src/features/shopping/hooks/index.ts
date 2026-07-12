@@ -88,9 +88,16 @@ export function useWishlistStatusMutation() {
     mutationFn: async (input: {
       id: string;
       action: "purchased" | "dismissed" | "delete";
+      purchasePrice?: number;
+      purchaseDate?: string;
     }) => {
       if (input.action === "purchased")
-        return unwrapData(await markPurchased(input.id));
+        return unwrapData(
+          await markPurchased(input.id, {
+            purchasePrice: input.purchasePrice,
+            purchaseDate: input.purchaseDate,
+          }),
+        );
       if (input.action === "dismissed")
         return unwrapData(await dismissWishlistItem(input.id));
       return unwrapData(await deleteWishlistItem(input.id));

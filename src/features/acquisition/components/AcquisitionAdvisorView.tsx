@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { CompassIcon, Loader2Icon, ShoppingBagIcon } from "lucide-react";
 
+import type { ProspectiveItem } from "@/domain/acquisition";
 import { PageHeader } from "@/features/layout";
 import { useBuyVsSkip } from "@/features/acquisition/hooks/useBuyVsSkip";
 import { BuyVsSkipResult } from "@/features/acquisition/components/BuyVsSkipResult";
@@ -18,6 +20,12 @@ import {
 
 export function AcquisitionAdvisorView() {
   const analyze = useBuyVsSkip();
+  const [lastItem, setLastItem] = useState<ProspectiveItem | null>(null);
+
+  function onAnalyze(item: ProspectiveItem) {
+    setLastItem(item);
+    analyze.mutate({ item, inputSource: "manual" });
+  }
 
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
@@ -31,10 +39,15 @@ export function AcquisitionAdvisorView() {
         <Card className="h-fit">
           <CardHeader className="pb-3">
             <CardTitle className="text-base">Prospective item</CardTitle>
-            <CardDescription>Name and category are required; the rest sharpens the verdict.</CardDescription>
+            <CardDescription>
+              Name and category are required; the rest sharpens the verdict.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <ProspectiveItemForm onAnalyze={analyze.mutate} isAnalyzing={analyze.isPending} />
+            <ProspectiveItemForm
+              onAnalyze={onAnalyze}
+              isAnalyzing={analyze.isPending}
+            />
           </CardContent>
         </Card>
 
@@ -53,7 +66,11 @@ export function AcquisitionAdvisorView() {
               <CardContent className="py-8 text-center text-sm text-destructive">
                 {analyze.error.message || "Couldn't run the analysis."}
                 <div className="mt-3">
-                  <Button variant="outline" size="sm" onClick={() => analyze.reset()}>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => analyze.reset()}
+                  >
                     Try again
                   </Button>
                 </div>
@@ -61,8 +78,13 @@ export function AcquisitionAdvisorView() {
             </Card>
           ) : null}
 
-          {!analyze.isPending && !analyze.isError && analyze.data ? (
-            <BuyVsSkipResult analysis={analyze.data} />
+          {!analyze.isPending && !analyze.isError && analyze.data && lastItem ? (
+            <BuyVsSkipResult
+              analysis={analyze.data.analysis}
+              item={lastItem}
+              source="manual"
+              decisionId={analyze.data.decisionId}
+            />
           ) : null}
 
           {!analyze.isPending && !analyze.isError && !analyze.data ? (
@@ -77,8 +99,8 @@ export function AcquisitionAdvisorView() {
                     Ready when you are
                   </p>
                   <p className="max-w-sm text-sm">
-                    Fill in an item on the left and press Analyze to see whether it&apos;s worth
-                    buying for your wardrobe.
+                    Fill in an item on the left and press Analyze to see whether
+                    it&apos;s worth buying for your wardrobe.
                   </p>
                 </div>
               </CardContent>

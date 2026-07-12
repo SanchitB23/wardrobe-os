@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Acquisition-to-Inventory Pipeline (RFC-018C)
+
+Connects Buy/Skip → wishlist → purchased → confirmed inventory → image →
+optional Visual StyleDNA. Handoffs only — does not rewrite BuyVsSkipEngine,
+Wishlist ranking, or Inventory CRUD. Never auto-creates inventory.
+
+- **Domain** (`AcquisitionPipeline`, extended `AcquisitionTimeline`): prefill
+  draft, conversion guard, decision card actions/lifecycle; timeline stages
+  Wishlist → Analysis → Purchased → Inventory Created → First Wear → ROI.
+- **Persistence:** additive `wishlist_items` columns (`inventory_item_id`,
+  `purchase_price`, `purchase_date`, `image_storage_path`); migration
+  `docs/migrations/RFC-018C-acquisition-to-inventory-pipeline.sql`. Links
+  `acquisition_decisions.wishlist_item_id` and `purchased_id` in app code.
+- **Service** (`acquisitionPipeline.service`): add-to-wishlist, mark purchased,
+  convert-with-confirm, image carry-forward (storage copy when possible).
+- **UI:** BuyVsSkipResult CTAs; screenshot `inputSource: "image"`; conversion
+  wizard `/acquisitions/convert/[wishlistId]`; polished Decision History cards;
+  wishlist purchase dialog + convert actions.
+- **RFC-018C** marked Implemented.
+
 ## [2.0.1] — 2026-07-12
 
 **Inventory Image Intelligence (RFC-020).** Connects owned-item primary photos to

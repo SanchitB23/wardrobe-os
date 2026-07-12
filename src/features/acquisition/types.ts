@@ -7,6 +7,7 @@ export type {
   ProspectiveItem,
   BuyVsSkipAnalysis,
   BuyVsSkipBreakdown,
+  BuyVsSkipInputSource,
   BuyDecision,
   DimensionKey,
   DecisionDimension,

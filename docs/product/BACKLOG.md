@@ -167,14 +167,16 @@ list of typed actions. Engines decide the actions; the Center ranks; AI explains
 
 Grow beyond the closet into the contexts a wardrobe serves. Engines decide; AI
 explains. **v2.0.0** ships RFC-017 / 018 / 018B / 019 + the Acquisitions hub;
-**v2.0.1** ships RFC-020 Inventory Image Intelligence. Full status + reasoning in
-[FUTURE.md](FUTURE.md).
+**v2.0.1** ships RFC-020 Inventory Image Intelligence; **v2.0.x** ships
+RFC-018C Acquisition-to-Inventory Pipeline (lifecycle glue). Full status +
+reasoning in [FUTURE.md](FUTURE.md).
 
 | RFC                                                | Title                                                                                                                                                                                                           | Status                           |
 | -------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------- |
 | [RFC-017](../rfc/RFC-017-Trip-Planner.md)          | Trip Planner — reusable/editable trips, templates, history, multi-city, packing checklist + progress, timeline / outfit calendar (**first v2.0 feature**)                                                       | ✅ Implemented                   |
 | [RFC-018](../rfc/RFC-018-Shopping-Intelligence.md) | Shopping Intelligence — wishlist · priority queue · wardrobe ROI · duplicate intelligence · shopping timeline (no budget planning). Product hub: `/acquisitions`; intelligence UI: `/acquisitions/intelligence` | ✅ Implemented                   |
 | [RFC-018B](../rfc/RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence — purchase lifecycle · recommendation accuracy · need/ROI evolution · opportunity queue · dynamic strategy (evolution of RFC-018; no engine replacement) | ✅ Implemented |
+| [RFC-018C](../rfc/RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline — Buy/Skip → wishlist → purchased → confirmed inventory · image carry-forward · Recent Decisions actions · timeline (evolution of RFC-018/018B; no auto-inventory) | ✅ Implemented |
 | [RFC-019](../rfc/RFC-019-Vision-Intelligence-v2.md) | Vision Intelligence v2 — closet scan · assisted outfit recognition · visual duplicate detection · review queue (laundry deferred) | ✅ Implemented                   |
 | [RFC-020](../rfc/RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence — primary image → VisualStyleAttributes → Accept → StyleDNA (v2.0.1) | ✅ Implemented                   |
 | [RFC-016](FUTURE.md)                               | Calendar Intelligence                                                                                                                                                                                           | ⏸️ Parked (low ROI, single-user) |

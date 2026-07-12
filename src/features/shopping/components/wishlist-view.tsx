@@ -24,6 +24,7 @@ import {
   useWishlist,
   useWishlistStatusMutation,
 } from "@/features/shopping/hooks";
+import { MarkPurchasedDialog } from "@/features/shopping/components/mark-purchased-dialog";
 import { NeedEvolutionPanel } from "@/features/shopping/components/acquisitions-intelligence-panels";
 import { PageHeader } from "@/features/layout";
 import { Badge } from "@/components/ui/badge";
@@ -104,6 +105,9 @@ export function WishlistView() {
   const status = useWishlistStatusMutation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [purchaseTarget, setPurchaseTarget] = useState<WishlistItem | null>(
+    null,
+  );
 
   const items = wishlist.data ?? [];
   const active = items.filter((i) => i.status === "active");
@@ -200,9 +204,7 @@ export function WishlistView() {
                 opportunityScore={opp?.opportunityScore ?? null}
                 busy={status.isPending || save.isPending}
                 onEdit={() => startEdit(w)}
-                onPurchased={() =>
-                  status.mutate({ id: w.id, action: "purchased" })
-                }
+                onPurchased={() => setPurchaseTarget(w)}
                 onDismiss={() =>
                   status.mutate({ id: w.id, action: "dismissed" })
                 }
@@ -237,6 +239,26 @@ export function WishlistView() {
                 </Badge>
               </span>
               <div className="flex gap-1">
+                {w.status === "purchased" && !w.inventoryItemId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    render={
+                      <Link href={`/acquisitions/convert/${w.id}`} />
+                    }
+                  >
+                    Convert to Inventory
+                  </Button>
+                ) : null}
+                {w.inventoryItemId ? (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    render={<Link href={`/inventory/${w.inventoryItemId}`} />}
+                  >
+                    View Inventory
+                  </Button>
+                ) : null}
                 <Button size="sm" variant="ghost" onClick={() => startEdit(w)}>
                   <PencilIcon /> Edit
                 </Button>
@@ -253,6 +275,28 @@ export function WishlistView() {
           ))}
         </div>
       ) : null}
+
+      <MarkPurchasedDialog
+        open={purchaseTarget != null}
+        onOpenChange={(open) => {
+          if (!open) setPurchaseTarget(null);
+        }}
+        itemName={purchaseTarget?.item.name}
+        defaultPrice={purchaseTarget?.item.estimatedPrice}
+        busy={status.isPending}
+        onConfirm={(input) => {
+          if (!purchaseTarget) return;
+          status.mutate(
+            {
+              id: purchaseTarget.id,
+              action: "purchased",
+              purchasePrice: input.purchasePrice,
+              purchaseDate: input.purchaseDate,
+            },
+            { onSuccess: () => setPurchaseTarget(null) },
+          );
+        }}
+      />
     </div>
   );
 }

@@ -8,7 +8,7 @@ import {
   XCircleIcon,
 } from "lucide-react";
 
-import type { BuyDecision, BuyVsSkipAnalysis } from "@/features/acquisition/types";
+import type { BuyDecision, BuyVsSkipAnalysis, BuyVsSkipInputSource, ProspectiveItem } from "@/features/acquisition/types";
 import {
   Card,
   CardContent,
@@ -16,10 +16,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
+import { BuyVsSkipPipelineActions } from "@/features/acquisition/components/BuyVsSkipPipelineActions";
 import { DecisionTraceDebug } from "@/features/acquisition/components/DecisionTraceDebug";
 import { PotentialOutfits } from "@/features/acquisition/components/PotentialOutfits";
 import { ScoreBreakdown } from "@/features/acquisition/components/ScoreBreakdown";
 import { SimilarItems } from "@/features/acquisition/components/SimilarItems";
+import type { ImageCandidate } from "@/features/shopping/services/acquisitionPipeline.service";
 
 const DECISION_STYLE: Record<
   BuyDecision,
@@ -73,7 +75,19 @@ function ReasonList({ items, tone }: { items: string[]; tone: "buy" | "skip" | "
   );
 }
 
-export function BuyVsSkipResult({ analysis }: { analysis: BuyVsSkipAnalysis }) {
+export function BuyVsSkipResult({
+  analysis,
+  item,
+  source = "manual",
+  decisionId,
+  imageCandidate,
+}: {
+  analysis: BuyVsSkipAnalysis;
+  item?: ProspectiveItem;
+  source?: BuyVsSkipInputSource;
+  decisionId?: string | null;
+  imageCandidate?: ImageCandidate | null;
+}) {
   const decision = DECISION_STYLE[analysis.decision];
   const DecisionIcon = decision.icon;
   const confidencePct = Math.round(analysis.confidence * 100);
@@ -104,6 +118,16 @@ export function BuyVsSkipResult({ analysis }: { analysis: BuyVsSkipAnalysis }) {
       </CardHeader>
 
       <CardContent className="space-y-5">
+        {item ? (
+          <BuyVsSkipPipelineActions
+            analysis={analysis}
+            item={item}
+            source={source}
+            decisionId={decisionId}
+            imageCandidate={imageCandidate}
+          />
+        ) : null}
+
         {lowConfidence ? (
           <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
             <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />

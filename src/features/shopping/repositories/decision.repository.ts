@@ -96,12 +96,20 @@ export function filterDecisions(
 ): AcquisitionDecisionRecord[] {
   const decision =
     filters.decision && filters.decision !== "all" ? filters.decision : null;
+  const source =
+    filters.source && filters.source !== "all" ? filters.source : null;
+  const linkage = filters.linkage ?? "all";
   const search = filters.search?.trim().toLowerCase() ?? "";
   const from = filters.from?.trim() || null;
   const to = filters.to?.trim() || null;
+  const highScore = filters.highScore === true;
 
-  return records.filter((r) => {
+  let next = records.filter((r) => {
     if (decision && r.decision !== decision) return false;
+    if (source && r.source !== source) return false;
+    if (linkage === "linked" && !r.wishlistItemId) return false;
+    if (linkage === "unlinked" && r.wishlistItemId) return false;
+    if (highScore && (r.score == null || r.score < 70)) return false;
     if (search) {
       const hay =
         `${r.itemName} ${r.itemCategory ?? ""} ${r.summary ?? ""}`.toLowerCase();
@@ -112,6 +120,54 @@ export function filterDecisions(
     if (to && day > to) return false;
     return true;
   });
+
+  if (filters.sort === "high_score") {
+    next = [...next].sort((a, b) => (b.score ?? -1) - (a.score ?? -1));
+  }
+
+  return next;
+}
+
+/** Link a decision to a wishlist item without mutating the analysis snapshot. */
+export async function linkDecisionWishlistItem(
+  decisionId: string,
+  wishlistItemId: string,
+): Promise<Result<AcquisitionDecisionRecord>> {
+  const supabase = createClient();
+  const { data: existing, error: readError } = await supabase
+    .from("acquisition_decisions")
+    .select("*")
+    .eq("id", decisionId)
+    .single();
+  if (readError || !existing) {
+    return {
+      data: null,
+      error: toError(readError?.message ?? "Decision not found."),
+    };
+  }
+  const row = existing as DecisionRow;
+  if (row.wishlist_item_id && row.wishlist_item_id !== wishlistItemId) {
+    return {
+      data: toRecord(row),
+      error: toError("Decision is already linked to a different wishlist item."),
+    };
+  }
+  if (row.wishlist_item_id === wishlistItemId) {
+    return { data: toRecord(row), error: null };
+  }
+  const { data, error } = await supabase
+    .from("acquisition_decisions")
+    .update({ wishlist_item_id: wishlistItemId })
+    .eq("id", decisionId)
+    .select("*")
+    .single();
+  if (error || !data) {
+    return {
+      data: null,
+      error: toError(error?.message ?? "Failed to link decision."),
+    };
+  }
+  return { data: toRecord(data as DecisionRow), error: null };
 }
 
 export async function selectDecisions(

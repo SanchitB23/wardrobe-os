@@ -133,15 +133,35 @@ export function evaluateWithContext(
 
 export async function analyzeBuyVsSkip(
   item: ProspectiveItem,
-): Promise<{ data: BuyVsSkipAnalysis | null; error: Error | null }> {
+  options?: {
+    inputSource?: BuyVsSkipInputSource;
+    wishlistItemId?: string | null;
+  },
+): Promise<{
+  data: BuyVsSkipAnalysis | null;
+  error: Error | null;
+  decisionId: string | null;
+}> {
   const { data: context, error } = await loadAcquisitionContext();
   if (error || !context)
     return {
       data: null,
       error: error ?? toError("Wardrobe data unavailable."),
+      decisionId: null,
     };
-  const analysis = evaluateWithContext(item, context);
+  const inputSource = options?.inputSource ?? "manual";
+  const analysis = evaluateWithContext(item, context, inputSource);
   // Best-effort Decision History (Acquisitions hub). Never fail the advisor path.
-  void recordDecisionSilent({ item, analysis });
-  return { data: analysis, error: null };
+  let decisionId: string | null = null;
+  try {
+    decisionId = await recordDecisionSilent({
+      item,
+      analysis,
+      source: inputSource,
+      wishlistItemId: options?.wishlistItemId ?? null,
+    });
+  } catch {
+    decisionId = null;
+  }
+  return { data: analysis, error: null, decisionId };
 }

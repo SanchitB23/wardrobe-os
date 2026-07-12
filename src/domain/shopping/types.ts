@@ -23,11 +23,18 @@ export interface WishlistSpec {
   source: BuyVsSkipInputSource;
   sourceUrl: string | null;
   imageUrl: string | null;
+  /** Durable storage path for candidate image (RFC-018C). */
+  imageStoragePath: string | null;
   notes: string | null;
   status: WishlistStatus;
   /** User-authored priority for the Acquisitions hub (not engine ranking). */
   priority: WishlistPriority;
   purchasedId: string | null;
+  /** Purchase intent before inventory exists (RFC-018C). */
+  purchasePrice: number | null;
+  purchaseDate: string | null;
+  /** Linked wardrobe item after conversion (RFC-018C). */
+  inventoryItemId: string | null;
 }
 
 /** Minimal identity + captured item that the pure engine ranks. */

@@ -24,11 +24,10 @@ Legend: ✅ shipped · 🚧 current · 🔜 planned
 
 - ✅ Today Experience & v1.0 Product Polish (RFC-007)
 
-**Current:** **v2.0.1 — Inventory Image Intelligence** (shipped 2026-07-12).
-Patch on the v2.0 Lifestyle Intelligence Platform: RFC-020 connects inventory
-primary images → Vision → Accept/Reject → StyleDNA. See
-[docs/releases/v2.0.1.md](docs/releases/v2.0.1.md). v2.0.0 remains the platform
-baseline ([docs/releases/v2.0.0.md](docs/releases/v2.0.0.md)).
+**Current:** **v2.0.x — Acquisition-to-Inventory Pipeline (RFC-018C)** implemented
+on top of v2.0.1 Inventory Image Intelligence. Connects analysis → wishlist →
+purchased → confirmed inventory. See CHANGELOG `[Unreleased]`. v2.0.1 remains
+the last tagged patch ([docs/releases/v2.0.1.md](docs/releases/v2.0.1.md)).
 
 ## Phases
 
@@ -43,6 +42,7 @@ baseline ([docs/releases/v2.0.0.md](docs/releases/v2.0.0.md)).
 | **v1.1**   | **Intelligence Refinement + Runtime** | **✅**    | **Weather Runtime, Recommendation v2, Personalization v2, AI Runtime v2, Intelligence Center (RFC-011…015)**                                            |
 | **v2.0**   | **Lifestyle Intelligence Platform**   | **✅**    | **Trip Planner (017), Shopping Intelligence (018), Acquisitions hub + 018B, Vision Intelligence v2 (019)**                                               |
 | **v2.0.1** | **Inventory Image Intelligence**      | **✅**    | **RFC-020 — primary image → VisualStyleAttributes → Accept → StyleDNA gap-fill**                                                                        |
+| **v2.0.x** | **Acquisition-to-Inventory Pipeline** | **✅ code** | **RFC-018C — analysis → wishlist → purchased → confirmed inventory → image → StyleDNA handoff**                                                       |
 | ~~v1.2~~   | ~~Wardrobe Intelligence~~             | ⏸️ Parked | Cross-engine orchestration + higher-order reasoning — superseded / absorbed by RFC-005/013/014 (see [FUTURE.md](docs/product/FUTURE.md))                |
 
 ---
@@ -172,6 +172,10 @@ Grow beyond the closet into the contexts a wardrobe serves. Release notes:
   → Vision Engine → pending `VisualStyleAttributes` → Accept/Reject → StyleDNA
   gap-fill into RecommendationContext. Surfaces on item detail +
   `/developer/inventory-images`. Manual fields always win.
+- **Acquisition-to-Inventory Pipeline (RFC-018C) — ✅ implemented (v2.0.x).**
+  Buy/Skip CTAs → wishlist link → purchase intent → confirmed inventory wizard
+  → image carry-forward → optional Visual StyleDNA. Timeline includes Inventory
+  Created. Never auto-creates inventory.
 
 ### ~~v1.2 — Wardrobe Intelligence~~ ⏸️ Parked
 

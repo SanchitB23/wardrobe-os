@@ -28,9 +28,14 @@ export interface SaveWishlistInput {
   source?: BuyVsSkipInputSource;
   sourceUrl?: string | null;
   imageUrl?: string | null;
+  imageStoragePath?: string | null;
   notes?: string | null;
   priority?: WishlistPriority;
   status?: WishlistStatus;
+  purchasePrice?: number | null;
+  purchaseDate?: string | null;
+  inventoryItemId?: string | null;
+  purchasedId?: string | null;
 }
 
 /** Persisted Buy vs Skip snapshot (Decision History). */
@@ -51,6 +56,10 @@ export interface AcquisitionDecisionRecord {
 
 export interface DecisionListFilters {
   decision?: BuyDecision | "all";
+  source?: BuyVsSkipInputSource | "all";
+  linkage?: "all" | "linked" | "unlinked";
+  highScore?: boolean;
+  sort?: "recent" | "high_score";
   search?: string;
   /** Inclusive ISO date (YYYY-MM-DD) lower bound on createdAt. */
   from?: string | null;

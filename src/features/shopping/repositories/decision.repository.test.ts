@@ -80,4 +80,36 @@ describe("filterDecisions", () => {
       ),
     ).toEqual(["1", "2"]);
   });
+
+  it("filters by source and linkage (RFC-018C)", () => {
+    const withLinks = [
+      rec({
+        id: "1",
+        itemName: "Navy Blazer",
+        decision: "buy",
+        createdAt: "2026-03-10T12:00:00Z",
+        source: "image",
+        wishlistItemId: "wl-1",
+        score: 88,
+      }),
+      rec({
+        id: "2",
+        itemName: "Red Tie",
+        decision: "skip",
+        createdAt: "2026-03-05T12:00:00Z",
+        source: "manual",
+        wishlistItemId: null,
+        score: 30,
+      }),
+    ];
+    expect(
+      filterDecisions(withLinks, { source: "image" }).map((r) => r.id),
+    ).toEqual(["1"]);
+    expect(
+      filterDecisions(withLinks, { linkage: "unlinked" }).map((r) => r.id),
+    ).toEqual(["2"]);
+    expect(
+      filterDecisions(withLinks, { highScore: true }).map((r) => r.id),
+    ).toEqual(["1"]);
+  });
 });

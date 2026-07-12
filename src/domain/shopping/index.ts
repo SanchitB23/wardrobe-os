@@ -48,6 +48,22 @@ export {
   type TimelineSubjectInput,
 } from "@/domain/shopping/AcquisitionTimeline";
 export {
+  assertConversionAllowed,
+  filterDecisionCards,
+  mapFormalityText,
+  mapProspectiveToInventoryDraft,
+  matchLookupId,
+  resolveDecisionActions,
+  resolveDecisionLifecycle,
+  type ConversionGuardInput,
+  type ConversionGuardResult,
+  type DecisionCardContext,
+  type DecisionCardFilters,
+  type DecisionLifecycleStatus,
+  type InventoryConversionDraft,
+  type PipelineDecisionAction,
+} from "@/domain/shopping/AcquisitionPipeline";
+export {
   SHOPPING_ENGINE_VERSION,
   DEFAULT_PRIORITY_WEIGHTS,
   NEED_BY_GAP_PRIORITY,

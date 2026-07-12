@@ -37,14 +37,14 @@ export function saveDecision(input: {
 
 /**
  * Best-effort persist after a successful Buy vs Skip run. Never throws; never
- * fails the analysis path. Advisor/screenshot UX stays unchanged.
+ * fails the analysis path. Returns the new decision id when insert succeeds.
  */
 export async function recordDecisionSilent(input: {
   item: ProspectiveItem;
   analysis: BuyVsSkipAnalysis;
   source?: BuyVsSkipInputSource;
   wishlistItemId?: string | null;
-}): Promise<void> {
+}): Promise<string | null> {
   try {
     const result = await insertDecision(input);
     if (result.error) {
@@ -52,9 +52,12 @@ export async function recordDecisionSilent(input: {
         "[acquisitions] decision history write failed:",
         result.error.message,
       );
+      return null;
     }
+    return result.data?.id ?? null;
   } catch (err) {
     console.warn("[acquisitions] decision history write failed:", err);
+    return null;
   }
 }
 

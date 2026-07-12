@@ -102,10 +102,11 @@ _Update this table (and the backlog) as RFCs are created._
 | [017](RFC-017-Trip-Planner.md) | Trip Planner | Travel | Implemented |
 | [018](RFC-018-Shopping-Intelligence.md) | Shopping Intelligence | Shopping | Implemented |
 | [018B](RFC-018B-Acquisitions-Intelligence.md) | Acquisitions Intelligence | Acquisitions | Implemented |
+| [018C](RFC-018C-Acquisition-to-Inventory-Pipeline.md) | Acquisition-to-Inventory Pipeline | Acquisitions | Implemented |
 | [019](RFC-019-Vision-Intelligence-v2.md) | Vision Intelligence v2 | Vision | Implemented |
 | [020](RFC-020-Inventory-Image-Intelligence.md) | Inventory Image Intelligence | Vision / Recommendation | Implemented |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-020; 014B/018B letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-022; 014B/018B/018C letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).
