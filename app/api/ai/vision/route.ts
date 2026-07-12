@@ -67,6 +67,9 @@ async function handleVision(request: Request): Promise<Response> {
       { provider: getServerVisionProvider() },
     );
     const provider = (analysis.metadata.provider || "gemini") as AIProviderId;
+    // Gemini is always the vision primary (see getServerVisionProvider()); being
+    // served by any other provider means the fallback path handled the request.
+    const usedFallback = provider !== "gemini";
     logAIUsage({
       capability: "vision",
       provider,
@@ -77,6 +80,7 @@ async function handleVision(request: Request): Promise<Response> {
       estimatedCostUsd: null,
       latencyMs: analysis.metadata.latencyMs,
       status: "ok",
+      usedFallback,
     });
     aiRuntimeMetrics.record({
       capability: "vision",
@@ -87,7 +91,7 @@ async function handleVision(request: Request): Promise<Response> {
       costUsd: 0,
       cacheHit: false,
       ok: true,
-      usedFallback: false,
+      usedFallback,
     });
     return NextResponse.json({ ok: true, data: analysis });
   } catch (error) {
