@@ -2,12 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Loader2Icon } from "lucide-react";
+import { EyeIcon, Loader2Icon, XIcon } from "lucide-react";
 
 import { PageHeader } from "@/features/layout";
 import { useOccasions, useCreateAdHocWearLogMutation } from "@/features/wear-logs/hooks";
 import { formatWearLogDateInput } from "@/features/wear-logs/services/wear-logs.service";
 import { useWardrobeItems } from "@/features/inventory/hooks";
+import { ItemPreviewDialog } from "@/features/inventory/components/item-preview-dialog";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -34,6 +35,7 @@ import { buildWearLogSlotEntries } from "@/domain/wear-logs";
 import type { OutfitSlot } from "@/types/wardrobe";
 
 const QUICK_SLOTS: OutfitSlot[] = ["top", "bottom", "footwear", "accessory"];
+const MULTI_SLOTS: OutfitSlot[] = ["top", "accessory"];
 
 type SlotPick = Partial<Record<OutfitSlot, string[]>>;
 
@@ -49,6 +51,7 @@ export function QuickWearLogView({
   const [slotPicks, setSlotPicks] = useState<SlotPick>({});
   const [extraIds, setExtraIds] = useState<string[]>(initialItemIds);
   const [error, setError] = useState<string | null>(null);
+  const [previewItemId, setPreviewItemId] = useState<string | null>(null);
 
   const itemsQuery = useWardrobeItems({ status: "active" });
   const occasionsQuery = useOccasions();
@@ -167,33 +170,119 @@ export function QuickWearLogView({
           {QUICK_SLOTS.map((slot) => {
             const def = OUTFIT_SLOT_DEFINITIONS.find((d) => d.slot === slot);
             const options = itemsBySlot.get(slot) ?? [];
-            const value = slotPicks[slot]?.[0] ?? "";
+            const picked = slotPicks[slot] ?? [];
+            const isMulti = MULTI_SLOTS.includes(slot);
+
+            if (isMulti) {
+              const available = options.filter((i) => !picked.includes(i.id));
+              return (
+                <div key={slot} className="space-y-1.5">
+                  <Label>{def?.label ?? slot}</Label>
+                  <Select
+                    value="__none__"
+                    onValueChange={(v) => {
+                      if (!v || v === "__none__") return;
+                      setSlotPicks((prev) => ({
+                        ...prev,
+                        [slot]: [...(prev[slot] ?? []), v],
+                      }));
+                    }}
+                  >
+                    <SelectTrigger className="w-full">
+                      <span className="flex flex-1 text-left text-muted-foreground">
+                        Add {(def?.label ?? slot).toLowerCase()}…
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">Add…</SelectItem>
+                      {available.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {picked.length > 0 ? (
+                    <ul className="flex flex-wrap gap-2 pt-1">
+                      {picked.map((id) => {
+                        const item = options.find((i) => i.id === id);
+                        return (
+                          <li key={id}>
+                            <Badge variant="outline" className="gap-1.5">
+                              {item?.name ?? id.slice(0, 8)}
+                              <button
+                                type="button"
+                                aria-label="Preview item"
+                                className="text-muted-foreground hover:text-foreground"
+                                onClick={() => setPreviewItemId(id)}
+                              >
+                                <EyeIcon className="size-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                aria-label="Remove item"
+                                className="text-muted-foreground hover:text-foreground"
+                                onClick={() =>
+                                  setSlotPicks((prev) => ({
+                                    ...prev,
+                                    [slot]: (prev[slot] ?? []).filter(
+                                      (x) => x !== id,
+                                    ),
+                                  }))
+                                }
+                              >
+                                <XIcon className="size-3.5" />
+                              </button>
+                            </Badge>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              );
+            }
+
+            const value = picked[0] ?? "";
             return (
               <div key={slot} className="space-y-1.5">
                 <Label>{def?.label ?? slot}</Label>
-                <Select
-                  value={value || "__none__"}
-                  onValueChange={(v) =>
-                    setSlotPicks((prev) => ({
-                      ...prev,
-                      [slot]: !v || v === "__none__" ? [] : [v],
-                    }))
-                  }
-                >
-                  <SelectTrigger className="w-full">
-                    <span className="flex flex-1 text-left">
-                      {options.find((i) => i.id === value)?.name ?? "None"}
-                    </span>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="__none__">None</SelectItem>
-                    {options.map((item) => (
-                      <SelectItem key={item.id} value={item.id}>
-                        {item.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={value || "__none__"}
+                    onValueChange={(v) =>
+                      setSlotPicks((prev) => ({
+                        ...prev,
+                        [slot]: !v || v === "__none__" ? [] : [v],
+                      }))
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <span className="flex flex-1 text-left">
+                        {options.find((i) => i.id === value)?.name ?? "None"}
+                      </span>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__none__">None</SelectItem>
+                      {options.map((item) => (
+                        <SelectItem key={item.id} value={item.id}>
+                          {item.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {value ? (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      aria-label="Preview item"
+                      onClick={() => setPreviewItemId(value)}
+                    >
+                      <EyeIcon className="size-4" />
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             );
           })}
@@ -243,6 +332,17 @@ export function QuickWearLogView({
           Cancel
         </Button>
       </div>
+
+      <ItemPreviewDialog
+        itemId={previewItemId}
+        open={previewItemId !== null}
+        onOpenChange={(open) => {
+          if (!open) {
+            setPreviewItemId(null);
+            void itemsQuery.refetch();
+          }
+        }}
+      />
     </div>
   );
 }
