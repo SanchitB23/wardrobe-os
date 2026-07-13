@@ -32,12 +32,16 @@ import { aiRuntimeMetrics } from "@/runtime/ai";
 
 const CHAT_TTL_SECONDS = 60 * 60; // 1 hour
 const DEFAULT_MAX_STEPS = 6;
+/** Bump when SYSTEM changes — the cache key must not replay answers produced
+ *  under an older system prompt (RFC-030 added the pairing chain guidance). */
+const CHAT_PROMPT_VERSION = "v3";
 const chatCostEstimator = new RuntimeCostEstimator();
 
 const SYSTEM = [
   "You are the Wardrobe OS stylist — a concise, friendly assistant with access to the user's wardrobe ONLY through tools.",
   "For ANY question about the user's wardrobe, recommendations, health, usage, insights, outfits, items, or shopping, you MUST call the relevant tool and answer from its result. Never invent items, scores, or data, and never claim to query a database.",
   "If a needed tool is not available yet, say so briefly and answer from the tools you do have.",
+  "For 'what goes with <item>?' styling questions: first call searchInventory to resolve the item's id, then call getItemPairings with that id and answer from its report.",
   "Prefer one or two tool calls; keep answers short and specific. This is a fresh session with no long-term memory.",
 ].join(" ");
 
@@ -117,7 +121,7 @@ export async function* streamChat(
 
   const { key } = buildAICacheKey({
     promptBuilder: "stylist-chat",
-    promptVersion: "v1",
+    promptVersion: CHAT_PROMPT_VERSION,
     model: modelId,
     input: messages,
   });
@@ -138,7 +142,7 @@ export async function* streamChat(
         capability: "conversation",
         provider: "gemini",
         model: modelId,
-        promptVersion: "v1",
+        promptVersion: CHAT_PROMPT_VERSION,
         cacheHit: true,
         usage: cached.response.usage,
         estimatedCostUsd: costUsd,
@@ -149,7 +153,7 @@ export async function* streamChat(
         capability: "conversation",
         provider: "gemini",
         model: modelId,
-        promptVersion: "v1",
+        promptVersion: CHAT_PROMPT_VERSION,
         latencyMs,
         usage: cached.response.usage,
         costUsd,
@@ -193,8 +197,23 @@ export async function* streamChat(
     let usage = turn.usage;
     const toolTrace: ToolTraceEntry[] = [];
     let steps = 0;
+    let nudged = false;
 
-    while (turn.toolCalls && turn.toolCalls.length > 0 && steps < maxSteps) {
+    while (steps < maxSteps) {
+      if (!turn.toolCalls || turn.toolCalls.length === 0) {
+        if ((turn.text ?? "").trim() || nudged) break;
+        // Gemini (notably flash-lite) sometimes ends a turn with
+        // finishReason=STOP and no parts at all — neither text nor a tool
+        // call. Nudge once so a single empty turn doesn't kill the answer.
+        nudged = true;
+        turn = await session.send({
+          text:
+            "Continue: answer the user's question using the tool results so far, calling another tool first if needed.",
+        });
+        usage = addUsage(usage, turn.usage);
+        continue;
+      }
+
       steps++;
       const calls = turn.toolCalls;
       for (const call of calls) {
@@ -234,21 +253,22 @@ export async function* streamChat(
       usage = addUsage(usage, turn.usage);
     }
 
-    const finalText =
-      turn.text && turn.text.trim()
-        ? turn.text
-        : "I couldn't complete that with the available tools. Try rephrasing.";
+    const modelAnswered = Boolean(turn.text && turn.text.trim());
+    const finalText = modelAnswered
+      ? (turn.text as string)
+      : "I couldn't complete that with the available tools. Try rephrasing.";
 
     for (const chunk of chunkText(finalText)) yield { type: "token", text: chunk };
 
-    // Cache the successful answer.
+    // Cache only real answers — a cached fallback would poison this exact
+    // question for the whole TTL even after the underlying blip resolves.
     const nowMs = now();
-    await cache.set({
+    if (modelAnswered) await cache.set({
       key,
       provider: "gemini",
       model: modelId,
       promptBuilder: "stylist-chat",
-      promptVersion: "v1",
+      promptVersion: CHAT_PROMPT_VERSION,
       inputHash: key,
       response: {
         text: finalText,
@@ -268,7 +288,7 @@ export async function* streamChat(
       capability: "conversation",
       provider: "gemini",
       model: modelId,
-      promptVersion: "v1",
+      promptVersion: CHAT_PROMPT_VERSION,
       cacheHit: false,
       usage,
       estimatedCostUsd: costUsd,
@@ -279,7 +299,7 @@ export async function* streamChat(
       capability: "conversation",
       provider: "gemini",
       model: modelId,
-      promptVersion: "v1",
+      promptVersion: CHAT_PROMPT_VERSION,
       latencyMs,
       usage,
       costUsd,
@@ -301,7 +321,7 @@ export async function* streamChat(
       capability: "conversation",
       provider: "gemini",
       model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
-      promptVersion: "v1",
+      promptVersion: CHAT_PROMPT_VERSION,
       cacheHit: false,
       usage: null,
       estimatedCostUsd: null,
@@ -313,7 +333,7 @@ export async function* streamChat(
       capability: "conversation",
       provider: "gemini",
       model: process.env.GEMINI_MODEL ?? "gemini-2.5-flash",
-      promptVersion: "v1",
+      promptVersion: CHAT_PROMPT_VERSION,
       latencyMs: now() - startedMs,
       costUsd: 0,
       cacheHit: false,

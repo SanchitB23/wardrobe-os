@@ -15,6 +15,7 @@ import { objectParams, type JSONSchema } from "@/ai/tools/json-schema";
 import { ToolRegistry } from "@/ai/tools/tool-registry";
 import type { AITool } from "@/ai/tools/types";
 import { fetchWardrobeItemDetail } from "@/features/inventory/services/item-detail.service";
+import { getItemPairings } from "@/features/inventory/services/item-pairing.service";
 import { fetchWardrobeItems } from "@/features/inventory/services/inventory.service";
 import {
   fetchInsightReport,
@@ -52,6 +53,7 @@ export interface WardrobeToolDeps {
   fetchPurchaseAnalytics: typeof fetchPurchaseAnalytics;
   runOrchestration: typeof runOrchestration;
   getIntelligenceCenter: typeof getIntelligenceCenter;
+  getItemPairings: typeof getItemPairings;
 }
 
 const DEFAULT_DEPS: WardrobeToolDeps = {
@@ -65,6 +67,7 @@ const DEFAULT_DEPS: WardrobeToolDeps = {
   fetchPurchaseAnalytics,
   runOrchestration,
   getIntelligenceCenter,
+  getItemPairings,
 };
 
 const SEASON: JSONSchema = {
@@ -200,6 +203,51 @@ function getItemTool(deps: WardrobeToolDeps): AITool {
   };
 }
 
+function getItemPairingsTool(deps: WardrobeToolDeps): AITool {
+  const normalize = (value: string) => value.toLowerCase().trim();
+  return {
+    name: "getItemPairings",
+    description:
+      "Get the deterministic 'what goes with this item?' report for an owned wardrobe item: complementary items ranked per outfit slot and the best complete outfits built around it, each with a 0-10 score and reasons (RFC-030). Pass the exact item id when you have one, else pass the item name as itemName and it is resolved server-side (an { ambiguous, candidates } result means you should ask the user which item they meant). Returns already-scored pairings; never re-rank or invent pairings beyond this report.",
+    parameters: objectParams({
+      itemId: { type: "string", description: "the anchor item's exact id (preferred when known)" },
+      itemName: { type: "string", description: "the item's name as the user said it — resolved to an id server-side" },
+    }),
+    async execute(args) {
+      let itemId = typeof args.itemId === "string" && args.itemId.trim() ? args.itemId.trim() : null;
+
+      if (!itemId) {
+        const itemName = typeof args.itemName === "string" ? args.itemName.trim() : "";
+        if (!itemName) throw new Error("getItemPairings requires itemId or itemName.");
+
+        const rows = required(
+          await deps.fetchWardrobeItems({ search: itemName, status: "active" }),
+        ) as ItemRowLike[];
+        const tokens = normalize(itemName).split(/\s+/).filter(Boolean);
+        const tokenMatches = rows.filter((row) =>
+          tokens.every((token) => normalize(row.name).includes(token)),
+        );
+        const pool = tokenMatches.length > 0 ? tokenMatches : rows;
+        const exact = pool.filter((row) => normalize(row.name) === normalize(itemName));
+        const candidates = exact.length === 1 ? exact : pool;
+
+        if (candidates.length === 0) {
+          throw new Error(`No active wardrobe item matches "${itemName}".`);
+        }
+        if (candidates.length > 1) {
+          return {
+            ambiguous: true,
+            candidates: candidates.slice(0, 6).map((row) => ({ id: row.id, name: row.name })),
+          };
+        }
+        itemId = candidates[0].id;
+      }
+
+      return required(await deps.getItemPairings(itemId));
+    },
+  };
+}
+
 interface ItemRowLike {
   id: string;
   name: string;
@@ -289,6 +337,7 @@ const CAPABILITY: JSONSchema = {
     "personalization",
     "vision",
     "acquisition",
+    "pairing",
   ],
 };
 
@@ -312,6 +361,7 @@ function runIntelligenceTool(deps: WardrobeToolDeps): AITool {
       },
       occasion: { type: "string", description: "Optional occasion context, e.g. Office, Travel." },
       limit: { type: "integer", description: "Max results for list-producing capabilities." },
+      itemId: { type: "string", description: "Anchor item id — required by the 'pairing' capability." },
     }),
     async execute(args) {
       const capabilities = Array.isArray(args.capabilities)
@@ -326,6 +376,7 @@ function runIntelligenceTool(deps: WardrobeToolDeps): AITool {
           inputs: {
             occasion: typeof args.occasion === "string" ? args.occasion : null,
             limit: typeof args.limit === "number" ? args.limit : undefined,
+            itemId: typeof args.itemId === "string" ? args.itemId : undefined,
           },
         }),
       );
@@ -391,6 +442,7 @@ export function createWardrobeToolRegistry(
     getInsightsTool(resolved),
     getOutfitTool(resolved),
     getItemTool(resolved),
+    getItemPairingsTool(resolved),
     searchInventoryTool(resolved),
     getShoppingAdviceTool(resolved),
     getTopActionsTool(resolved),

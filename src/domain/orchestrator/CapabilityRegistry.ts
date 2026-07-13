@@ -25,6 +25,8 @@ import type {
   ProspectiveItemCandidate,
 } from "@/domain/acquisition";
 import type { VisionAnalysis } from "@/domain/vision";
+import { buildPairingReport } from "@/domain/pairing";
+import { deriveStyleDNA, type StyleDNAItem } from "@/domain/style-dna";
 
 function numberOr(value: unknown, fallback: number): number {
   return typeof value === "number" && Number.isFinite(value) ? value : fallback;
@@ -158,6 +160,32 @@ const acquisition: CapabilityDefinition = {
   confidenceOf: (out) => (out as BuyVsSkipAnalysis | null)?.confidence ?? null,
 };
 
+/**
+ * pairing (RFC-030) — item-anchored "what goes with this?" over the active
+ * wardrobe. The anchor must be present in the context wardrobe (which is
+ * active-only), so retired/unknown items fail cleanly — the orchestrator never
+ * guesses an anchor.
+ */
+const pairing: CapabilityDefinition = {
+  id: "pairing",
+  dependsOn: [],
+  run: (ctx) => {
+    const itemId = ctx.shared.inputs.itemId;
+    if (typeof itemId !== "string" || itemId.length === 0) {
+      throw new Error("pairing requires inputs.itemId.");
+    }
+    const anchorItem = ctx.shared.wardrobe.find((entry) => entry.id === itemId);
+    if (!anchorItem) {
+      throw new Error(`pairing: item "${itemId}" is not in the active wardrobe.`);
+    }
+    const toEntry = (item: StyleDNAItem) => ({ item, dna: deriveStyleDNA(item) });
+    return buildPairingReport(
+      toEntry(anchorItem),
+      ctx.shared.wardrobe.filter((entry) => entry.id !== itemId).map(toEntry),
+    );
+  },
+};
+
 /** The registered capabilities (reserved future ones are intentionally absent). */
 export const DEFAULT_CAPABILITY_REGISTRY: CapabilityRegistry = {
   health,
@@ -169,6 +197,7 @@ export const DEFAULT_CAPABILITY_REGISTRY: CapabilityRegistry = {
   recommendation,
   vision,
   acquisition,
+  pairing,
 };
 
 /** Build a registry from explicit definitions (for tests / future consumers). */

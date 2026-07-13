@@ -19,6 +19,7 @@ import {
 import type { ImageType } from "@/types/wardrobe";
 import { fetchImportLookups } from "@/features/inventory/services/import.service";
 import { fetchWardrobeItemDetail } from "@/features/inventory/services/item-detail.service";
+import { getItemPairings } from "@/features/inventory/services/item-pairing.service";
 import {
   bulkSyncJsonWardrobeItems,
   type JsonSyncInput,
@@ -119,6 +120,15 @@ export function useWardrobeItem(id: string) {
       };
     },
     enabled: Boolean(id),
+  });
+}
+
+/** Deterministic "what goes with this item?" report (RFC-030). */
+export function useItemPairings(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemPairings(itemId),
+    queryFn: async () => unwrapData(await getItemPairings(itemId)),
+    enabled: Boolean(itemId),
   });
 }
 

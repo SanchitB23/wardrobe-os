@@ -67,6 +67,23 @@ function deps(overrides: Partial<WardrobeToolDeps> = {}): Partial<WardrobeToolDe
       totalWardrobeValue: 1200,
       averageCostPerWear: 4.5,
     }) as WardrobeToolDeps["fetchPurchaseAnalytics"],
+    getItemPairings: ok({
+      version: "1.0.0",
+      anchorItemId: "a1",
+      anchorSlot: "top",
+      pairingsBySlot: {
+        bottom: [
+          { itemId: "b1", itemName: "Beige Chino Pants", slot: "bottom", score: 7.4, reasons: ["Neutral pairing."] },
+        ],
+        footwear: [
+          { itemId: "f1", itemName: "White Sneakers", slot: "footwear", score: 7.4, reasons: ["Matching formality."] },
+        ],
+      },
+      outfits: [
+        { itemIds: ["b1", "f1"], itemNames: ["Black T-Shirt", "Beige Chino Pants", "White Sneakers"], score: 7.4 },
+      ],
+      codes: ["PAIRING_STRONG"],
+    }) as unknown as WardrobeToolDeps["getItemPairings"],
     runOrchestration: ok({
       executedCapabilities: ["recommendation"],
       skippedCapabilities: [],
@@ -93,6 +110,7 @@ describe("createWardrobeToolRegistry", () => {
       [
         "getInsights",
         "getItem",
+        "getItemPairings",
         "getOutfit",
         "getRecommendations",
         "getShoppingAdvice",
@@ -112,7 +130,7 @@ describe("createWardrobeToolRegistry", () => {
 
   it("advertises Gemini + OpenAI shapes for every tool", () => {
     const registry = createWardrobeToolRegistry(deps());
-    expect(registry.toGeminiFunctionDeclarations()).toHaveLength(10);
+    expect(registry.toGeminiFunctionDeclarations()).toHaveLength(11);
     expect(registry.toOpenAITools().every((t) => t.type === "function")).toBe(true);
   });
 });
@@ -181,6 +199,70 @@ describe("wardrobe tool execution (via executor, injected fakes)", () => {
     const executor = new ToolExecutor(createWardrobeToolRegistry(deps()));
     const result = await executor.execute({ name: "getItem", args: {} });
     expect(result).toMatchObject({ ok: false, code: "invalid_args" });
+  });
+
+  it("getItemPairings returns the deterministic report verbatim", async () => {
+    const executor = new ToolExecutor(createWardrobeToolRegistry(deps()));
+    const result = await executor.execute({ name: "getItemPairings", args: { itemId: "a1" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        anchorItemId: "a1",
+        codes: ["PAIRING_STRONG"],
+        outfits: [{ score: 7.4 }],
+      });
+    }
+  });
+
+  it("getItemPairings fails cleanly when neither itemId nor itemName is given", async () => {
+    const executor = new ToolExecutor(createWardrobeToolRegistry(deps()));
+    const result = await executor.execute({ name: "getItemPairings", args: {} });
+    expect(result.ok).toBe(false);
+  });
+
+  it("getItemPairings resolves a unique itemName to its id server-side", async () => {
+    const pairingsSpy = vi.fn(
+      ok({ anchorItemId: "a", pairingsBySlot: {}, outfits: [], codes: [], version: "1.0.0", anchorSlot: "top" }),
+    ) as unknown as WardrobeToolDeps["getItemPairings"];
+    const executor = new ToolExecutor(
+      createWardrobeToolRegistry(deps({ getItemPairings: pairingsSpy })),
+    );
+    const result = await executor.execute({ name: "getItemPairings", args: { itemName: "grey tee" } });
+    expect(result.ok).toBe(true);
+    expect((pairingsSpy as unknown as ReturnType<typeof vi.fn>).mock.calls[0][0]).toBe("a");
+  });
+
+  it("getItemPairings surfaces candidates when the name is ambiguous", async () => {
+    const rows = ok([
+      { id: "a", name: "Grey Tee", formality: "casual", rating: 8, status: "active", favorite: false },
+      { id: "b", name: "Grey Tee Oversized", formality: "casual", rating: 7, status: "active", favorite: false },
+    ]) as unknown as WardrobeToolDeps["fetchWardrobeItems"];
+    const executor = new ToolExecutor(
+      createWardrobeToolRegistry(deps({ fetchWardrobeItems: rows })),
+    );
+    const result = await executor.execute({ name: "getItemPairings", args: { itemName: "grey" } });
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.data).toMatchObject({
+        ambiguous: true,
+        candidates: [
+          { id: "a", name: "Grey Tee" },
+          { id: "b", name: "Grey Tee Oversized" },
+        ],
+      });
+    }
+  });
+
+  it("getItemPairings surfaces an unknown item as an execution_error", async () => {
+    const executor = new ToolExecutor(
+      createWardrobeToolRegistry(
+        deps({
+          getItemPairings: fail("Item not found.") as unknown as WardrobeToolDeps["getItemPairings"],
+        }),
+      ),
+    );
+    const result = await executor.execute({ name: "getItemPairings", args: { itemId: "nope" } });
+    expect(result).toMatchObject({ ok: false, code: "execution_error", error: "Item not found." });
   });
 
   it("getShoppingAdvice composes gaps + spending context", async () => {
