@@ -45,7 +45,7 @@ export function useOutfit(id: string) {
   });
 }
 
-/** Saved outfits that feature the given wardrobe item (RFC-030). */
+/** Saved outfits that feature the given wardrobe item (RFC-031). */
 export function useOutfitsContainingItem(itemId: string) {
   return useQuery({
     queryKey: wardrobeKeys.itemOutfitsContaining(itemId),

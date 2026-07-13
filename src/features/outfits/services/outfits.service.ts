@@ -176,7 +176,7 @@ export async function fetchOutfits(): Promise<{
   };
 }
 
-/** Saved outfits that feature the given wardrobe item (RFC-030). */
+/** Saved outfits that feature the given wardrobe item (RFC-031). */
 export async function listOutfitsContainingItem(
   itemId: string,
 ): Promise<{ data: OutfitListRow[] | null; error: Error | null }> {

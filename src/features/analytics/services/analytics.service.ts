@@ -22,21 +22,12 @@ import {
 import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import { toError } from "@/shared/utils/data-result";
+import { relatedNames } from "@/shared/utils/related-names";
 
 export type WardrobeHealthReport = {
   health: WardrobeHealth;
   debug: WardrobeHealthDebug;
 };
-
-/** Extracts non-empty related names from a junction relation. */
-function relatedNames<K extends string>(
-  rows: { [key in K]: { name: string } | null }[] | null | undefined,
-  key: K,
-): string[] {
-  return (rows ?? [])
-    .map((row) => row[key]?.name ?? null)
-    .filter((name): name is string => Boolean(name && name.trim()));
-}
 
 function toHealthItem(row: HealthItemRow): WardrobeHealthItem {
   return {

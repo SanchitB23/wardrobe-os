@@ -1,5 +1,5 @@
 /**
- * Item pairing service (RFC-030) — orchestrates "what goes with this item?".
+ * Item pairing service (RFC-031) — orchestrates "what goes with this item?".
  *
  * Fetches the wardrobe via the recommendations repository (same snapshot the
  * Buy vs Skip context uses), derives StyleDNA per item, and hands everything to

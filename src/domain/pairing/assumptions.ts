@@ -1,5 +1,5 @@
 /**
- * Tunables for the Item Pairing Engine (RFC-030).
+ * Tunables for the Item Pairing Engine (RFC-031).
  *
  * Seeded from the acquisition module's OUTFIT_COMPAT / GUARDS values (RFC-001)
  * so anchored-outfit behaviour starts identical to Buy vs Skip's, but tuned

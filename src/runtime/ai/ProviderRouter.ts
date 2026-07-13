@@ -31,6 +31,12 @@ export interface RouteOptions {
   isAvailable?: (providerId: AIProviderId) => boolean;
   /** Route to the primary only — never append the fallback link (isolated probes). */
   disableFallback?: boolean;
+  /**
+   * Structured-output check. A non-empty error list means the provider's
+   * response is unusable (e.g. truncated JSON) — the chain advances to the
+   * fallback exactly as if the provider had thrown.
+   */
+  validate?: (response: AIResponse) => string[] | null;
 }
 
 export interface ProviderRouterConfig {
@@ -98,6 +104,11 @@ export class ProviderRouter {
         : request;
       try {
         const response = await this.withRetry(provider, mechanical, providerRequest, opts.signal);
+        const validationErrors = opts.validate ? opts.validate(response) : null;
+        if (validationErrors && validationErrors.length > 0) {
+          errors.push(`${link.id}: invalid response: ${validationErrors.join("; ")}`);
+          continue;
+        }
         return { response, servedBy: provider.id, usedFallback: link.isFallback };
       } catch (error) {
         errors.push(`${link.id}: ${error instanceof Error ? error.message : String(error)}`);

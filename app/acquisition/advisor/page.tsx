@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 
-import { AcquisitionAdvisorView } from "@/features/acquisition/components/AcquisitionAdvisorView";
+import { ScreenshotAdvisorView } from "@/features/acquisition/components/ScreenshotAdvisorView";
 
 export const metadata: Metadata = {
   title: "Buy vs Skip Advisor",
 };
 
 export default function AcquisitionAdvisorPage() {
-  return <AcquisitionAdvisorView />;
+  return <ScreenshotAdvisorView />;
 }

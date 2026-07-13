@@ -13,11 +13,9 @@ import {
   type VisionProvider,
   type VisionProviderId,
 } from "@/domain/vision";
-import type {
-  RawDetectedItem,
-  RawVisionResult,
-  VisionImageInput,
-} from "@/domain/vision";
+import type { RawVisionResult, VisionImageInput } from "@/domain/vision";
+
+import { parseVisionItems } from "@/ai/vision/parse-vision-items";
 
 const DEFAULT_VISION_MODEL = "gemini-2.5-flash";
 
@@ -45,23 +43,6 @@ export interface GeminiVisionProviderConfig {
   apiKey?: string;
   model?: string;
   client?: GeminiVisionClient;
-}
-
-function parseItems(text: string | undefined): RawDetectedItem[] {
-  if (!text) return [];
-  // Tolerate fenced/prose-wrapped JSON.
-  const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i);
-  const candidates = [fenced?.[1], text, text.slice(text.indexOf("{"), text.lastIndexOf("}") + 1)];
-  for (const candidate of candidates) {
-    if (!candidate) continue;
-    try {
-      const parsed = JSON.parse(candidate) as { items?: RawDetectedItem[] };
-      if (Array.isArray(parsed.items)) return parsed.items;
-    } catch {
-      // try next
-    }
-  }
-  return [];
 }
 
 /** Heuristic: is this a transient provider error worth one retry? (RFC-009/N17a) */
@@ -125,7 +106,7 @@ export class GeminiVisionProvider implements VisionProvider {
     return {
       provider: this.id,
       model,
-      items: parseItems(response.text),
+      items: parseVisionItems(response.text),
       raw: response,
     };
   }

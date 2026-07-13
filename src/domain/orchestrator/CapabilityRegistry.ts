@@ -161,7 +161,7 @@ const acquisition: CapabilityDefinition = {
 };
 
 /**
- * pairing (RFC-030) — item-anchored "what goes with this?" over the active
+ * pairing (RFC-031) — item-anchored "what goes with this?" over the active
  * wardrobe. The anchor must be present in the context wardrobe (which is
  * active-only), so retired/unknown items fail cleanly — the orchestrator never
  * guesses an anchor.

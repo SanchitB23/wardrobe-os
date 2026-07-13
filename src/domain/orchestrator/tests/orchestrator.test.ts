@@ -212,7 +212,7 @@ describe("orchestrate — real-engine composition (default registry)", () => {
     expect(Array.isArray(report.outcomes.recommendation.output)).toBe(true);
   });
 
-  // RFC-030: item-anchored pairing as an orchestrator capability.
+  // RFC-031: item-anchored pairing as an orchestrator capability.
   function pairingWardrobe(): StyleDNAItem[] {
     const dnaItem = (id: string, name: string, category: string): StyleDNAItem => ({
       id,

@@ -22,3 +22,9 @@ export const WARNING_PENALTY = 6;
 
 /** Default occasion for a trip day with no explicit event. */
 export const DEFAULT_OCCASION = "Casual";
+
+/**
+ * Candidates requested from the recommendation capability per day, so
+ * consecutive days can rotate outfits instead of repeating the single top pick.
+ */
+export const DAILY_OUTFIT_CANDIDATES = 5;

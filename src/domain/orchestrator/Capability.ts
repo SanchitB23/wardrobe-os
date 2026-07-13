@@ -39,7 +39,7 @@ export interface CapabilityInputs {
   prospectiveItem?: unknown;
   /** For `vision` — an already-produced VisionAnalysis (AI extraction happens upstream). */
   visionAnalysis?: unknown;
-  /** For `pairing` — the owned anchor item to pair around (RFC-030). Required. */
+  /** For `pairing` — the owned anchor item to pair around (RFC-031). Required. */
   itemId?: string;
   [key: string]: unknown;
 }

@@ -14,10 +14,8 @@ import {
   type WearLogSource,
   type WearLogWeather,
 } from "@/domain/wear-logs";
-import {
-  categoryMatchesOutfitSlot,
-  OUTFIT_SLOT_DEFINITIONS,
-} from "@/domain/outfit/slot-matching";
+import { OUTFIT_SLOT_DEFINITIONS } from "@/domain/outfit/slot-matching";
+import { resolveOutfitSlot } from "@/domain/outfit/slot-resolution";
 import * as wearEventsRepository from "@/features/wear-logs/repositories/wear-events.repository";
 import * as wearLogsRepository from "@/features/wear-logs/repositories/wear-logs.repository";
 import {
@@ -95,12 +93,7 @@ function inferSlot(
 ): string | null {
   if (explicit) return explicit;
   if (!categoryName) return null;
-  for (const def of OUTFIT_SLOT_DEFINITIONS) {
-    if (categoryMatchesOutfitSlot(categoryName, def.slot)) {
-      return def.slot;
-    }
-  }
-  return "accessory";
+  return resolveOutfitSlot(categoryName).slot;
 }
 
 function slotForOutfit(slot: string | null): OutfitSlot {

@@ -1,4 +1,4 @@
-# RFC-030: Item Pairing Recommendations — "What Goes With This?"
+# RFC-031: Item Pairing Recommendations — "What Goes With This?"
 
 Status: Approved
 Owner: Sanchit Bhatnagar

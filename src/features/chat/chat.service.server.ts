@@ -33,7 +33,7 @@ import { aiRuntimeMetrics } from "@/runtime/ai";
 const CHAT_TTL_SECONDS = 60 * 60; // 1 hour
 const DEFAULT_MAX_STEPS = 6;
 /** Bump when SYSTEM changes — the cache key must not replay answers produced
- *  under an older system prompt (RFC-030 added the pairing chain guidance). */
+ *  under an older system prompt (RFC-031 added the pairing chain guidance). */
 const CHAT_PROMPT_VERSION = "v3";
 const chatCostEstimator = new RuntimeCostEstimator();
 

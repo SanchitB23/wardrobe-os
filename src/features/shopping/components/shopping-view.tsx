@@ -55,9 +55,9 @@ export function ShoppingView() {
             </Button>
             <Button
               variant="outline"
-              render={<Link href="/acquisition/screenshot" />}
+              render={<Link href="/acquisition/advisor" />}
             >
-              <ScanSearchIcon /> From screenshot
+              <ScanSearchIcon /> Buy vs Skip
             </Button>
           </div>
         }

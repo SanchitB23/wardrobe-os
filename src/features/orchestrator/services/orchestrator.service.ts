@@ -12,65 +12,21 @@ import {
   type ExecutionReport,
 } from "@/domain/orchestrator";
 import { buildRecommendationContext } from "@/domain/recommendation";
-import type { WardrobeItemInput } from "@/domain/recommendation";
 import { toPreferenceSnapshot } from "@/domain/personalization";
-import type { StyleDNAItem } from "@/domain/style-dna";
 import {
   fetchUsageAnalytics,
   fetchWardrobeHealth,
 } from "@/features/analytics/services/analytics.service";
 import { fetchPurchaseAnalytics } from "@/features/purchases/services/purchases.service";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
+import { selectRecommendationData } from "@/features/recommendations/repositories/recommendations.repository";
 import {
-  selectRecommendationData,
-  type RecoItemRow,
-} from "@/features/recommendations/repositories/recommendations.repository";
+  isActive,
+  toItemInput,
+  toStyleItem,
+} from "@/features/recommendations/repositories/reco-item-mappers";
 import { toError } from "@/shared/utils/data-result";
 import { logOrchestratorRun } from "@/runtime/logging/orchestrator-logger";
-
-function relatedNames<K extends string>(
-  rows: { [key in K]: { name: string } | null }[] | null | undefined,
-  key: K,
-): string[] {
-  return (rows ?? [])
-    .map((row) => row[key]?.name ?? null)
-    .filter((name): name is string => Boolean(name && name.trim()));
-}
-
-function toItemInput(row: RecoItemRow): WardrobeItemInput {
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category?.name ?? null,
-    subcategory: row.subcategory?.name ?? null,
-    color: row.primary_color?.name ?? null,
-    formality: row.formality,
-    usage: row.usage,
-    rating: row.rating,
-    status: row.status,
-    seasons: relatedNames(row.item_seasons, "seasons"),
-    styles: relatedNames(row.item_styles, "styles"),
-    tags: relatedNames(row.item_tags, "tags"),
-  };
-}
-
-function toStyleItem(row: RecoItemRow): StyleDNAItem {
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category?.name ?? null,
-    subcategory: row.subcategory?.name ?? null,
-    color: row.primary_color?.name ?? null,
-    formality: row.formality,
-    usage: row.usage,
-    rating: row.rating,
-    seasons: relatedNames(row.item_seasons, "seasons"),
-    styles: relatedNames(row.item_styles, "styles"),
-    tags: relatedNames(row.item_tags, "tags"),
-  };
-}
-
-const isActive = (row: RecoItemRow) => row.status === "active" || row.status === null;
 
 /**
  * Run an orchestration request end-to-end: assemble context from data, run the

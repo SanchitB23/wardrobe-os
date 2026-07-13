@@ -8,9 +8,19 @@ import type { WeatherSnapshot } from "@/domain/recommendation";
 import { toWeatherSnapshot as projectSnapshot } from "@/domain/weather";
 import type { WeatherForecast, WeatherForecastDay } from "@/domain/lifestyle/types";
 
-/** Neutral fallback when the forecast has no entry for a date. */
+/**
+ * Seasonal estimate when the forecast has no entry for a date — e.g. a trip
+ * beyond the ~16-day live-forecast horizon. Derived from the month (India-
+ * centred calendar: Jun–Sep is monsoon), which is honest enough to plan
+ * against; the old constant "summer, mild" claimed sunshine for August in Goa.
+ */
 export function fallbackDay(date: string): WeatherForecastDay {
-  return { date, season: "summer", condition: "mild", highC: null, lowC: null, rainRisk: null };
+  const month = Number(date.slice(5, 7));
+  const base = { date, highC: null, lowC: null, rainRisk: null };
+  if (month === 12 || month <= 2) return { ...base, season: "winter", condition: "cool" };
+  if (month <= 5) return { ...base, season: "summer", condition: "hot" };
+  if (month <= 9) return { ...base, season: "monsoon", condition: "rainy", rainRisk: 0.6 };
+  return { ...base, season: "autumn", condition: "mild" };
 }
 
 export function weatherForDate(

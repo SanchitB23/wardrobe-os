@@ -20,6 +20,8 @@ describe("resolveStyleOccasion", () => {
     expect(resolveStyleOccasion("workout")).toBe("gym");
     expect(resolveStyleOccasion("office")).toBe("office");
     expect(resolveStyleOccasion("work")).toBe("office");
+    expect(resolveStyleOccasion("Business")).toBe("office"); // trip-strategy default
+    expect(resolveStyleOccasion("Meetings")).toBe("office"); // trip-template events
     expect(resolveStyleOccasion("wedding")).toBe("wedding");
     expect(resolveStyleOccasion("formal")).toBe("wedding");
     expect(resolveStyleOccasion("travel")).toBe("travel");

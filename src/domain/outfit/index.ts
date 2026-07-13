@@ -6,6 +6,13 @@ export {
 } from "@/domain/outfit/slot-matching";
 
 export {
+  CANONICAL_SLOT_TERMS,
+  resolveOutfitSlot,
+  type SlotResolution,
+  type SlotResolutionSource,
+} from "@/domain/outfit/slot-resolution";
+
+export {
   areFormalitiesCompatible,
   assessOutfitFormalityCompatibility,
   getFormalityRank,

@@ -123,7 +123,7 @@ export function useWardrobeItem(id: string) {
   });
 }
 
-/** Deterministic "what goes with this item?" report (RFC-030). */
+/** Deterministic "what goes with this item?" report (RFC-031). */
 export function useItemPairings(itemId: string) {
   return useQuery({
     queryKey: wardrobeKeys.itemPairings(itemId),

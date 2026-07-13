@@ -1,5 +1,5 @@
 /**
- * ItemPairingEngine (RFC-030) — deterministic item-anchored pairing.
+ * ItemPairingEngine (RFC-031) — deterministic item-anchored pairing.
  *
  * Pure TypeScript: no React, no Supabase, no AI, no I/O. Given an owned anchor
  * item and the active wardrobe, ranks complementary items per core outfit slot
@@ -8,7 +8,7 @@
  * owned item. Identical inputs always produce identical output.
  *
  * AI never produces any value here — it may only narrate the report afterwards
- * (ADR-005). See docs/rfc/RFC-030-Item-Pairing-Recommendations.md.
+ * (ADR-005). See docs/rfc/RFC-031-Item-Pairing-Recommendations.md.
  */
 
 import type { StyleDNA, StyleDNAItem } from "@/domain/style-dna";
@@ -133,7 +133,7 @@ function emptyReport(
 /**
  * Build the deterministic pairing report for an owned anchor item.
  *
- * Algorithm (RFC-030 §6): top-K wardrobe items per complementary core slot →
+ * Algorithm (RFC-031 §6): top-K wardrobe items per complementary core slot →
  * bounded cartesian product of anchored outfit candidates → each scored with
  * `evaluateOutfit` → per-item pairing score = best participating outfit score,
  * so pairings and outfits can never contradict each other.

@@ -208,7 +208,7 @@ function getItemPairingsTool(deps: WardrobeToolDeps): AITool {
   return {
     name: "getItemPairings",
     description:
-      "Get the deterministic 'what goes with this item?' report for an owned wardrobe item: complementary items ranked per outfit slot and the best complete outfits built around it, each with a 0-10 score and reasons (RFC-030). Pass the exact item id when you have one, else pass the item name as itemName and it is resolved server-side (an { ambiguous, candidates } result means you should ask the user which item they meant). Returns already-scored pairings; never re-rank or invent pairings beyond this report.",
+      "Get the deterministic 'what goes with this item?' report for an owned wardrobe item: complementary items ranked per outfit slot and the best complete outfits built around it, each with a 0-10 score and reasons (RFC-031). Pass the exact item id when you have one, else pass the item name as itemName and it is resolved server-side (an { ambiguous, candidates } result means you should ask the user which item they meant). Returns already-scored pairings; never re-rank or invent pairings beyond this report.",
     parameters: objectParams({
       itemId: { type: "string", description: "the anchor item's exact id (preferred when known)" },
       itemName: { type: "string", description: "the item's name as the user said it — resolved to an id server-side" },
