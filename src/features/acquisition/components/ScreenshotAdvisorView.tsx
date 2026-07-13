@@ -12,7 +12,11 @@ import {
 
 import type { VisionAnalysis, VisionSource } from "@/domain/vision";
 import { interpretShoppingImage } from "@/domain/acquisition";
-import type { BuyVsSkipAnalysis, ProspectiveItem } from "@/domain/acquisition";
+import type {
+  BuyVsSkipAnalysis,
+  BuyVsSkipInputSource,
+  ProspectiveItem,
+} from "@/domain/acquisition";
 import type { BuyVsSkipExplanation } from "@/features/acquisition/ai/buy-vs-skip-explanation";
 import {
   analyzeScreenshot,
@@ -65,6 +69,8 @@ export function ScreenshotAdvisorView() {
   const [selectedIndex, setSelectedIndex] = useState(0);
 
   const [lastItem, setLastItem] = useState<ProspectiveItem | null>(null);
+  const [lastInputSource, setLastInputSource] =
+    useState<BuyVsSkipInputSource>("manual");
 
   const vision = useMutation<VisionAnalysis, Error, void>({
     mutationFn: async () => {
@@ -124,8 +130,10 @@ export function ScreenshotAdvisorView() {
       ...item,
       imagePreviewUrl,
     };
+    const inputSource: BuyVsSkipInputSource = candidate ? "image" : "manual";
     setLastItem(withPreview);
-    buyVsSkip.mutate({ item: withPreview, inputSource: "image" });
+    setLastInputSource(inputSource);
+    buyVsSkip.mutate({ item: withPreview, inputSource });
   }
 
   const lowConfidence =
@@ -140,9 +148,9 @@ export function ScreenshotAdvisorView() {
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-8 sm:px-6 lg:px-8">
       <PageHeader
-        title="Screenshot → Buy vs Skip"
+        title="Buy vs Skip Advisor"
         badge={<Badge variant="secondary">Acquisition</Badge>}
-        description="Drop a shopping screenshot. The Vision Engine reads the item, you correct anything it got wrong, and the deterministic engine scores it against your wardrobe. Vision observes, you edit, engines decide — AI only explains."
+        description="Enter a prospective item by hand, or upload a shopping screenshot to prefill the form. Either way, the deterministic engine scores it against your wardrobe. Vision observes, you edit, engines decide — AI only explains."
       />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_1fr]">
@@ -199,12 +207,12 @@ export function ScreenshotAdvisorView() {
             </CardContent>
           </Card>
 
-          {/* Step 2 — review + edit the candidate */}
-          {candidate ? (
-            <Card className="h-fit">
-              <CardHeader className="pb-3">
-                <div className="flex flex-wrap items-center justify-between gap-2">
-                  <CardTitle className="text-base">2 · Review the item</CardTitle>
+          {/* Step 2 — confirm / enter the item — always available (manual works with no image) */}
+          <Card className="h-fit">
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <CardTitle className="text-base">2 · Confirm the item</CardTitle>
+                {candidate ? (
                   <div className="flex items-center gap-1.5">
                     <Badge variant="outline" className={cn("capitalize", QUALITY_TONE[candidate.quality])}>
                       {candidate.quality}
@@ -213,60 +221,60 @@ export function ScreenshotAdvisorView() {
                       {Math.round(candidate.confidence * 100)}%
                     </Badge>
                   </div>
+                ) : null}
+              </div>
+              <CardDescription>
+                {candidate
+                  ? "The Vision Engine's read — correct anything before scoring."
+                  : "Enter an item manually, or upload a screenshot on the left to prefill this."}
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {candidate && multiItem ? (
+                <div className="space-y-1.5">
+                  <Label className="text-xs text-muted-foreground">
+                    {detectedItems.length} items detected — pick one to evaluate
+                  </Label>
+                  <div className="flex flex-wrap gap-2">
+                    {detectedItems.map((item, i) => (
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => selectItem(i)}
+                        className={cn(
+                          "rounded-full border px-3 py-1 text-sm transition-colors",
+                          i === selectedIndex
+                            ? "border-primary bg-primary text-primary-foreground"
+                            : "border-input hover:bg-muted",
+                        )}
+                      >
+                        {item.styleDNACandidate.name || item.label || item.category || `Item ${i + 1}`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <CardDescription>
-                  {detectedItems.length === 0
-                    ? "Nothing was detected — fill the item in by hand, then analyze."
-                    : "Correct anything the Vision Engine got wrong. Flagged fields are low-confidence guesses."}
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {multiItem ? (
-                  <div className="space-y-1.5">
-                    <Label className="text-xs text-muted-foreground">
-                      {detectedItems.length} items detected — pick one to evaluate
-                    </Label>
-                    <div className="flex flex-wrap gap-2">
-                      {detectedItems.map((item, i) => (
-                        <button
-                          key={i}
-                          type="button"
-                          onClick={() => selectItem(i)}
-                          className={cn(
-                            "rounded-full border px-3 py-1 text-sm transition-colors",
-                            i === selectedIndex
-                              ? "border-primary bg-primary text-primary-foreground"
-                              : "border-input hover:bg-muted",
-                          )}
-                        >
-                          {item.styleDNACandidate.name || item.label || item.category || `Item ${i + 1}`}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : null}
+              ) : null}
 
-                {lowConfidence ? (
-                  <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
-                    <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
-                    <span>
-                      Low-confidence read — the Vision Engine wasn&apos;t sure about this image. Double-check
-                      the flagged fields (and add a price) before trusting the verdict.
-                    </span>
-                  </div>
-                ) : null}
+              {candidate && lowConfidence ? (
+                <div className="flex items-start gap-2 rounded-lg border border-amber-500/30 bg-amber-500/10 p-3 text-sm text-amber-700 dark:text-amber-400">
+                  <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+                  <span>
+                    Low-confidence read — the Vision Engine wasn&apos;t sure about this image. Double-check
+                    the flagged fields (and add a price) before trusting the verdict.
+                  </span>
+                </div>
+              ) : null}
 
-                <ProspectiveItemForm
-                  // Reseed the form whenever the image or the selected item changes.
-                  key={`${candidate.provenance.imageHash}-${selectedIndex}`}
-                  initial={candidate.item}
-                  lowConfidenceFields={candidate.lowConfidenceFields}
-                  onAnalyze={runBuyVsSkip}
-                  isAnalyzing={buyVsSkip.isPending}
-                />
-              </CardContent>
-            </Card>
-          ) : null}
+              <ProspectiveItemForm
+                // Reseed the form whenever the image or the selected item changes.
+                key={candidate ? `${candidate.provenance.imageHash}-${selectedIndex}` : "manual"}
+                initial={candidate ? candidate.item : undefined}
+                lowConfidenceFields={candidate ? candidate.lowConfidenceFields : undefined}
+                onAnalyze={runBuyVsSkip}
+                isAnalyzing={buyVsSkip.isPending}
+              />
+            </CardContent>
+          </Card>
         </div>
 
         {/* Step 3 — verdict */}
@@ -298,7 +306,7 @@ export function ScreenshotAdvisorView() {
               <BuyVsSkipResult
                 analysis={verdict}
                 item={lastItem}
-                source="image"
+                source={lastInputSource}
                 decisionId={buyVsSkip.data?.decisionId}
                 imageCandidate={
                   file
@@ -378,10 +386,10 @@ export function ScreenshotAdvisorView() {
                   <ScanSearchIcon className="size-6" />
                 </div>
                 <div className="space-y-1">
-                  <p className="font-medium text-foreground">Upload a screenshot to start</p>
+                  <p className="font-medium text-foreground">Fill in the item to start</p>
                   <p className="max-w-sm text-sm">
-                    The Vision Engine reads the item, you fix anything it got wrong, then press Analyze
-                    to see whether it&apos;s worth buying.
+                    Enter the item by hand, or upload a screenshot to have the Vision Engine prefill it —
+                    then press Analyze to see whether it&apos;s worth buying.
                   </p>
                 </div>
               </CardContent>

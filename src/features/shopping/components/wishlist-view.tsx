@@ -162,9 +162,9 @@ export function WishlistView() {
           <div className="flex gap-2">
             <Button
               variant="outline"
-              render={<Link href="/acquisition/screenshot" />}
+              render={<Link href="/acquisition/advisor" />}
             >
-              <ScanSearchIcon /> From screenshot
+              <ScanSearchIcon /> Buy vs Skip
             </Button>
             <Button variant="outline" render={<Link href="/acquisitions" />}>
               Hub
