@@ -43,6 +43,7 @@ import {
   selectRecommendationData,
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
+import { relatedNames } from "@/features/recommendations/repositories/reco-item-mappers";
 import { toError } from "@/shared/utils/data-result";
 
 export type RecommendationFilters = {
@@ -124,15 +125,6 @@ export type RecommendationCenterData = {
    */
   explainContext: ExplainSharedContext;
 };
-
-function relatedNames<K extends string>(
-  rows: { [key in K]: { name: string } | null }[] | null | undefined,
-  key: K,
-): string[] {
-  return (rows ?? [])
-    .map((row) => row[key]?.name ?? null)
-    .filter((name): name is string => Boolean(name && name.trim()));
-}
 
 function toItemInput(row: RecoItemRow): WardrobeItemInput {
   return {

@@ -22,20 +22,15 @@ import {
   selectRecommendationData,
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
+import {
+  isActive,
+  relatedNames,
+} from "@/features/recommendations/repositories/reco-item-mappers";
 import { addWishlistItem } from "@/features/shopping/services/shopping.service";
 import type { SaveWishlistInput, WishlistItem } from "@/features/shopping/types";
 import { toError } from "@/shared/utils/data-result";
 
 type Result<T> = { data: T | null; error: Error | null };
-
-function relatedNames<K extends string>(
-  rows: { [key in K]: { name: string } | null }[] | null | undefined,
-  key: K,
-): string[] {
-  return (rows ?? [])
-    .map((row) => row[key]?.name ?? null)
-    .filter((name): name is string => Boolean(name && name.trim()));
-}
 
 function itemClusterKey(row: RecoItemRow): string | null {
   const bucket = categoryBucketFor(row.category?.name ?? null);
@@ -54,10 +49,6 @@ function matchesCategoryKey(row: RecoItemRow, categoryKey: string): boolean {
   // Loose: category key contained in cluster or vice versa (partial deep-links).
   if (cluster && (cluster.includes(key) || key.includes(cluster))) return true;
   return false;
-}
-
-function isActive(row: RecoItemRow): boolean {
-  return row.status === "active" || row.status === null;
 }
 
 /** Draft payload only — does not persist. */
