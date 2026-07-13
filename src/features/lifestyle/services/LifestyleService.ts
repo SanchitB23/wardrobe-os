@@ -17,7 +17,6 @@ import {
 import { buildRecommendationContext } from "@/domain/recommendation";
 import type { WardrobeItemInput } from "@/domain/recommendation";
 import { toPreferenceSnapshot } from "@/domain/personalization";
-import type { StyleDNAItem } from "@/domain/style-dna";
 import {
   fetchUsageAnalytics,
   fetchWardrobeHealth,
@@ -28,6 +27,11 @@ import {
   selectRecommendationData,
   type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
+import {
+  isActive,
+  relatedNames,
+  toStyleItem,
+} from "@/features/recommendations/repositories/reco-item-mappers";
 import { manualForecast, weatherRuntime } from "@/runtime/weather";
 import { toError } from "@/shared/utils/data-result";
 
@@ -52,15 +56,6 @@ export interface LifestyleResult {
   itemNames: Record<string, string>;
 }
 
-function names<K extends string>(
-  rows: { [key in K]: { name: string } | null }[] | null | undefined,
-  key: K,
-): string[] {
-  return (rows ?? [])
-    .map((r) => r[key]?.name ?? null)
-    .filter((n): n is string => Boolean(n && n.trim()));
-}
-
 function toItemInput(row: RecoItemRow): WardrobeItemInput {
   return {
     id: row.id,
@@ -72,29 +67,11 @@ function toItemInput(row: RecoItemRow): WardrobeItemInput {
     usage: row.usage,
     rating: row.rating,
     status: row.status,
-    seasons: names(row.item_seasons, "seasons"),
-    styles: names(row.item_styles, "styles"),
-    tags: names(row.item_tags, "tags"),
+    seasons: relatedNames(row.item_seasons, "seasons"),
+    styles: relatedNames(row.item_styles, "styles"),
+    tags: relatedNames(row.item_tags, "tags"),
   };
 }
-
-function toStyleItem(row: RecoItemRow): StyleDNAItem {
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category?.name ?? null,
-    subcategory: row.subcategory?.name ?? null,
-    color: row.primary_color?.name ?? null,
-    formality: row.formality,
-    usage: row.usage,
-    rating: row.rating,
-    seasons: names(row.item_seasons, "seasons"),
-    styles: names(row.item_styles, "styles"),
-    tags: names(row.item_tags, "tags"),
-  };
-}
-
-const isActive = (row: RecoItemRow) => row.status === "active" || row.status === null;
 
 /** Neutral fallback forecast when live fetch is unavailable. */
 function fallbackForecast(trip: Trip): WeatherForecast {

@@ -22,8 +22,11 @@ import {
 import {
   selectRecommendationData,
   type RecommendationData,
-  type RecoItemRow,
 } from "@/features/recommendations/repositories/recommendations.repository";
+import {
+  isActive,
+  toStyleItem,
+} from "@/features/recommendations/repositories/reco-item-mappers";
 import { getPreferenceProfile } from "@/features/personalization/services/personalization.service";
 import { recordDecisionSilent } from "@/features/shopping/services/decision.service";
 import { toError } from "@/shared/utils/data-result";
@@ -41,37 +44,6 @@ export interface AcquisitionContext {
   usage: UsageAnalytics | null;
   preferences: PreferenceHints | null;
   raw: RecommendationData;
-}
-
-function relatedNames<K extends string>(
-  rows: { [key in K]: { name: string } | null }[] | null | undefined,
-  key: K,
-): string[] {
-  return (rows ?? [])
-    .map((row) => row[key]?.name ?? null)
-    .filter((name): name is string => Boolean(name && name.trim()));
-}
-
-/** Map a raw wardrobe row to the StyleDNA-derivable shape the engine needs. */
-function toStyleItem(row: RecoItemRow): StyleDNAItem {
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category?.name ?? null,
-    subcategory: row.subcategory?.name ?? null,
-    color: row.primary_color?.name ?? null,
-    formality: row.formality,
-    usage: row.usage,
-    rating: row.rating,
-    seasons: relatedNames(row.item_seasons, "seasons"),
-    styles: relatedNames(row.item_styles, "styles"),
-    tags: relatedNames(row.item_tags, "tags"),
-  };
-}
-
-/** Active items only — retired pieces shouldn't shape a buy decision. */
-function isActive(row: RecoItemRow): boolean {
-  return row.status === "active" || row.status === null;
 }
 
 /**
