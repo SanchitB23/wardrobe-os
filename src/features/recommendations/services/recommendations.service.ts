@@ -6,7 +6,6 @@ import {
   type RecommendationV2,
   type RecommendedOutfitItem,
   type SeasonLabel,
-  type WardrobeItemInput,
   type WeatherCondition,
   type WeatherSnapshot,
 } from "@/domain/recommendation";
@@ -39,11 +38,8 @@ import {
   createWearLogFromOutfit,
   createWearLogFromRecommendation,
 } from "@/features/wear-logs/services/wear-events.service";
-import {
-  selectRecommendationData,
-  type RecoItemRow,
-} from "@/features/recommendations/repositories/recommendations.repository";
-import { relatedNames } from "@/features/recommendations/repositories/reco-item-mappers";
+import { selectRecommendationData } from "@/features/recommendations/repositories/recommendations.repository";
+import { toItemInput } from "@/features/recommendations/repositories/reco-item-mappers";
 import { toError } from "@/shared/utils/data-result";
 
 export type RecommendationFilters = {
@@ -125,23 +121,6 @@ export type RecommendationCenterData = {
    */
   explainContext: ExplainSharedContext;
 };
-
-function toItemInput(row: RecoItemRow): WardrobeItemInput {
-  return {
-    id: row.id,
-    name: row.name,
-    category: row.category?.name ?? null,
-    subcategory: row.subcategory?.name ?? null,
-    color: row.primary_color?.name ?? null,
-    formality: row.formality,
-    usage: row.usage,
-    rating: row.rating,
-    status: row.status,
-    seasons: relatedNames(row.item_seasons, "seasons"),
-    styles: relatedNames(row.item_styles, "styles"),
-    tags: relatedNames(row.item_tags, "tags"),
-  };
-}
 
 function weatherOverride(
   filters: RecommendationFilters,
