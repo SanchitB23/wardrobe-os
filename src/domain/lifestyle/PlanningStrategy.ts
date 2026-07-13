@@ -16,6 +16,8 @@ export interface StrategyProfile {
   itemsPerDay: number;
   /** Bias toward more formal picks (business skews up). */
   formalityBias: number;
+  /** Occasion assumed for trip days with no explicit event. */
+  defaultOccasion: string;
   label: string;
 }
 
@@ -27,6 +29,7 @@ export const STRATEGY_PROFILES: Record<PlanningStrategy, StrategyProfile> = {
     reusePenalty: 0.1, // reuse freely — smallest bag
     itemsPerDay: 1,
     formalityBias: 0,
+    defaultOccasion: "Casual",
     label: "Minimal",
   },
   balanced: {
@@ -34,6 +37,7 @@ export const STRATEGY_PROFILES: Record<PlanningStrategy, StrategyProfile> = {
     reusePenalty: 0.4,
     itemsPerDay: 1,
     formalityBias: 0,
+    defaultOccasion: "Casual",
     label: "Balanced",
   },
   luxury: {
@@ -41,6 +45,7 @@ export const STRATEGY_PROFILES: Record<PlanningStrategy, StrategyProfile> = {
     reusePenalty: 0.8, // maximise variety
     itemsPerDay: 1.5,
     formalityBias: 0.5,
+    defaultOccasion: "Casual",
     label: "Luxury",
   },
   business: {
@@ -48,6 +53,7 @@ export const STRATEGY_PROFILES: Record<PlanningStrategy, StrategyProfile> = {
     reusePenalty: 0.5,
     itemsPerDay: 1.25,
     formalityBias: 1, // lean formal
+    defaultOccasion: "Business",
     label: "Business",
   },
 };

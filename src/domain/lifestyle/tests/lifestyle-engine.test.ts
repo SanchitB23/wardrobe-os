@@ -2,7 +2,7 @@ import { describe, expect, it, vi } from "vitest";
 
 import { planLifestyle } from "@/domain/lifestyle/LifestyleEngine";
 import { eachDateInclusive, expandTripDays } from "@/domain/lifestyle/TripPlanner";
-import { toWeatherSnapshot } from "@/domain/lifestyle/WeatherPlanner";
+import { fallbackDay, toWeatherSnapshot } from "@/domain/lifestyle/WeatherPlanner";
 import type {
   LifestyleInput,
   OrchestrateFn,
@@ -61,6 +61,16 @@ function stubOrchestrate(recItemIds: string[] | null): OrchestrateFn {
   };
 }
 
+/** Orchestrator stub that returns the same ranked candidate list every day. */
+function stubOrchestrateMulti(candidates: string[][]): OrchestrateFn {
+  return (request) => {
+    const cap = request.capabilities[0];
+    if (cap === "recommendation") return mkReport("recommendation", candidates.map(rec));
+    if (cap === "acquisition") return mkReport("acquisition", buyVsSkip);
+    return mkReport(cap, null);
+  };
+}
+
 function wardrobe(): StyleDNAItem[] {
   return [
     { id: "t1", name: "Navy Tee", category: "T-Shirt", rating: 9 },
@@ -110,6 +120,15 @@ describe("TripPlanner — expansion", () => {
   });
 });
 
+describe("WeatherPlanner — seasonal fallback", () => {
+  it("derives the season from the month instead of always claiming summer/mild", () => {
+    expect(fallbackDay("2026-08-20")).toMatchObject({ season: "monsoon", condition: "rainy" }); // Goa in August
+    expect(fallbackDay("2026-01-10")).toMatchObject({ season: "winter", condition: "cool" });
+    expect(fallbackDay("2026-04-15")).toMatchObject({ season: "summer", condition: "hot" });
+    expect(fallbackDay("2026-11-05")).toMatchObject({ season: "autumn", condition: "mild" });
+  });
+});
+
 describe("WeatherPlanner — normalization", () => {
   it("averages high/low into a temperature snapshot", () => {
     const snap = toWeatherSnapshot({ date: "d", season: "winter", condition: "cold", highC: 10, lowC: 4, rainRisk: 0 });
@@ -145,6 +164,52 @@ describe("planLifestyle — composition through the orchestrator", () => {
     expect(p.tripPlan.dailyOutfits.every((o) => o.uncovered)).toBe(true);
     expect(p.warnings.length).toBeGreaterThan(0);
     expect(p.planScore).toBeLessThan(50);
+  });
+});
+
+describe("planLifestyle — daily variety", () => {
+  it("rotates through distinct candidates instead of repeating one outfit", () => {
+    const orchestrate = stubOrchestrateMulti([
+      ["t1", "b1"],
+      ["x1", "b1"],
+      ["t1", "f1"],
+    ]);
+    const p = planLifestyle(input(), { generatedAt: AT, orchestrate, clock: fakeClock });
+    const signatures = p.tripPlan.dailyOutfits.map((o) => [...o.itemIds].sort().join("|"));
+    expect(new Set(signatures).size).toBe(3); // 3 days, 3 distinct outfits
+    expect(signatures[0]).toBe("b1|t1"); // day 1 still gets the top pick
+  });
+
+  it("asks the recommendation capability for more than one candidate per day", () => {
+    const spy = vi.fn(stubOrchestrateMulti([["t1", "b1"]]));
+    planLifestyle(input(), { generatedAt: AT, orchestrate: spy, clock: fakeClock });
+    const recCall = spy.mock.calls.find((c) => c[0].capabilities.includes("recommendation"));
+    expect(recCall?.[0].inputs?.limit).toBeGreaterThan(1);
+  });
+
+  it("repeats gracefully when the wardrobe offers no alternative", () => {
+    const p = planLifestyle(input(), {
+      generatedAt: AT,
+      orchestrate: stubOrchestrateMulti([["t1", "b1"]]),
+      clock: fakeClock,
+    });
+    expect(p.tripPlan.dailyOutfits.every((o) => !o.uncovered)).toBe(true);
+    const signatures = p.tripPlan.dailyOutfits.map((o) => [...o.itemIds].sort().join("|"));
+    expect(new Set(signatures).size).toBe(1); // only one option exists — reuse it
+  });
+});
+
+describe("planLifestyle — strategy-derived occasions", () => {
+  it("business strategy defaults event-less days to a Business occasion", () => {
+    const p = plan({}, { strategy: "business" });
+    const eventless = p.tripPlan.days.filter((d) => d.date !== "2026-08-02");
+    expect(eventless.every((d) => d.occasion === "Business")).toBe(true);
+    expect(p.tripPlan.days.find((d) => d.date === "2026-08-02")?.occasion).toBe("Office"); // explicit event wins
+  });
+
+  it("balanced strategy keeps the Casual default", () => {
+    const p = plan();
+    expect(p.tripPlan.days[0].occasion).toBe("Casual");
   });
 });
 

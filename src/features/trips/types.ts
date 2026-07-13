@@ -33,5 +33,11 @@ export interface TripPlanView {
   itemNames: Record<string, string>;
   timeline: TripTimelineDay[];
   packingChecklist: PackingChecklist;
-  weather: { source: WeatherSource; refreshedAt: string };
+  weather: {
+    source: WeatherSource;
+    refreshedAt: string;
+    /** True when the trip starts beyond the live-forecast horizon (~16 days) —
+     *  refreshing cannot produce live data yet. */
+    beyondForecastHorizon: boolean;
+  };
 }

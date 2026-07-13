@@ -32,6 +32,7 @@ const PROVIDER_ID: AIProviderId = "gemini";
 /** Minimal shape of a Gemini `generateContent` result that we consume. */
 export interface GeminiGenerateResult {
   text?: string;
+  candidates?: { finishReason?: string }[];
   usageMetadata?: {
     promptTokenCount?: number;
     candidatesTokenCount?: number;
@@ -50,6 +51,7 @@ export interface GeminiClient {
         temperature?: number;
         maxOutputTokens?: number;
         responseMimeType?: string;
+        thinkingConfig?: { thinkingBudget?: number };
         abortSignal?: AbortSignal;
       };
     }): Promise<GeminiGenerateResult>;
@@ -115,7 +117,7 @@ export class GeminiProvider extends StubAIProvider {
       text,
       provider: PROVIDER_ID,
       model,
-      finishReason: "stop",
+      finishReason: mapFinishReason(result.candidates?.[0]?.finishReason),
       usage: mapUsage(result.usageMetadata),
       latencyMs,
       raw: result,
@@ -142,6 +144,11 @@ export class GeminiProvider extends StubAIProvider {
           maxOutputTokens: request.maxTokens,
           responseMimeType:
             request.responseFormat === "json" ? "application/json" : undefined,
+          // Gemini 2.5 thinks by default and thought tokens count against
+          // maxOutputTokens, starving the visible output (truncated JSON →
+          // parse_error). Flash-family models accept a zero budget; pro models
+          // reject it, so thinking stays on there.
+          thinkingConfig: model.includes("pro") ? undefined : { thinkingBudget: 0 },
         },
       });
 
@@ -198,6 +205,24 @@ export class GeminiProvider extends StubAIProvider {
         { retryable: false },
       );
     }
+  }
+}
+
+function mapFinishReason(
+  reason: string | undefined,
+): "stop" | "length" | "content_filter" | "unknown" {
+  switch (reason) {
+    case undefined:
+    case "STOP":
+      return "stop";
+    case "MAX_TOKENS":
+      return "length";
+    case "SAFETY":
+    case "BLOCKLIST":
+    case "PROHIBITED_CONTENT":
+      return "content_filter";
+    default:
+      return "unknown";
   }
 }
 

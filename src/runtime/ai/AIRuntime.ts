@@ -185,6 +185,15 @@ export class AIRuntime {
         resolveModel: route.resolveModel,
         isAvailable: route.isAvailable,
         disableFallback: req.disableFallback,
+        // A response the parser rejects is as unusable as a provider error —
+        // let the router advance to the fallback instead of 502ing on the
+        // primary's truncated/malformed output.
+        validate: req.parser
+          ? (response) => {
+              const parsed = req.parser!.parse(response.text);
+              return parsed.ok ? null : parsed.errors;
+            }
+          : undefined,
       });
     } catch (error) {
       this.metrics.record({

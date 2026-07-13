@@ -177,6 +177,35 @@ describe("AIRuntime — structured output", () => {
     expect(result.parsed).toEqual({ ok: true });
   });
 
+  it("falls back to the secondary provider when the primary's output fails validation", async () => {
+    const badPrimary = fakeProvider("gemini", () => ({
+      text: "nope — truncated garbage",
+      provider: "gemini",
+      model: "m",
+      finishReason: "length",
+    }));
+    const runtime = new AIRuntime({
+      providers: [badPrimary, fakeProvider("openai")],
+      policies: policies({ explanation: { primary: "gemini", fallback: "openai" } }),
+    });
+    const result = await runtime.run({ capability: "explanation", request: { prompt: "x" }, parser });
+    expect(result.parsed).toEqual({ ok: true });
+    expect(result.servedBy).toBe("openai");
+    expect(result.usedFallback).toBe(true);
+  });
+
+  it("throws when every provider's output fails validation", async () => {
+    const bad = (id: "gemini" | "openai") =>
+      fakeProvider(id, () => ({ text: "nope", provider: id, model: "m", finishReason: "stop" }));
+    const runtime = new AIRuntime({
+      providers: [bad("gemini"), bad("openai")],
+      policies: policies({ explanation: { primary: "gemini", fallback: "openai" } }),
+    });
+    await expect(
+      runtime.run({ capability: "explanation", request: { prompt: "x" }, parser }),
+    ).rejects.toThrow(/all providers failed/i);
+  });
+
   it("throws ParseError on invalid output", async () => {
     const runtime = new AIRuntime({
       providers: [fakeProvider("gemini", () => ({ text: "nope", provider: "gemini", model: "m", finishReason: "stop" }))],

@@ -21,6 +21,7 @@ import { expandTripDays } from "@/domain/lifestyle/TripPlanner";
 import { toWeatherSnapshot } from "@/domain/lifestyle/WeatherPlanner";
 import { DEFAULT_STRATEGY, strategyProfile } from "@/domain/lifestyle/PlanningStrategy";
 import {
+  DAILY_OUTFIT_CANDIDATES,
   LIFESTYLE_ENGINE_VERSION,
   PLAN_SCORE_WEIGHTS,
   WARNING_PENALTY,
@@ -38,12 +39,24 @@ import type {
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
-/** Build the per-day recommendation via the Orchestrator (never a direct call). */
+/** Sorted-itemIds signature identifying an outfit combination. */
+const outfitSignature = (rec: UnifiedOutfitRecommendation): string =>
+  rec.items
+    .map((i) => i.itemId)
+    .sort()
+    .join("|");
+
+/** Build the per-day recommendation via the Orchestrator (never a direct call).
+ *  Requests several ranked candidates and prefers the best one not yet worn on
+ *  a previous day, so the trip rotates outfits instead of repeating the single
+ *  deterministic top pick. Falls back to the top pick when every candidate has
+ *  already been used (small wardrobe). */
 function selectDailyOutfit(
   day: TripDay,
   input: LifestyleInput,
   generatedAt: string,
   orchestrate: OrchestrateFn,
+  usedSignatures: Set<string>,
   clock?: () => number,
 ): DailyOutfit {
   const weather = { condition: day.weather.condition, season: day.weather.season };
@@ -52,24 +65,24 @@ function selectDailyOutfit(
     generatedAt,
     weather: toWeatherSnapshot(day.weather),
   };
+  const inputs = { occasion: day.occasion, limit: DAILY_OUTFIT_CANDIDATES };
   const exec = createExecutionContext({
     recommendation: dayContext,
     wardrobe: input.wardrobe,
     health: input.health ?? null,
     usage: input.usage ?? null,
     purchase: input.purchase ?? null,
-    inputs: { occasion: day.occasion, limit: 1 },
+    inputs,
     generatedAt,
   });
-  const report = orchestrate(
-    { capabilities: ["recommendation"], inputs: { occasion: day.occasion, limit: 1 } },
-    exec,
-    { clock },
-  );
+  const report = orchestrate({ capabilities: ["recommendation"], inputs }, exec, { clock });
   const outcome = report.outcomes.recommendation;
   const recs =
     outcome?.status === "executed" ? (outcome.output as UnifiedOutfitRecommendation[]) : null;
-  const top = recs && recs.length > 0 ? recs[0] : null;
+  const top =
+    recs && recs.length > 0
+      ? (recs.find((r) => !usedSignatures.has(outfitSignature(r))) ?? recs[0])
+      : null;
 
   if (!top) {
     return {
@@ -82,6 +95,7 @@ function selectDailyOutfit(
       uncovered: true,
     };
   }
+  usedSignatures.add(outfitSignature(top));
   return {
     date: day.date,
     occasion: day.occasion,
@@ -188,12 +202,14 @@ export function planLifestyle(
   const orchestrate = options.orchestrate ?? realOrchestrate;
   const clock = options.clock;
 
-  // 1. Trip → per-day schedule.
-  const days = expandTripDays(input.trip, input.forecast);
+  // 1. Trip → per-day schedule (event-less days take the strategy's occasion).
+  const days = expandTripDays(input.trip, input.forecast, strategy.defaultOccasion);
 
-  // 2. Per-day outfit selection — through the Orchestrator's recommendation capability.
+  // 2. Per-day outfit selection — through the Orchestrator's recommendation
+  // capability, rotating away from already-worn combinations.
+  const usedSignatures = new Set<string>();
   const dailyOutfits = days.map((day) =>
-    selectDailyOutfit(day, input, generatedAt, orchestrate, clock),
+    selectDailyOutfit(day, input, generatedAt, orchestrate, usedSignatures, clock),
   );
 
   // 3. Capsule (deduped union of daily-outfit items).

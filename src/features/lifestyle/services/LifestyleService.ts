@@ -7,6 +7,7 @@
 
 import {
   eachDateInclusive,
+  fallbackDay,
   planLifestyle,
   type LifestylePlan,
   type PlanningStrategy,
@@ -52,17 +53,10 @@ export interface LifestyleResult {
   itemNames: Record<string, string>;
 }
 
-/** Neutral fallback forecast when live fetch is unavailable. */
+/** Seasonal fallback forecast when live fetch is unavailable. */
 function fallbackForecast(trip: Trip): WeatherForecast {
   return manualForecast(
-    eachDateInclusive(trip.startDate, trip.endDate).map((date) => ({
-      date,
-      season: "summer",
-      condition: "mild",
-      highC: null,
-      lowC: null,
-      rainRisk: null,
-    })),
+    eachDateInclusive(trip.startDate, trip.endDate).map((date) => fallbackDay(date)),
   );
 }
 
