@@ -80,6 +80,22 @@ describe("normalizeVision", () => {
     expect(result.styleDNACandidates).toHaveLength(2);
   });
 
+  it("classifies slots via the canonical resolver (converges with StyleDNA)", () => {
+    const raw: RawVisionResult = {
+      provider: "fake",
+      model: "fake-vision",
+      items: [
+        { label: "Grey Hoodie", confidence: 0.9 },
+        { label: "Beige Cardigan", confidence: 0.9 },
+        { label: "White Kurta", confidence: 0.9 },
+        { label: "Utter Mystery", confidence: 0.9 },
+      ],
+    };
+    const result = normalizeVision(raw, input, { generatedAt: AT });
+    const slots = result.detectedItems.map((i) => i.slot);
+    expect(slots).toEqual(["top", "outerwear", "top", null]);
+  });
+
   it("aggregates dominant colours, cues, and segmentation", () => {
     const result = normalizeVision(rawTwoItems, input, { generatedAt: AT });
     expect(result.dominantColors.map((c) => c.family)).toContain("blue");

@@ -47,6 +47,34 @@ describe("deriveStyleDNA", () => {
     expect(dna.occasion.best).toBeTruthy();
   });
 
+  describe("slot resolution", () => {
+    it("maps common bottom categories to the bottom slot", () => {
+      expect(deriveStyleDNA(item({ category: "Chinos", subcategory: null })).slot).toBe("bottom");
+      expect(deriveStyleDNA(item({ category: "Joggers", subcategory: null })).slot).toBe("bottom");
+      expect(deriveStyleDNA(item({ category: "Leggings", subcategory: null })).slot).toBe("bottom");
+    });
+
+    it("maps Polos to the top slot", () => {
+      expect(deriveStyleDNA(item({ category: "Polos", subcategory: null })).slot).toBe("top");
+    });
+
+    it("maps common footwear categories to the footwear slot", () => {
+      expect(deriveStyleDNA(item({ category: "Chelsea Boots", subcategory: null })).slot).toBe("footwear");
+      expect(deriveStyleDNA(item({ category: "Loafers", subcategory: null })).slot).toBe("footwear");
+    });
+
+    it("exposes slot resolution provenance", () => {
+      expect(deriveStyleDNA(item({ category: "Chinos", subcategory: null })).slotSource).toBe("exact");
+      expect(deriveStyleDNA({ id: "x", name: "Mystery", category: null }).slotSource).toBe("fallback");
+    });
+
+    it("falls back to the item name when category is missing", () => {
+      const dna = deriveStyleDNA({ id: "n1", name: "White Oxford Shirt", category: null });
+      expect(dna.slot).toBe("top");
+      expect(dna.slotSource).toBe("exact");
+    });
+  });
+
   describe("colour profile", () => {
     it("classifies temperature, neutrality, contrast, and boldness", () => {
       expect(deriveStyleDNA(item({ color: "Navy" })).color).toMatchObject({

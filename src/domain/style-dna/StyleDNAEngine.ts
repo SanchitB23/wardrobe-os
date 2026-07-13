@@ -8,10 +8,7 @@
  * recommendation engine relies on for eligibility.
  */
 
-import {
-  OUTFIT_SLOT_DEFINITIONS,
-  categoryMatchesOutfitSlot,
-} from "@/domain/outfit";
+import { resolveOutfitSlot, type SlotResolution } from "@/domain/outfit";
 import type { FormalityEnum, OutfitSlot } from "@/types/wardrobe";
 import type {
   ColorProfile,
@@ -61,17 +58,8 @@ const OCCASION_KEYS: OccasionKey[] = [
   "casual",
 ];
 
-function resolveSlot(item: StyleDNAItem): OutfitSlot {
-  const haystack = `${item.category ?? ""} ${item.subcategory ?? ""}`;
-  for (const definition of OUTFIT_SLOT_DEFINITIONS) {
-    if (
-      categoryMatchesOutfitSlot(item.category, definition.slot) ||
-      categoryMatchesOutfitSlot(haystack, definition.slot)
-    ) {
-      return definition.slot;
-    }
-  }
-  return "accessory";
+function resolveSlot(item: StyleDNAItem): SlotResolution {
+  return resolveOutfitSlot(item.category, item.subcategory, item.name);
 }
 
 function hay(item: StyleDNAItem): string {
@@ -180,7 +168,7 @@ function colorProfile(item: StyleDNAItem): ColorProfile {
 
 function textureProfile(item: StyleDNAItem): TextureProfile {
   const h = hay(item);
-  const slot = resolveSlot(item);
+  const { slot } = resolveSlot(item);
 
   let texture: TextureFamily = "smooth";
   if (["denim", "jean"].some((k) => h.includes(k))) texture = "denim";
@@ -451,7 +439,7 @@ function compatibilityProfile(
 
 /** Derives the full {@link StyleDNA} for a single item. Deterministic. */
 export function deriveStyleDNA(item: StyleDNAItem): StyleDNA {
-  const slot = resolveSlot(item);
+  const { slot, source: slotSource } = resolveSlot(item);
   const color = colorProfile(item);
   const texture = textureProfile(item);
   const weather = weatherProfile(item, texture.fabricWeight);
@@ -463,6 +451,7 @@ export function deriveStyleDNA(item: StyleDNAItem): StyleDNA {
     itemId: item.id,
     name: item.name,
     slot,
+    slotSource,
     formality: item.formality ?? null,
     primaryStyle: style.primary,
     secondaryStyle: style.secondary,

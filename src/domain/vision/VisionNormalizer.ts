@@ -6,6 +6,7 @@
  * below-threshold detections). No model calls, no I/O; `generatedAt` injected.
  */
 
+import { resolveOutfitSlot } from "@/domain/outfit/slot-resolution";
 import {
   buildStyleDNACandidate,
   type StyleDNACandidate,
@@ -29,16 +30,6 @@ import type {
 /** Detections below this confidence are dropped in Validate. */
 const MIN_ITEM_CONFIDENCE = 0.2;
 
-const SLOT_KEYWORDS: [slot: string, keywords: string[]][] = [
-  ["outerwear", ["jacket", "blazer", "coat", "overshirt", "hoodie", "tuxedo", "cardigan", "parka"]],
-  ["footwear", ["shoe", "sneaker", "trainer", "boot", "loafer", "sandal", "heel", "footwear", "oxford", "derby"]],
-  ["bottom", ["trouser", "pant", "jean", "chino", "short", "skirt", "legging", "bottom"]],
-  ["top", ["shirt", "tee", "t-shirt", "polo", "blouse", "sweater", "knit", "henley", "kurta", "top", "vest"]],
-  ["watch", ["watch"]],
-  ["belt", ["belt"]],
-  ["fragrance", ["fragrance", "perfume", "cologne"]],
-];
-
 const COLOR_FAMILIES: [family: string, keywords: string[]][] = [
   ["blue", ["navy", "blue", "teal", "indigo", "cobalt"]],
   ["black", ["black", "charcoal black", "jet"]],
@@ -59,11 +50,8 @@ function normalize(value: string | null | undefined): string {
 }
 
 function slotFor(label: string, category: string | null): string | null {
-  const hay = `${normalize(label)} ${normalize(category)}`;
-  for (const [slot, keywords] of SLOT_KEYWORDS) {
-    if (keywords.some((k) => hay.includes(k))) return slot;
-  }
-  return null;
+  const resolution = resolveOutfitSlot(category, label);
+  return resolution.source === "fallback" ? null : resolution.slot;
 }
 
 function colorFamilyFor(name: string | null): string | null {
