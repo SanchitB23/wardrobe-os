@@ -99,14 +99,19 @@ function tripToRow(input: SaveTripInput) {
 
 async function loadChildren(tripIds: string[]) {
   const supabase = createClient();
-  if (tripIds.length === 0) return { cities: [] as CityRow[], events: [] as EventRow[] };
+  if (tripIds.length === 0)
+    return { cities: [] as CityRow[], events: [] as EventRow[], error: null as Error | null };
   const [citiesRes, eventsRes] = await Promise.all([
     supabase.from("trip_cities").select("trip_id, city, start_date, end_date, sort_order").in("trip_id", tripIds),
     supabase.from("trip_events").select("trip_id, event_date, occasion, formality_hint").in("trip_id", tripIds),
   ]);
+  // Surface child-read failures instead of pretending the trip has no
+  // events/cities — a silently empty edit form would wipe them on save.
+  const error = citiesRes.error ?? eventsRes.error;
   return {
     cities: (citiesRes.data ?? []) as CityRow[],
     events: (eventsRes.data ?? []) as EventRow[],
+    error: error ? toError(error.message) : null,
   };
 }
 
@@ -121,7 +126,9 @@ export async function selectTrips(): Promise<Result<TripRecord[]>> {
   if (error) return { data: null, error: toError(error.message) };
 
   const rows = (data ?? []) as TripRow[];
-  const { cities, events } = await loadChildren(rows.map((r) => r.id));
+  const children = await loadChildren(rows.map((r) => r.id));
+  if (children.error) return { data: null, error: children.error };
+  const { cities, events } = children;
   const byTrip = <T extends { trip_id: string }>(list: T[], id: string) =>
     list.filter((x) => x.trip_id === id);
   return {
@@ -137,8 +144,9 @@ export async function selectTrip(id: string): Promise<Result<TripRecord>> {
   if (!data) return { data: null, error: toError("Trip not found.") };
 
   const row = data as TripRow;
-  const { cities, events } = await loadChildren([id]);
-  return { data: toRecord(row, cities, events), error: null };
+  const children = await loadChildren([id]);
+  if (children.error) return { data: null, error: children.error };
+  return { data: toRecord(row, children.cities, children.events), error: null };
 }
 
 async function replaceChildren(tripId: string, input: SaveTripInput): Promise<Error | null> {
@@ -180,7 +188,12 @@ export async function insertTrip(input: SaveTripInput): Promise<Result<TripRecor
   if (error || !data) return { data: null, error: toError(error?.message ?? "Failed to save trip.") };
 
   const childErr = await replaceChildren(data.id, input);
-  if (childErr) return { data: null, error: childErr };
+  if (childErr) {
+    // Compensate: don't leave a half-created trip (parent row without its
+    // events/cities) behind when a child insert fails.
+    await supabase.from("trips").delete().eq("id", data.id);
+    return { data: null, error: childErr };
+  }
   return selectTrip(data.id);
 }
 

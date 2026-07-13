@@ -90,6 +90,18 @@ function TripDetail({
   const { trip, plan, itemNames, timeline, packingChecklist, weather } = view;
   const nameOf = (id: string) => itemNames[id] ?? id;
 
+  const weatherLabel =
+    weather.source === "forecast"
+      ? "live forecast"
+      : weather.beyondForecastHorizon
+        ? "seasonal estimate"
+        : "manual";
+  // "N-day" in the trip name but a different actual span → the dates were
+  // probably edited after creation; surface it instead of quietly disagreeing.
+  const namedDays = trip.name?.match(/(\d+)[- ]day/i);
+  const dayCountMismatch =
+    namedDays && Number(namedDays[1]) !== plan.metadata.days ? Number(namedDays[1]) : null;
+
   const explain = useLifestyleExplanation();
   const [explainOpen, setExplainOpen] = useState(false);
   function onExplain() {
@@ -110,7 +122,17 @@ function TripDetail({
         description={`${trip.startDate} → ${trip.endDate}${trip.destination ? ` · ${trip.destination}` : ""}`}
         actions={
           <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" onClick={onRefreshWeather} disabled={refreshing}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={onRefreshWeather}
+              disabled={refreshing || weather.beyondForecastHorizon}
+              title={
+                weather.beyondForecastHorizon
+                  ? "Live forecasts open ~16 days before departure — until then the plan uses a seasonal estimate."
+                  : undefined
+              }
+            >
               {refreshing ? <Loader2Icon className="animate-spin" /> : <RefreshCwIcon />} Refresh weather
             </Button>
             <Button variant="outline" size="sm" render={<Link href={`/trips/${tripId}/edit`} />}>
@@ -129,7 +151,7 @@ function TripDetail({
         <CardHeader className="pb-3">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-              <CloudSunIcon className="size-4" /> weather: {weather.source}
+              <CloudSunIcon className="size-4" /> weather: {weatherLabel}
               <span aria-hidden>·</span> {plan.metadata.days} day{plan.metadata.days === 1 ? "" : "s"}
               <Badge variant="outline" className="capitalize">{plan.metadata.strategy}</Badge>
             </div>
@@ -140,8 +162,23 @@ function TripDetail({
             </div>
           </div>
         </CardHeader>
-        {plan.tradeoffs.length > 0 || plan.warnings.length > 0 ? (
+        {plan.tradeoffs.length > 0 ||
+        plan.warnings.length > 0 ||
+        weather.beyondForecastHorizon ||
+        dayCountMismatch != null ? (
           <CardContent className="space-y-2">
+            {weather.beyondForecastHorizon ? (
+              <p className="text-sm text-muted-foreground">
+                · Weather is a seasonal estimate — live forecasts open ~16 days before departure.
+              </p>
+            ) : null}
+            {dayCountMismatch != null ? (
+              <p className="flex items-start gap-2 text-sm text-amber-700 dark:text-amber-400">
+                <AlertTriangleIcon className="mt-0.5 size-4 shrink-0" />
+                The name says {dayCountMismatch}-day but the dates span {plan.metadata.days} days —
+                the dates may have been edited after creation.
+              </p>
+            ) : null}
             {plan.tradeoffs.map((t, i) => (
               <p key={`t${i}`} className="text-sm text-muted-foreground">· {t}</p>
             ))}

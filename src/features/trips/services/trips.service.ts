@@ -8,6 +8,7 @@
 
 import {
   eachDateInclusive,
+  fallbackDay,
   type Trip,
   type WeatherForecast,
   type WeatherForecastDay,
@@ -36,18 +37,22 @@ import { toError } from "@/shared/utils/data-result";
 
 type Result<T> = { data: T | null; error: Error | null };
 
-/** Neutral seasonal fallback covering the whole horizon (mirrors LifestyleService). */
+/** Seasonal fallback covering the whole horizon (mirrors LifestyleService). */
 function fallbackForecast(startDate: string, endDate: string): WeatherForecast {
-  return manualForecast(
-    eachDateInclusive(startDate, endDate).map((date) => ({
-      date,
-      season: "summer",
-      condition: "mild",
-      highC: null,
-      lowC: null,
-      rainRisk: null,
-    })),
-  );
+  return manualForecast(eachDateInclusive(startDate, endDate).map((date) => fallbackDay(date)));
+}
+
+/**
+ * Open-Meteo serves daily forecasts ~16 days out. Beyond that, "Refresh
+ * weather" cannot produce live data — the UI uses this to explain the
+ * seasonal estimate instead of dangling a refresh that never works.
+ */
+const FORECAST_HORIZON_DAYS = 16;
+
+function beyondForecastHorizon(startDate: string, now: Date): boolean {
+  const start = Date.parse(`${startDate}T00:00:00.000Z`);
+  if (Number.isNaN(start)) return false;
+  return start - now.getTime() > FORECAST_HORIZON_DAYS * 24 * 60 * 60 * 1000;
 }
 
 /**
@@ -189,7 +194,11 @@ export async function getTripPlan(id: string): Promise<Result<TripPlanView>> {
       itemNames,
       timeline: buildTimeline(plan.tripPlan.days, plan.tripPlan.dailyOutfits, trip.cities),
       packingChecklist: buildPackingChecklist(plan.packingPlan.packingList.bySlot, packedItemIds, nameOf),
-      weather: { source: plan.metadata.weatherSource, refreshedAt: plan.metadata.generatedAt },
+      weather: {
+        source: plan.metadata.weatherSource,
+        refreshedAt: plan.metadata.generatedAt,
+        beyondForecastHorizon: beyondForecastHorizon(trip.startDate, new Date()),
+      },
     },
     error: null,
   };

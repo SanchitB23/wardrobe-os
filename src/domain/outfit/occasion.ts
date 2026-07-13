@@ -23,7 +23,8 @@ export function resolveStyleOccasion(
   const value = normalizeOccasion(occasion);
   if (!value) return null;
   if (["gym", "workout", "fitness"].includes(value)) return "gym";
-  if (["office", "work"].includes(value)) return "office";
+  if (["office", "work", "business", "meeting", "meetings", "conference"].includes(value))
+    return "office";
   if (["wedding", "formal"].includes(value)) return "wedding";
   if (["dinner", "date", "brewery", "party", "brunch", "social"].includes(value)) return "social";
   if (["travel", "vacation"].includes(value)) return "travel";

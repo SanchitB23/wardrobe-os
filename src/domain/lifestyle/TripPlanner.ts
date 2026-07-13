@@ -22,13 +22,19 @@ export function eachDateInclusive(startDate: string, endDate: string): string[] 
   return dates;
 }
 
-/** Expand the trip into `TripDay[]` (occasion + forecast per day). */
-export function expandTripDays(trip: Trip, forecast: WeatherForecast): TripDay[] {
+/** Expand the trip into `TripDay[]` (occasion + forecast per day). Days without
+ *  an explicit event take `defaultOccasion` (the planning strategy's default —
+ *  a business trip's event-less days are business days, not casual ones). */
+export function expandTripDays(
+  trip: Trip,
+  forecast: WeatherForecast,
+  defaultOccasion: string = DEFAULT_OCCASION,
+): TripDay[] {
   return eachDateInclusive(trip.startDate, trip.endDate).map((date) => {
     const event = trip.events.find((e) => e.date === date);
     return {
       date,
-      occasion: event?.occasion?.trim() || DEFAULT_OCCASION,
+      occasion: event?.occasion?.trim() || defaultOccasion,
       weather: weatherForDate(forecast, date) ?? fallbackDay(date),
     };
   });

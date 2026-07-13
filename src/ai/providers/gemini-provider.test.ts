@@ -18,6 +18,7 @@ interface CapturedCall {
     temperature?: number;
     maxOutputTokens?: number;
     responseMimeType?: string;
+    thinkingConfig?: { thinkingBudget?: number };
   };
 }
 
@@ -119,6 +120,35 @@ describe("GeminiProvider.generate", () => {
     expect(calls[0].config?.responseMimeType).toBe("application/json");
     expect(calls[0].config?.temperature).toBe(0);
     expect(calls[0].config?.maxOutputTokens).toBe(100);
+  });
+
+  it("disables thinking on flash-family models so maxTokens is all visible output", async () => {
+    const { client, calls } = fakeClient([okResult]);
+    const provider = new GeminiProvider({ client });
+
+    await provider.generate({ prompt: "json please", responseFormat: "json", maxTokens: 900 });
+    expect(calls[0].config?.thinkingConfig).toEqual({ thinkingBudget: 0 });
+  });
+
+  it("leaves thinking enabled on pro models (they reject a zero budget)", async () => {
+    const { client, calls } = fakeClient([okResult]);
+    const provider = new GeminiProvider({ client, model: "gemini-2.5-pro" });
+
+    await provider.generate({ prompt: "json please", responseFormat: "json" });
+    expect(calls[0].config?.thinkingConfig).toBeUndefined();
+  });
+
+  it("surfaces MAX_TOKENS truncation as finishReason 'length'", async () => {
+    const truncated: GeminiGenerateResult = {
+      text: '{"partial":',
+      candidates: [{ finishReason: "MAX_TOKENS" }],
+      usageMetadata: { promptTokenCount: 458, candidatesTokenCount: 26, totalTokenCount: 1344 },
+    };
+    const { client } = fakeClient([truncated]);
+    const provider = new GeminiProvider({ client });
+
+    const res = await provider.generate(req);
+    expect(res.finishReason).toBe("length");
   });
 
   it("omits responseMimeType for text mode", async () => {
