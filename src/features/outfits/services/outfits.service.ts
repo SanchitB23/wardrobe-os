@@ -176,6 +176,30 @@ export async function fetchOutfits(): Promise<{
   };
 }
 
+/** Saved outfits that feature the given wardrobe item (RFC-031). */
+export async function listOutfitsContainingItem(
+  itemId: string,
+): Promise<{ data: OutfitListRow[] | null; error: Error | null }> {
+  const [outfitsResult, linksResult] = await Promise.all([
+    fetchOutfits(),
+    fetchOutfitItemLinks(),
+  ]);
+
+  const firstError = outfitsResult.error ?? linksResult.error;
+  if (firstError) return { data: null, error: firstError };
+
+  const outfitIds = new Set(
+    (linksResult.data ?? [])
+      .filter((link) => link.item_id === itemId)
+      .map((link) => link.outfit_id),
+  );
+
+  return {
+    data: (outfitsResult.data ?? []).filter((outfit) => outfitIds.has(outfit.id)),
+    error: null,
+  };
+}
+
 async function fetchOutfitItemsForOutfit(
   outfitId: string,
 ): Promise<{ data: OutfitItemDetail[] | null; error: Error | null }> {

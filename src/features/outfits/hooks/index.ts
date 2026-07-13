@@ -11,6 +11,7 @@ import {
   fetchOutfitLookups,
   fetchOutfitPickerItems,
   fetchOutfits,
+  listOutfitsContainingItem,
   setOutfitFavorite,
   updateOutfit,
 } from "@/features/outfits/services/outfits.service";
@@ -41,6 +42,15 @@ export function useOutfit(id: string) {
     queryKey: wardrobeKeys.outfit(id),
     queryFn: async () => unwrapData(await fetchOutfitById(id)),
     enabled: Boolean(id),
+  });
+}
+
+/** Saved outfits that feature the given wardrobe item (RFC-031). */
+export function useOutfitsContainingItem(itemId: string) {
+  return useQuery({
+    queryKey: wardrobeKeys.itemOutfitsContaining(itemId),
+    queryFn: async () => unwrapData(await listOutfitsContainingItem(itemId)),
+    enabled: Boolean(itemId),
   });
 }
 

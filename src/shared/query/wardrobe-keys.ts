@@ -50,6 +50,10 @@ export const wardrobeKeys = {
     [...wardrobeKeys.all, "wear-developer-insights"] as const,
   itemWearSummary: (itemId: string) =>
     [...wardrobeKeys.all, "item-wear-summary", itemId] as const,
+  itemPairings: (itemId: string) =>
+    [...wardrobeKeys.all, "item-pairings", itemId] as const,
+  itemOutfitsContaining: (itemId: string) =>
+    [...wardrobeKeys.all, "item-outfits-containing", itemId] as const,
   occasions: () => [...wardrobeKeys.all, "occasions"] as const,
   purchases: (filters: PurchaseFilters) =>
     [...wardrobeKeys.all, "purchases", filters] as const,

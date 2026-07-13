@@ -8,14 +8,14 @@ import {
   ArrowLeftIcon,
   CalendarPlusIcon,
   HeartIcon,
-  LayersIcon,
   PencilIcon,
-  SparklesIcon,
   Wand2Icon,
 } from "lucide-react";
 
 import { InventoryErrorState } from "@/features/inventory/components/inventory-error-state";
+import { ItemCompatibilityCard } from "@/features/inventory/components/item-compatibility-card";
 import { ItemFormDialog } from "@/features/inventory/components/item-form-dialog";
+import { ItemOutfitsCard } from "@/features/inventory/components/item-outfits-card";
 import { ItemImageGallery } from "@/features/inventory/components/item-image-gallery";
 import { ItemVisualAnalysisCard } from "@/features/inventory/components/item-visual-analysis-card";
 import { LogWearDialog } from "@/features/wear-logs/components/log-wear-dialog";
@@ -32,10 +32,12 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  useItemPairings,
   useWardrobeItemDetail,
   useWardrobeLookups,
   useToggleWardrobeItemFavoriteMutation,
 } from "@/features/inventory/hooks";
+import { useOutfitsContainingItem } from "@/features/outfits/hooks";
 import { useItemPurchaseDetail } from "@/features/purchases/hooks";
 import { useItemWearSummary } from "@/features/wear-logs/hooks";
 import { formatPurchaseDisplayDate } from "@/features/purchases/services/purchases.service";
@@ -538,27 +540,28 @@ function NotesCard({ notes }: { notes: string | null }) {
   );
 }
 
-function ComingSoonCard({
-  title,
-  description,
-  icon: Icon,
-}: {
-  title: string;
-  description: string;
-  icon: typeof LayersIcon;
-}) {
+function StylistCard({ itemName }: { itemName: string }) {
+  const prompt = `What goes well with my ${itemName}?`;
   return (
-    <Card className="border-dashed">
+    <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <Icon className="size-4 text-muted-foreground" />
-          <CardTitle className="text-base">{title}</CardTitle>
-          <Badge variant="outline" className="text-muted-foreground">
-            Coming soon
-          </Badge>
+          <Wand2Icon className="size-4 text-muted-foreground" />
+          <CardTitle className="text-base">Ask the stylist</CardTitle>
         </div>
-        <CardDescription>{description}</CardDescription>
+        <CardDescription>
+          Styling suggestions for this piece, grounded in your wardrobe.
+        </CardDescription>
       </CardHeader>
+      <CardContent>
+        <Button
+          variant="outline"
+          render={<Link href={`/chat?q=${encodeURIComponent(prompt)}`} />}
+        >
+          <Wand2Icon />
+          What goes well with this?
+        </Button>
+      </CardContent>
     </Card>
   );
 }
@@ -619,6 +622,8 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
   const wearSummaryQuery = useItemWearSummary(itemId);
   const purchaseDetailQuery = useItemPurchaseDetail(itemId);
   const lookupsQuery = useWardrobeLookups();
+  const pairingsQuery = useItemPairings(itemId);
+  const itemOutfitsQuery = useOutfitsContainingItem(itemId);
 
   const detail = detailQuery.data;
   const item = detail?.item;
@@ -719,22 +724,17 @@ export function ItemDetailView({ itemId }: ItemDetailViewProps) {
             <NotesCard notes={item.notes} />
           </div>
 
-          <div className="grid gap-6 md:grid-cols-3">
-            <ComingSoonCard
-              title="Compatibility"
-              description="How well this item pairs with the rest of your wardrobe."
-              icon={SparklesIcon}
+          <ItemCompatibilityCard
+            report={pairingsQuery.data}
+            isLoading={pairingsQuery.isPending}
+          />
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <ItemOutfitsCard
+              outfits={itemOutfitsQuery.data}
+              isLoading={itemOutfitsQuery.isPending}
             />
-            <ComingSoonCard
-              title="AI recommendation"
-              description="Smart styling suggestions for this piece."
-              icon={Wand2Icon}
-            />
-            <ComingSoonCard
-              title="Outfits"
-              description="Saved outfits that feature this item."
-              icon={LayersIcon}
-            />
+            <StylistCard itemName={item.name} />
           </div>
         </div>
       </div>

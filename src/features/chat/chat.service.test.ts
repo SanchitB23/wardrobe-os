@@ -95,11 +95,62 @@ describe("streamChat", () => {
     }
   });
 
+  it("nudges once when the model returns an empty turn mid-conversation", async () => {
+    // Gemini (esp. flash-lite) sometimes returns finishReason=STOP with no
+    // parts after a tool result. One nudge should recover the answer.
+    const { model, sends } = fakeModel([
+      { toolCalls: [{ name: "getWardrobeHealth", args: {} }] },
+      { text: "" }, // empty turn after tool results
+      { toolCalls: [{ name: "getWardrobeHealth", args: {} }] }, // nudge → more tools
+      { text: "Recovered: 72/100." },
+    ]);
+    const events = await run(userMsg, { model, registry: registry(), cache: new InMemoryAICache() });
+
+    const text = events.filter((e) => e.type === "token").map((e) => (e as { text: string }).text).join("");
+    expect(text).toContain("Recovered");
+    // opening send + tool results + nudge + tool results = 4 sends
+    expect(sends).toHaveLength(4);
+    expect(events.at(-1)).toMatchObject({ type: "done", steps: 2 });
+  });
+
+  it("falls back after a second consecutive empty turn instead of nudging forever", async () => {
+    const { model, sends } = fakeModel([
+      { toolCalls: [{ name: "getWardrobeHealth", args: {} }] },
+      { text: "" },
+      { text: "" }, // still empty after the nudge
+    ]);
+    const events = await run(userMsg, { model, registry: registry(), cache: new InMemoryAICache() });
+
+    const text = events.filter((e) => e.type === "token").map((e) => (e as { text: string }).text).join("");
+    expect(text).toContain("couldn't complete");
+    expect(sends).toHaveLength(3); // opening + tool results + one nudge only
+  });
+
+  it("does not cache the fallback answer for a failed conversation", async () => {
+    const cache = new InMemoryAICache();
+    // Real-time clock so cache entries written by the service are not expired.
+    const clock = () => Date.now();
+    const { model } = fakeModel([
+      { toolCalls: [{ name: "getWardrobeHealth", args: {} }] },
+      { text: "" },
+      { text: "" }, // empty even after the nudge → fallback answer
+    ]);
+    await collect(streamChat({ messages: userMsg }, { model, registry: registry(), cache, now: clock }));
+
+    // A retry with a working model must not replay the cached fallback.
+    const { model: healthyModel } = fakeModel([{ text: "All good: 72/100." }]);
+    const events = await collect(
+      streamChat({ messages: userMsg }, { model: healthyModel, registry: registry(), cache, now: clock }),
+    );
+    const text = events.filter((e) => e.type === "token").map((e) => (e as { text: string }).text).join("");
+    expect(text).toContain("72/100");
+  });
+
   it("serves a cache hit without invoking the model", async () => {
     const cache = new InMemoryAICache();
     const { key } = buildAICacheKey({
       promptBuilder: "stylist-chat",
-      promptVersion: "v1",
+      promptVersion: "v3",
       model: MODEL,
       input: userMsg,
     });
@@ -108,7 +159,7 @@ describe("streamChat", () => {
       provider: "gemini",
       model: MODEL,
       promptBuilder: "stylist-chat",
-      promptVersion: "v1",
+      promptVersion: "v3",
       inputHash: key,
       response: {
         text: "Cached: your wardrobe is healthy.",

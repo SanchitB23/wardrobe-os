@@ -16,6 +16,7 @@ import {
 } from "@/domain/orchestrator";
 import { buildRecommendationContext } from "@/domain/recommendation";
 import type { WardrobeItemInput } from "@/domain/recommendation/RecommendationContextBuilder";
+import type { StyleDNAItem } from "@/domain/style-dna";
 
 const AT = "2026-07-08T00:00:00.000Z";
 
@@ -209,5 +210,72 @@ describe("orchestrate — real-engine composition (default registry)", () => {
     expect(report.failedCapabilities).toEqual([]);
     expect(report.outcomes.weather.output).toBeTruthy(); // WeatherSnapshot surfaced
     expect(Array.isArray(report.outcomes.recommendation.output)).toBe(true);
+  });
+
+  // RFC-031: item-anchored pairing as an orchestrator capability.
+  function pairingWardrobe(): StyleDNAItem[] {
+    const dnaItem = (id: string, name: string, category: string): StyleDNAItem => ({
+      id,
+      name,
+      category,
+      color: "Black",
+      formality: "casual",
+      rating: 8,
+      seasons: ["Year Round"],
+      styles: ["Casual"],
+      tags: [],
+    });
+    return [
+      dnaItem("a1", "Black T-Shirt", "T-Shirt"),
+      dnaItem("b1", "Beige Chino Pants", "Pants"),
+      dnaItem("f1", "White Sneakers", "Sneakers"),
+    ];
+  }
+
+  it("runs the pairing capability over the context wardrobe", () => {
+    const context = createExecutionContext({
+      recommendation: { generatedAt: AT } as never,
+      wardrobe: pairingWardrobe(),
+      inputs: { itemId: "a1" },
+      generatedAt: AT,
+    });
+
+    const report = orchestrate({ capabilities: ["pairing"] }, context, { clock: fakeClock() });
+
+    expect(report.executionOrder).toEqual(["pairing"]);
+    expect(report.failedCapabilities).toEqual([]);
+    const output = report.outcomes.pairing.output as {
+      anchorItemId: string;
+      outfits: unknown[];
+    };
+    expect(output.anchorItemId).toBe("a1");
+    expect(output.outfits.length).toBeGreaterThan(0);
+  });
+
+  it("fails the pairing capability cleanly without inputs.itemId", () => {
+    const context = createExecutionContext({
+      recommendation: { generatedAt: AT } as never,
+      wardrobe: pairingWardrobe(),
+      generatedAt: AT,
+    });
+
+    const report = orchestrate({ capabilities: ["pairing"] }, context, { clock: fakeClock() });
+
+    expect(report.failedCapabilities).toEqual(["pairing"]);
+    expect(report.outcomes.pairing.error).toContain("itemId");
+  });
+
+  it("fails the pairing capability cleanly for an unknown anchor item", () => {
+    const context = createExecutionContext({
+      recommendation: { generatedAt: AT } as never,
+      wardrobe: pairingWardrobe(),
+      inputs: { itemId: "nope" },
+      generatedAt: AT,
+    });
+
+    const report = orchestrate({ capabilities: ["pairing"] }, context, { clock: fakeClock() });
+
+    expect(report.failedCapabilities).toEqual(["pairing"]);
+    expect(report.outcomes.pairing.error).toContain("nope");
   });
 });
