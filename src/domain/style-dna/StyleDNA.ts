@@ -7,6 +7,7 @@
  * StyleDNA rather than raw wardrobe fields.
  */
 
+import type { SlotResolutionSource } from "@/domain/outfit/slot-resolution";
 import type { FormalityEnum, OutfitSlot, UsageFrequency } from "@/types/wardrobe";
 
 /** Structural subset of a wardrobe item the engine derives DNA from. */
@@ -120,6 +121,8 @@ export interface StyleDNA {
   itemId: string;
   name: string;
   slot: OutfitSlot;
+  /** How the slot was resolved; "fallback" flags an unclassifiable category. */
+  slotSource: SlotResolutionSource;
   formality: FormalityEnum | null;
   primaryStyle: string | null;
   secondaryStyle: string | null;
