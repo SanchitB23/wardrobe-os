@@ -218,6 +218,18 @@ decides catalog correctness.
 | [RFC-028](../rfc/RFC-028-Status-Page.md)                       | Status Page — live AI wiring truth, service health (passive + manual probes), budget guard, build    | ✅ Implemented |
 | [RFC-029](../rfc/RFC-029-Vision-Fallback-and-Unified-Advisor.md) | Vision Fallback + Unified Buy-vs-Skip Advisor — OpenAI vision fallback (budget-gated) + merge advisor/screenshot pages | 📝 Draft |
 
+## Epic 13 — Item Pairing & Styling (RFC approved)
+
+Item-anchored recommendations: given an owned item, deterministically rank
+complementary items and complete anchored outfits ("what goes with my black
+T-shirt?"), fill the item page's Compatibility/Outfits placeholder cards, and
+expose the report to the AI Stylist via a `getItemPairings` tool (engine
+decides, AI narrates — ADR-005).
+
+| RFC                                                        | Title                                                                                       | Status   |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------- |
+| [RFC-030](../rfc/RFC-030-Item-Pairing-Recommendations.md) | Item Pairing Recommendations — pairing engine, item-page Compatibility/Outfits cards, AI tool, orchestrator capability | ✅ Approved |
+
 ## Removed / parked from scope
 
 **Rejected** — low ROI for a single-user product ([FUTURE.md](FUTURE.md) → Rejected):
@@ -231,7 +243,7 @@ decides catalog correctness.
 Calendar Intelligence (RFC-016), Long-Horizon Planning & Multi-Step Reasoning
 (RFC-021), Laundry Detection. Former Cross-Engine Orchestration topic remains
 cancelled (RFC-005); RFC-020 number is Inventory Image Intelligence (✅ v2.0.1).
-Next free sequential after RFC-029 (Draft): **RFC-030**.
+Next free sequential after RFC-030 (Approved): **RFC-031**.
 
 ---
 

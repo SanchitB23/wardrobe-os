@@ -113,8 +113,10 @@ _Update this table (and the backlog) as RFCs are created._
 | [026](RFC-026-Inventory-Item-Occasions-UI.md)           | Item Relations Editor (Occasions/Materials/Seasons) | Inventory / Data Quality         | Implemented |
 | [027](RFC-027-Inline-Brand-Creation.md)                 | Inline Brand Creation                               | Inventory / Data Quality         | Implemented |
 | [028](RFC-028-Status-Page.md)                           | Status Page                                         | Platform / Observability         | Implemented |
+| [029](RFC-029-Vision-Fallback-and-Unified-Advisor.md)   | Vision Fallback + Unified Buy-vs-Skip Advisor       | Acquisition / AI Runtime         | Draft       |
+| [030](RFC-030-Item-Pairing-Recommendations.md)          | Item Pairing Recommendations ("What Goes With This?") | Item Pairing / Recommendation  | Approved    |
 
 See [`docs/product/BACKLOG.md`](../product/BACKLOG.md) for the epics and reserved
-RFC numbers (RFC-001 … RFC-028; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
+RFC numbers (RFC-001 … RFC-030; 014B/015A/018B/018C letter-suffixes; RFC-016/021 parked).
 Former Cross-Engine Orchestration reservation for RFC-020 was reassigned — see
 [FUTURE.md](../product/FUTURE.md).
